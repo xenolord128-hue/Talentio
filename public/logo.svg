@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="talentioGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3D2FD1" />
+      <stop offset="50%" stop-color="#6E5BFF" />
+      <stop offset="100%" stop-color="#A38BFF" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Solid Background -->
+  <rect width="500" height="500" fill="#000000" rx="0"/>
+
+  <!-- Network Connecting Lines -->
+  <g stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- N1 to N2 -->
+    <line x1="160" y1="115" x2="193" y2="195" />
+    <!-- N2 to T-Stem -->
+    <line x1="193" y1="195" x2="272" y2="175" />
+    <!-- N2 to N3 -->
+    <line x1="193" y1="195" x2="102" y2="250" />
+    <!-- N2 to N4 -->
+    <line x1="193" y1="195" x2="212" y2="285" />
+    <!-- N3 to N4 -->
+    <line x1="102" y1="250" x2="212" y2="285" />
+    <!-- N3 to N5 -->
+    <line x1="102" y1="250" x2="156" y2="385" />
+    <!-- N4 to N5 -->
+    <line x1="212" y1="285" x2="156" y2="385" />
+    <!-- N4 to N6 -->
+    <line x1="212" y1="285" x2="277" y2="326" />
+    <!-- N5 to N7 -->
+    <line x1="156" y1="385" x2="332" y2="382" />
+    <!-- N6 to N7 -->
+    <line x1="277" y1="326" x2="332" y2="382" stroke-width="12" />
+    <!-- N6 to T base connect -->
+    <line x1="277" y1="326" x2="338" y2="335" stroke-width="10" />
+  </g>
+
+  <!-- Letter T Solid Geometry -->
+  <path d="M 188 102 L 420 102 L 420 160 L 338 160 L 338 335 L 272 335 L 272 160 L 188 160 Z" fill="#FFFFFF" />
+
+  <!-- Constellation Nodes (Circles) -->
+  <g fill="#FFFFFF">
+    <!-- N1 (Top Left) -->
+    <circle cx="160" cy="115" r="24" />
+    <!-- N2 (Upper Middle) -->
+    <circle cx="193" cy="195" r="18" />
+    <!-- N3 (Far Left) -->
+    <circle cx="102" cy="250" r="20" />
+    <!-- N4 (Center Inner) -->
+    <circle cx="212" cy="285" r="19" />
+    <!-- N5 (Bottom Left) -->
+    <circle cx="156" cy="385" r="20" />
+    <!-- N6 (Lower Middle Right) -->
+    <circle cx="277" cy="326" r="18" />
+    <!-- N7 (Bottom Right Base) -->
+    <circle cx="332" cy="382" r="25" />
+  </g>
+</svg>

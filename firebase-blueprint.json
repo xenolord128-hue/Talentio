@@ -1,0 +1,166 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Talentio user and freelancer profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "handle": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "avatar": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "userType": { "type": "string", "enum": ["client", "freelancer", "agency"] },
+        "accountStatus": { "type": "string", "enum": ["approved", "pending", "suspended"] },
+        "isApprovedSeller": { "type": "boolean" },
+        "onboardingCompleted": { "type": "boolean" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "skills": { "type": "array" },
+        "balanceAvailable": { "type": "number" },
+        "balanceInEscrow": { "type": "number" }
+      },
+      "required": ["id", "email", "userType"]
+    },
+    "Gig": {
+      "title": "Gig",
+      "description": "Marketplace service gig offered by freelancers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "freelancerId": { "type": "string" },
+        "freelancerName": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "startingPrice": { "type": "number" },
+        "deliveryDays": { "type": "number" },
+        "rating": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "freelancerId", "title", "startingPrice"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Project job posted by client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "budget": { "type": "number" },
+        "category": { "type": "string" },
+        "clientId": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "title", "budget"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "description": "Proposal submitted by a freelancer on a project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "jobId": { "type": "string" },
+        "freelancerId": { "type": "string" },
+        "bidAmount": { "type": "number" },
+        "coverLetter": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "jobId", "freelancerId", "bidAmount"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Escrow contract order between client and freelancer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "gigId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string" },
+        "escrowFunded": { "type": "boolean" }
+      },
+      "required": ["id", "totalAmount", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message in conversation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "text"]
+    },
+    "AdminLog": {
+      "title": "AdminLog",
+      "description": "Governance audit trail log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "adminId": { "type": "string" },
+        "action": { "type": "string" },
+        "reason": { "type": "string" }
+      },
+      "required": ["id", "action"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "System, administrative, ranking, and account notices for users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["approval", "rank", "system", "gig", "order", "announcement"] },
+        "priority": { "type": "string", "enum": ["high", "normal", "low"] },
+        "createdAt": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" },
+        "actionUrl": { "type": "string" }
+      },
+      "required": ["id", "title", "description", "category"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts and public freelancer profiles"
+    },
+    "/gigs/{gigId}": {
+      "schema": "Gig",
+      "description": "Marketplace gig listings"
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Open project listings"
+    },
+    "/proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "Freelancer bids on projects"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Escrow contracts and milestone orders"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages inside direct chat conversations"
+    },
+    "/adminLogs/{logId}": {
+      "schema": "AdminLog",
+      "description": "Audit records for administrative compliance actions"
+    },
+    "/notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "Administrative announcements and user notices"
+    }
+  }
+}

@@ -1,0 +1,219 @@
+@import "tailwindcss";
+
+@theme {
+  --color-talentio-deep: #1A1633;
+  --color-talentio-indigo: #3D2FD1;
+  --color-talentio-violet: #6E5BFF;
+  --color-talentio-lavender: #A38BFF;
+  --color-talentio-light: #F2F0FF;
+}
+
+:root {
+  --talentio-deep: #1A1633;
+  --talentio-indigo: #3D2FD1;
+  --talentio-violet: #6E5BFF;
+  --talentio-lavender: #A38BFF;
+  --talentio-light: #F2F0FF;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --canvas-bg: #F8FAFC;
+  --canvas-text: #1A1633;
+}
+
+html.dark {
+  --canvas-bg: #0F0B1E;
+  --canvas-text: #F8FAFC;
+}
+
+html.high-contrast {
+  --canvas-bg: #000000;
+  --canvas-text: #FFFFFF;
+}
+
+/* Prevent horizontal scroll across all viewports */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+#root {
+  max-width: 100vw;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--canvas-bg);
+  color: var(--canvas-text);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* High Contrast Mode Rules (WCAG AAA) */
+html.high-contrast body {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+}
+
+html.high-contrast a,
+html.high-contrast button {
+  outline-color: #FACC15 !important;
+}
+
+html.high-contrast .ios-glass,
+html.high-contrast .ios-glass-dark {
+  background: #000000 !important;
+  border: 2px solid #FACC15 !important;
+  box-shadow: none !important;
+}
+
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast select {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #FFFFFF !important;
+}
+
+html.high-contrast input:focus,
+html.high-contrast textarea:focus,
+html.high-contrast select:focus {
+  border-color: #FACC15 !important;
+  outline: 2px solid #FACC15 !important;
+}
+
+/* Dark Mode Global Overrides */
+html.dark body {
+  background-color: #0F0B1E;
+  color: #F8FAFC;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+  background-color: #15102A !important;
+}
+
+html.dark .bg-white {
+  background-color: #1A1633 !important;
+  color: #F8FAFC;
+}
+
+html.dark .text-slate-900,
+html.dark .text-[#1A1633] {
+  color: #F8FAFC !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-800 {
+  color: #CBD5E1 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #94A3B8 !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: rgba(163, 139, 255, 0.18) !important;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
+
+/* iOS Liquid Water-Glass utilities */
+.ios-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 20px 60px 0 rgba(26, 22, 51, 0.15);
+}
+
+.ios-glass-dark {
+  background: rgba(26, 22, 51, 0.82);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(163, 139, 255, 0.25);
+  box-shadow: 0 25px 70px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Floating water-glass animation */
+@keyframes waterFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-water-float {
+  animation: waterFloat 4s ease-in-out infinite;
+}
+
+/* Custom smooth scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(163, 139, 255, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 91, 255, 0.6);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(110, 91, 255, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 139, 255, 0.5);
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Talentio subtle glow utilities */
+.talentio-glow-subtle {
+  box-shadow: 0 0 25px -5px rgba(110, 91, 255, 0.15);
+}
+
+.talentio-glow-hover:hover {
+  box-shadow: 0 10px 30px -10px rgba(61, 47, 209, 0.25);
+}
+
+.talentio-gradient-accent {
+  background: linear-gradient(135deg, #3D2FD1 0%, #6E5BFF 50%, #A38BFF 100%);
+}

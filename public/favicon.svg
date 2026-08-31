@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="32" height="32">
+  <rect width="500" height="500" rx="90" fill="#1A1633" />
+  
+  <!-- Network Connecting Lines -->
+  <g stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="160" y1="115" x2="193" y2="195" />
+    <line x1="193" y1="195" x2="272" y2="175" />
+    <line x1="193" y1="195" x2="102" y2="250" />
+    <line x1="193" y1="195" x2="212" y2="285" />
+    <line x1="102" y1="250" x2="212" y2="285" />
+    <line x1="102" y1="250" x2="156" y2="385" />
+    <line x1="212" y1="285" x2="156" y2="385" />
+    <line x1="212" y1="285" x2="277" y2="326" />
+    <line x1="156" y1="385" x2="332" y2="382" />
+    <line x1="277" y1="326" x2="332" y2="382" stroke-width="16" />
+    <line x1="277" y1="326" x2="338" y2="335" stroke-width="14" />
+  </g>
+
+  <!-- Letter T Solid Geometry -->
+  <path d="M 188 102 L 420 102 L 420 160 L 338 160 L 338 335 L 272 335 L 272 160 L 188 160 Z" fill="#FFFFFF" />
+
+  <!-- Constellation Nodes (Circles) -->
+  <g fill="#FFFFFF">
+    <circle cx="160" cy="115" r="26" />
+    <circle cx="193" cy="195" r="20" />
+    <circle cx="102" cy="250" r="22" />
+    <circle cx="212" cy="285" r="21" />
+    <circle cx="156" cy="385" r="22" />
+    <circle cx="277" cy="326" r="20" />
+    <circle cx="332" cy="382" r="28" />
+  </g>
+</svg>

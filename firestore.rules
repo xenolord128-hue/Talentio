@@ -1,0 +1,138 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================================================
+    // HELPER GUARDS & ACCESS CONTROL PRIMITIVES
+    // ========================================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'lord79915@gmail.com' ||
+        request.auth.token.email == 'admin@talentio.com' ||
+        request.auth.token.role == 'admin'
+      );
+    }
+
+    // ========================================================================
+    // 1. USERS & TALENT PROFILES
+    // ========================================================================
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) || isAdmin() || isSignedIn();
+      allow update: if isOwner(userId) || isAdmin() || isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================================
+    // 2. GIGS & MARKETPLACE SERVICES
+    // ========================================================================
+    match /gigs/{gigId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        resource.data.freelancerId == request.auth.uid ||
+        request.resource.data.freelancerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.freelancerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // ========================================================================
+    // 3. JOBS & CLIENT PROJECTS
+    // ========================================================================
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        resource.data.clientId == request.auth.uid ||
+        request.resource.data.clientId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.clientId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // ========================================================================
+    // 4. PROPOSALS
+    // ========================================================================
+    match /proposals/{proposalId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        resource.data.freelancerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.freelancerId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // ========================================================================
+    // 5. ORDERS & ESCROW CONTRACTS
+    // ========================================================================
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================================
+    // 6. CHAT CONVERSATIONS & TIMELINE MESSAGES
+    // ========================================================================
+    match /conversations/{conversationId} {
+      allow read, write: if isSignedIn() || true;
+      
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn() || true;
+      }
+    }
+
+    // ========================================================================
+    // 7. NOTICES & PLATFORM ANNOUNCEMENTS
+    // ========================================================================
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow create: if isSignedIn() || isAdmin();
+      allow update: if isSignedIn() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================================
+    // 8. ADMINISTRATIVE AUDIT TRAIL LOGS
+    // ========================================================================
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() || isAdmin();
+      allow update, delete: if false;
+    }
+
+    // ========================================================================
+    // 9. HEALTH CHECK / CONNECTION TEST
+    // ========================================================================
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // ========================================================================
+    // 10. DEFAULT DENY
+    // ========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
