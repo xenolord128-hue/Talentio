@@ -1,10 +1,14 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
+import App from './App';
 import './index.css';
+import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 );
+
+// Register PWA service worker for offline capability and fast asset delivery
+registerServiceWorker();

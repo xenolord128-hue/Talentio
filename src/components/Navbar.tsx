@@ -49,6 +49,7 @@ export const Navbar: React.FC = () => {
     setIsCreateGigModalOpen,
     setIsShortcutsModalOpen,
     currency,
+    setCurrency,
     user,
     isAuthenticated,
     logout,
@@ -59,15 +60,20 @@ export const Navbar: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false);
   const [isDualGiftModalOpen, setIsDualGiftModalOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
+  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (desktopMenuRef.current && !desktopMenuRef.current.contains(event.target as Node)) {
+        setDesktopMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -118,47 +124,12 @@ export const Navbar: React.FC = () => {
               </div>
             </button>
 
-            {/* Desktop Navigation Links - Exposing Chat, Dashboard, Talent, Services, Workstation */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = activePage === link.id || 
-                  (link.id === 'explore' && activePage === 'home') ||
-                  (link.id === 'freelancers' && activePage === 'talent') ||
-                  (link.id === 'services' && activePage === 'catalog') ||
-                  (link.id === 'workstation' && (activePage === 'escrow' || activePage === 'orders')) ||
-                  (link.id === 'chat' && activePage === 'messages') ||
-                  (link.id === 'dashboard' && (activePage === 'earnings' || activePage === 'payouts'));
-                
-                return (
-                  <button
-                    key={link.id}
-                    onClick={() => setActivePage(link.id)}
-                    className={`px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-[#3D2FD1] text-white shadow-sm ring-1 ring-[#A38BFF]/40'
-                        : 'text-slate-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#A38BFF]'}`} />
-                    <span>{link.label}</span>
-                    {link.badge && (
-                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono font-bold ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-black/30 text-[#A38BFF]'
-                      }`}>
-                        {link.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
           </div>
 
-          {/* Right Action Bar */}
+          {/* Right Action Bar - Only Currency, Profile, and Menu */}
           <div className="flex items-center gap-2 sm:gap-2.5">
 
-            {/* Currency Switcher - Always Visible on Mobile and Desktop */}
+            {/* Currency Switcher - Visible on Mobile and Desktop */}
             <button
               onClick={() => setIsCurrencyModalOpen(true)}
               className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-xs font-mono font-bold text-white border border-white/20 transition-all cursor-pointer shadow-sm active:scale-95"
@@ -372,46 +343,385 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* Search Trigger (Tablet & Desktop) */}
-            <button
-              onClick={() => setIsSearchModalOpen(true)}
-              className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 text-xs text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm"
-              title="Search Talent, Gigs, or Services (Cmd+K)"
-            >
-              <Search className="w-3.5 h-3.5 text-[#A38BFF]" />
-              <span className="hidden xl:inline font-medium text-slate-300">Search...</span>
-              <kbd className="hidden lg:inline-block px-1 py-0.2 text-[9px] font-mono bg-black/40 border border-white/15 rounded text-slate-300">
-                ⌘K
-              </kbd>
-            </button>
-
-            {/* Theme Toggle */}
-            <ThemeToggle variant="dropdown" className="hidden md:block" />
-
-            {/* Post Job / Create Gig Primary CTA */}
-            {user?.userType === 'freelancer' ? (
+            {/* Desktop Menu Button - Unified Hub for Currency, Profile, Quick Actions & Settings */}
+            <div className="relative hidden md:block" ref={desktopMenuRef}>
               <button
-                onClick={() => setIsCreateGigModalOpen(true)}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold shadow-md shadow-[#3D2FD1]/30 transition-all cursor-pointer"
+                id="desktop-header-menu-btn"
+                onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
+                className={`flex items-center gap-2 px-3 py-1.5 min-h-[40px] rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm active:scale-95 border ${
+                  desktopMenuOpen
+                    ? 'bg-[#3D2FD1] text-white border-[#A38BFF]/50 ring-2 ring-[#6E5BFF]/30'
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                }`}
+                aria-label="Open Desktop Menu"
+                title="Talentio Desktop Menu"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Create Gig</span>
+                <Menu className="w-4 h-4 text-[#A38BFF]" />
+                <span className="font-display tracking-wide">Menu</span>
+                {unreadNoticesCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-[#6E5BFF] animate-pulse" />
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-300 transition-transform duration-200 ${desktopMenuOpen ? 'rotate-180 text-white' : ''}`} />
               </button>
-            ) : (
-              <button
-                onClick={() => {
-                  if (isAuthenticated) {
-                    setIsPostJobModalOpen(true);
-                  } else {
-                    setIsAuthModalOpen(true);
-                  }
-                }}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold shadow-md shadow-[#3D2FD1]/30 transition-all cursor-pointer"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Post Job</span>
-              </button>
-            )}
+
+              {/* Desktop Menu Dropdown / Popover */}
+              {desktopMenuOpen && (
+                <div className="absolute right-0 mt-2.5 w-[380px] rounded-3xl bg-[#14102B]/98 backdrop-blur-2xl border border-white/20 text-white p-3 z-50 shadow-[0_20px_60px_rgba(0,0,0,0.65)] animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] overflow-y-auto space-y-3">
+                  
+                  {/* 1. User Profile & Account Summary */}
+                  {isAuthenticated && user ? (
+                    <div className="p-3 rounded-2xl bg-gradient-to-r from-[#1E1940] to-[#2B2358] border border-white/15 shadow-inner">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            referrerPolicy="no-referrer"
+                            className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#A38BFF]"
+                          />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-[#14102B]" />
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                          <div className="text-sm font-extrabold text-white truncate">{user.name}</div>
+                          <div className="text-[11px] text-slate-300 font-medium truncate">{user.handle || user.email}</div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#3D2FD1] text-white border border-[#A38BFF]/30 uppercase">
+                              {user.role === 'admin' ? 'Super Admin' : `${user.userType} Account`}
+                            </span>
+                            {user.userType !== 'client' && (
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                                user.accountStatus === 'approved' 
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                              }`}>
+                                {user.accountStatus === 'approved' ? '✓ Verified' : '⏳ Review'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 mt-3 pt-2.5 border-t border-white/10">
+                        <button
+                          onClick={() => {
+                            setIsOnboardingModalOpen(true);
+                            setDesktopMenuOpen(false);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Sliders className="w-3.5 h-3.5 text-[#6E5BFF]" />
+                          <span>Profile & KYC</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActivePage('dashboard');
+                            setDesktopMenuOpen(false);
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Dashboard</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md">
+                      <div className="text-sm font-black mb-1">Welcome to Talentio</div>
+                      <div className="text-xs text-[#E0DBFF] mb-3">Sign in to access milestone escrow, live chat, and seller workstations.</div>
+                      <button
+                        onClick={() => {
+                          setIsAuthModalOpen(true);
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="w-full py-2 rounded-xl bg-white text-[#1A1633] font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors shadow cursor-pointer"
+                      >
+                        <User className="w-4 h-4 text-[#3D2FD1]" />
+                        <span>Sign In or Register</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 2. Currency Selector Hub */}
+                  <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-[#A38BFF]" />
+                        <span>Global Currency</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-emerald-400">
+                        {currentCurrencyObj.flag} {currency} ({currentCurrencyObj.symbol})
+                      </span>
+                    </div>
+
+                    {/* Quick 1-Click Select Currencies */}
+                    <div className="grid grid-cols-4 gap-1">
+                      {[
+                        { code: 'USD', flag: '🇺🇸' },
+                        { code: 'EUR', flag: '🇪🇺' },
+                        { code: 'GBP', flag: '🇬🇧' },
+                        { code: 'BDT', flag: '🇧🇩' },
+                        { code: 'INR', flag: '🇮🇳' },
+                        { code: 'AED', flag: '🇦🇪' },
+                        { code: 'CAD', flag: '🇨🇦' },
+                        { code: 'AUD', flag: '🇦🇺' },
+                      ].map(item => (
+                        <button
+                          key={item.code}
+                          onClick={() => {
+                            setCurrency(item.code);
+                          }}
+                          className={`py-1 px-1.5 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                            currency === item.code
+                              ? 'bg-[#3D2FD1] text-white ring-1 ring-[#A38BFF]'
+                              : 'bg-white/5 hover:bg-white/15 text-slate-300'
+                          }`}
+                        >
+                          <span>{item.flag}</span>
+                          <span>{item.code}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setIsCurrencyModalOpen(true);
+                        setDesktopMenuOpen(false);
+                      }}
+                      className="w-full py-1.5 px-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-200 hover:text-white flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <span>Explore 150+ World Currencies...</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
+                    </button>
+                  </div>
+
+                  {/* 3. Core Header Options & Platform Workspaces */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                      Workspaces & Navigation
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => {
+                          setActivePage('workstation');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="truncate">Escrow Workstation</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActivePage('chat');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                        <span className="truncate">Messages & Chat</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActivePage('notices');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center justify-between text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Bell className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                          <span className="truncate">Notices</span>
+                        </div>
+                        {unreadNoticesCount > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-[#3D2FD1] text-white">
+                            {unreadNoticesCount}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActivePage('leaderboard');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="truncate">Leaderboard</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActivePage('freelancers');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <Users className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                        <span className="truncate">Browse Talent</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActivePage('services');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <Layers className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                        <span className="truncate">Browse Services</span>
+                      </button>
+                    </div>
+
+                    {/* Admin Desk if Admin */}
+                    {user?.role === 'admin' && (
+                      <button
+                        onClick={() => {
+                          setActivePage('admin');
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-between p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-colors cursor-pointer mt-1.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <ShieldAlert className="w-4 h-4 text-emerald-400" />
+                          <span>Admin Control Center</span>
+                        </div>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-200 font-mono font-bold uppercase">Super Admin</span>
+                      </button>
+                    )}
+
+                    {/* 2 Guaranteed Gifts & Shortcuts */}
+                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                      <button
+                        onClick={() => {
+                          setIsDualGiftModalOpen(true);
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Gift className="w-3.5 h-3.5 text-amber-400" />
+                          <span>2 Gifts</span>
+                        </div>
+                        <span className="text-[9px] bg-amber-400 text-black px-1.5 py-0.2 rounded font-black font-mono uppercase">Claim</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsShortcutsModalOpen(true);
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Keyboard className="w-3.5 h-3.5 text-[#A38BFF]" />
+                          <span>Hotkeys</span>
+                        </div>
+                        <kbd className="text-[9px] font-mono bg-black/40 px-1 py-0.2 rounded border border-white/10">?</kbd>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4. Quick Action Button */}
+                  <div className="pt-1 border-t border-white/10">
+                    {user?.userType === 'freelancer' ? (
+                      <button
+                        onClick={() => {
+                          setIsCreateGigModalOpen(true);
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>Create & Publish Gig</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (isAuthenticated) {
+                            setIsPostJobModalOpen(true);
+                          } else {
+                            setIsAuthModalOpen(true);
+                          }
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>Post a Project (Escrow Job)</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 5. Demo Role Switcher & System Preferences */}
+                  <div className="pt-2 border-t border-white/10 space-y-2">
+                    <div>
+                      <div className="px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        ⚡ Demo Account Role Switch
+                      </div>
+                      <div className="grid grid-cols-3 gap-1">
+                        <button
+                          onClick={() => {
+                            switchDemoAccount('client');
+                            setDesktopMenuOpen(false);
+                          }}
+                          className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
+                            user?.userType === 'client' && user?.role !== 'admin'
+                              ? 'bg-[#3D2FD1] text-white'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                          }`}
+                        >
+                          Client
+                        </button>
+                        <button
+                          onClick={() => {
+                            switchDemoAccount('freelancer');
+                            setDesktopMenuOpen(false);
+                          }}
+                          className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
+                            user?.userType === 'freelancer'
+                              ? 'bg-[#3D2FD1] text-white'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                          }`}
+                        >
+                          Seller
+                        </button>
+                        <button
+                          onClick={() => {
+                            switchDemoAccount('admin');
+                            setDesktopMenuOpen(false);
+                          }}
+                          className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
+                            user?.role === 'admin'
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-white/5 hover:bg-white/10 text-emerald-300'
+                          }`}
+                        >
+                          Admin
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sign out if authenticated */}
+                    {isAuthenticated && (
+                      <button
+                        onClick={() => {
+                          logout();
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/20 transition-colors cursor-pointer border border-rose-500/20"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out of Account</span>
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              )}
+            </div>
 
             {/* Mobile Hamburger Toggle Button */}
             <button

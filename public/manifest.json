@@ -1,20 +1,67 @@
 {
+  "id": "/",
   "short_name": "Talentio",
   "name": "Talentio — Premium Global Freelance Marketplace",
+  "description": "Premier international marketplace connecting vetted global freelancers and modern enterprises with secure escrow, transparent milestones, and top-tier digital services.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#1A1633",
+  "theme_color": "#1A1633",
+  "categories": ["business", "productivity", "finance"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
-      "sizes": "any"
+      "sizes": "any",
+      "purpose": "any"
     },
     {
       "src": "/logo.svg",
       "type": "image/svg+xml",
-      "sizes": "512x512 192x192"
+      "sizes": "192x192 512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": "/",
-  "background_color": "#1A1633",
-  "theme_color": "#1A1633",
-  "display": "standalone"
+  "shortcuts": [
+    {
+      "name": "Browse Services",
+      "short_name": "Services",
+      "description": "Explore vetted digital services and packages",
+      "url": "/?page=services",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Direct Messenger",
+      "short_name": "Messages",
+      "description": "Chat with clients and freelancers in real time",
+      "url": "/?page=chat",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Escrow Workstation",
+      "short_name": "Workstation",
+      "description": "Manage active orders, deliverables, and milestones",
+      "url": "/?page=workstation",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Post a Project",
+      "short_name": "Post Job",
+      "description": "Publish a milestone-based job RFP",
+      "url": "/?action=post-job",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
 }

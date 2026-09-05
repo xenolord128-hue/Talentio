@@ -14,6 +14,7 @@ import { ProposalModal } from './components/ProposalModal';
 import { CreateGigModal } from './components/CreateGigModal';
 import { ShortcutsHelpModal } from './components/ShortcutsHelpModal';
 import { ToastContainer } from './components/ToastContainer';
+import { OfflineNoticeBanner } from './components/OfflineNoticeBanner';
 import { AuthGateway } from './components/AuthGateway';
 import { ProfileCompletionBarrier } from './components/ProfileCompletionBarrier';
 import { SellerStatusBanner } from './components/SellerStatusBanner';
@@ -52,6 +53,7 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen w-full bg-[#0E0B1F]">
+        <OfflineNoticeBanner />
         <AuthGateway initialMode={activePage === 'register' ? 'register' : 'login'} />
         <ToastContainer />
       </div>
@@ -128,7 +130,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className={`min-h-screen max-w-full overflow-x-hidden w-full flex flex-col font-sans transition-colors duration-200 selection:bg-[#3D2FD1] selection:text-white ${
-      isChatPage ? 'h-screen overflow-hidden pb-0' : 'pb-20 md:pb-0'
+      isChatPage ? 'h-screen overflow-hidden pb-0' : 'pb-24 sm:pb-28'
     } ${
       theme === 'high-contrast' 
         ? 'bg-black text-white' 
@@ -138,6 +140,7 @@ const AppContent: React.FC = () => {
     }`}>
       
       {/* Sticky Compact Global Navigation (Hidden on dedicated Message page as per Requirement 1) */}
+      <OfflineNoticeBanner />
       {!isChatPage && <Navbar />}
 
       {/* Main Dynamic Page Content */}

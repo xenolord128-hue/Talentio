@@ -2,13 +2,13 @@ import React from 'react';
 import { useGuide } from '../context/GuideContext';
 import { 
   Home, 
-  Users, 
   Layers, 
   ShieldCheck, 
   MessageSquare,
   LayoutDashboard,
   ShieldAlert,
-  Bell
+  Bell,
+  Sparkles
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
@@ -55,11 +55,11 @@ export const MobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 pt-1 pointer-events-none">
+    <div className="fixed bottom-3 sm:bottom-5 left-0 right-0 z-40 px-3 sm:px-6 pointer-events-none flex justify-center">
       <nav 
-        id="talentio-mobile-dock"
-        aria-label="Mobile Navigation"
-        className="pointer-events-auto max-w-md mx-auto ios-glass rounded-[26px] p-1.5 flex items-center justify-around ring-1 ring-[#6E5BFF]/25 shadow-[0_16px_45px_rgba(61,47,209,0.22)]"
+        id="talentio-floating-dock"
+        aria-label="Floating Navigation Dock"
+        className="pointer-events-auto max-w-md sm:max-w-xl w-full mx-auto smooth-dock-slide relative rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 flex items-center justify-around overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.5)] bg-[#130F26]/95 backdrop-blur-md border border-white/15 sm:border-[#6E5BFF]/30"
       >
         {navItems.map(item => {
           const Icon = item.icon;
@@ -74,35 +74,32 @@ export const MobileBottomNav: React.FC = () => {
           return (
             <button
               key={item.id}
-              id={`mobile-nav-${item.id}`}
+              id={`nav-dock-${item.id}`}
               onClick={item.action}
-              className={`relative flex flex-col items-center justify-center min-w-[44px] min-h-[44px] py-1 px-1.5 rounded-2xl transition-all duration-200 cursor-pointer ${
+              className={`relative flex flex-col items-center justify-center min-w-[48px] sm:min-w-[62px] min-h-[46px] sm:min-h-[50px] py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl cursor-pointer transition-colors duration-150 active:scale-95 select-none ${
                 isActive
-                  ? 'bg-gradient-to-b from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md shadow-[#3D2FD1]/35 scale-105'
-                  : 'text-slate-600 hover:text-[#1A1633] active:scale-95 hover:bg-white/40'
+                  ? 'bg-[#3D2FD1] text-white shadow-sm ring-1 ring-white/30'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              <div className="relative">
+              <div className="relative flex items-center justify-center">
                 <Icon 
-                  size={18} 
-                  className={`transition-transform duration-200 ${
-                    isActive ? 'stroke-[2.5] text-white scale-110' : 'stroke-2 text-slate-700'
+                  size={20} 
+                  className={`transition-transform duration-150 ${
+                    isActive ? 'stroke-[2.5] text-white' : 'stroke-2 text-slate-300'
                   }`} 
                 />
                 {item.badge !== undefined && !isActive && (
-                  <span className="absolute -top-1.5 -right-2 px-1 py-0.2 rounded-full text-[9px] font-bold bg-[#3D2FD1] text-white ring-1 ring-white">
+                  <span className="absolute -top-1.5 -right-2.5 px-1.5 py-0.2 min-w-[16px] h-4 rounded-full text-[9px] font-extrabold bg-[#6E5BFF] text-white ring-1 ring-white/80 flex items-center justify-center shadow-xs">
                     {item.badge}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-bold mt-0.5 tracking-tight ${
-                isActive ? 'text-white' : 'text-slate-600'
+              <span className={`text-[10px] sm:text-xs font-bold mt-0.5 tracking-tight ${
+                isActive ? 'text-white' : 'text-slate-300'
               }`}>
                 {item.label}
               </span>
-              {isActive && (
-                <span className="absolute -top-1 w-1.5 h-1.5 rounded-full bg-[#A38BFF] ring-2 ring-white shadow-sm" />
-              )}
             </button>
           );
         })}
