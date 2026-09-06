@@ -1,12 +1,221 @@
 import express, { Request, Response } from "express";
+import http from "http";
 import path from "path";
 import dotenv from "dotenv";
+import { Server as SocketIOServer, Socket } from "socket.io";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
+const httpServer = http.createServer(app);
+
+// Initialize Socket.IO with CORS support
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  pingTimeout: 30000,
+  pingInterval: 10000
+});
+
+// Track online user presence and active calls in memory
+interface UserPresenceRecord {
+  userId: string;
+  online: boolean;
+  lastSeen: number;
+  socketIds: Set<string>;
+}
+
+const userPresenceMap = new Map<string, UserPresenceRecord>();
+const activeCallsMap = new Map<string, any>();
+const moderationReports: Array<{
+  id: string;
+  reporterId: string;
+  reporterName?: string;
+  targetType: 'message' | 'user' | 'call';
+  targetId: string;
+  reason: string;
+  details?: string;
+  timestamp: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+}> = [];
+
+// Socket.IO Real-time Messaging, WebRTC Signaling, and Presence Handlers
+io.on("connection", (socket: Socket) => {
+  let boundUserId: string | null = null;
+
+  // 1. User registers their socket
+  socket.on("join_user", (userId: string) => {
+    if (!userId) return;
+    boundUserId = userId;
+    socket.join(`user:${userId}`);
+
+    let record = userPresenceMap.get(userId);
+    if (!record) {
+      record = {
+        userId,
+        online: true,
+        lastSeen: Date.now(),
+        socketIds: new Set([socket.id])
+      };
+      userPresenceMap.set(userId, record);
+    } else {
+      record.online = true;
+      record.lastSeen = Date.now();
+      record.socketIds.add(socket.id);
+    }
+
+    // Broadcast user online status
+    io.emit("presence_change", {
+      userId,
+      online: true,
+      lastSeen: new Date().toISOString()
+    });
+  });
+
+  // 2. Typing Indicators (with real-time forward to recipient)
+  socket.on("typing_start", (data: { conversationId: string; senderId: string; senderName: string; receiverId: string }) => {
+    if (!data.receiverId) return;
+    socket.to(`user:${data.receiverId}`).emit("user_typing_start", {
+      conversationId: data.conversationId,
+      userId: data.senderId,
+      userName: data.senderName
+    });
+  });
+
+  socket.on("typing_stop", (data: { conversationId: string; senderId: string; receiverId: string }) => {
+    if (!data.receiverId) return;
+    socket.to(`user:${data.receiverId}`).emit("user_typing_stop", {
+      conversationId: data.conversationId,
+      userId: data.senderId
+    });
+  });
+
+  // 3. Instant Real-time Message Forwarding
+  socket.on("message_send", (data: { conversationId: string; message: any }) => {
+    if (!data.message || !data.message.receiverId) return;
+    const receiverRoom = `user:${data.message.receiverId}`;
+    socket.to(receiverRoom).emit("message_received", {
+      conversationId: data.conversationId,
+      message: data.message
+    });
+  });
+
+  // 4. Delivery & Seen Receipts
+  socket.on("message_delivered", (data: { conversationId: string; messageId: string; senderId: string; receiverId: string }) => {
+    if (!data.senderId) return;
+    socket.to(`user:${data.senderId}`).emit("message_delivered", {
+      conversationId: data.conversationId,
+      messageId: data.messageId,
+      deliveredAt: new Date().toISOString()
+    });
+  });
+
+  socket.on("message_seen", (data: { conversationId: string; messageIds: string[]; senderId: string; receiverId: string }) => {
+    if (!data.senderId) return;
+    socket.to(`user:${data.senderId}`).emit("message_seen", {
+      conversationId: data.conversationId,
+      messageIds: data.messageIds,
+      seenBy: data.receiverId,
+      seenAt: new Date().toISOString()
+    });
+  });
+
+  // 5. WebRTC Account-to-Account Voice & Video Calling Signaling
+  socket.on("call_initiate", (callData: {
+    callId: string;
+    conversationId?: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    receiverId: string;
+    receiverName: string;
+    receiverAvatar?: string;
+    type: 'audio' | 'video';
+  }) => {
+    if (!callData.receiverId) return;
+    activeCallsMap.set(callData.callId, {
+      ...callData,
+      status: "ringing",
+      startedAt: Date.now()
+    });
+
+    // Notify recipient across all their open tabs/devices
+    socket.to(`user:${callData.receiverId}`).emit("call_incoming", callData);
+  });
+
+  socket.on("call_accept", (data: { callId: string; callerId: string; receiverId: string }) => {
+    const active = activeCallsMap.get(data.callId);
+    if (active) {
+      active.status = "connected";
+      active.connectedAt = Date.now();
+    }
+    socket.to(`user:${data.callerId}`).emit("call_accepted", data);
+  });
+
+  socket.on("call_decline", (data: { callId: string; callerId: string; receiverId: string; reason?: string }) => {
+    activeCallsMap.delete(data.callId);
+    socket.to(`user:${data.callerId}`).emit("call_declined", data);
+  });
+
+  socket.on("call_end", (data: { callId: string; otherUserId: string; durationSeconds?: number }) => {
+    activeCallsMap.delete(data.callId);
+    if (data.otherUserId) {
+      socket.to(`user:${data.otherUserId}`).emit("call_ended", data);
+    }
+  });
+
+  // WebRTC SDP & ICE Candidate Exchange
+  socket.on("webrtc_signal", (data: {
+    toUserId: string;
+    fromUserId: string;
+    callId: string;
+    signal: {
+      type: 'offer' | 'answer' | 'candidate';
+      sdp?: any;
+      candidate?: any;
+    };
+  }) => {
+    if (!data.toUserId) return;
+    socket.to(`user:${data.toUserId}`).emit("webrtc_signal", {
+      fromUserId: data.fromUserId,
+      callId: data.callId,
+      signal: data.signal
+    });
+  });
+
+  // 6. Presence Heartbeat
+  socket.on("presence_heartbeat", (data: { userId: string }) => {
+    if (!data.userId) return;
+    const record = userPresenceMap.get(data.userId);
+    if (record) {
+      record.lastSeen = Date.now();
+      record.online = true;
+    }
+  });
+
+  // 7. Disconnect Handler
+  socket.on("disconnect", () => {
+    if (boundUserId) {
+      const record = userPresenceMap.get(boundUserId);
+      if (record) {
+        record.socketIds.delete(socket.id);
+        if (record.socketIds.size === 0) {
+          record.online = false;
+          record.lastSeen = Date.now();
+          io.emit("presence_change", {
+            userId: boundUserId,
+            online: false,
+            lastSeen: new Date().toISOString()
+          });
+        }
+      }
+    }
+  });
+});
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -285,6 +494,96 @@ Maintain a warm, knowledgeable, concise, and professional tone. Keep answers str
   }
 });
 
+// ============================================================================
+// CHAT & CALL PLATFORM REAL-TIME & ADMIN API ENDPOINTS
+// ============================================================================
+
+// Admin: Real-time Communication Statistics
+app.get("/api/chat/admin-stats", (_req: Request, res: Response) => {
+  let onlineCount = 0;
+  userPresenceMap.forEach(record => {
+    if (record.online) onlineCount++;
+  });
+
+  res.json({
+    activeCalls: activeCallsMap.size,
+    onlineUsersCount: onlineCount,
+    totalReports: moderationReports.length,
+    pendingReports: moderationReports.filter(r => r.status === 'pending').length,
+    systemStatus: "operational",
+    activeCallsList: Array.from(activeCallsMap.values())
+  });
+});
+
+// User: Submit Moderation / Abuse Report
+app.post("/api/chat/reports", (req: Request, res: Response) => {
+  const { reporterId, reporterName, targetType, targetId, reason, details } = req.body;
+  if (!reporterId || !targetId || !reason) {
+    return res.status(400).json({ error: "reporterId, targetId and reason are required" });
+  }
+
+  const report = {
+    id: `rep-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    reporterId,
+    reporterName: reporterName || "Anonymous User",
+    targetType: targetType || "message",
+    targetId,
+    reason,
+    details: details || "",
+    timestamp: new Date().toISOString(),
+    status: "pending" as const
+  };
+
+  moderationReports.unshift(report);
+  res.status(201).json({ success: true, report });
+});
+
+// Admin: List Moderation Reports
+app.get("/api/chat/reports", (_req: Request, res: Response) => {
+  res.json(moderationReports);
+});
+
+// Admin: Update Moderation Report Status (resolve, dismiss)
+app.patch("/api/chat/reports/:id", (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const report = moderationReports.find(r => r.id === id);
+  if (!report) {
+    return res.status(404).json({ error: "Report not found" });
+  }
+
+  if (status) {
+    report.status = status;
+  }
+  res.json({ success: true, report });
+});
+
+// User: Check Presence Status for specific user IDs
+app.post("/api/chat/presence-batch", (req: Request, res: Response) => {
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds)) {
+    return res.status(400).json({ error: "userIds array is required" });
+  }
+
+  const result: Record<string, { online: boolean; lastSeen: string }> = {};
+  userIds.forEach(uid => {
+    const record = userPresenceMap.get(uid);
+    if (record) {
+      result[uid] = {
+        online: record.online,
+        lastSeen: new Date(record.lastSeen).toISOString()
+      };
+    } else {
+      result[uid] = {
+        online: false,
+        lastSeen: "Offline"
+      };
+    }
+  });
+
+  res.json(result);
+});
+
 // Mount Vite middleware in development or serve static in production
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
@@ -302,8 +601,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Talentio server running on http://0.0.0.0:${PORT}`);
+  httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`Talentio server with Real-Time WebRTC & Socket.IO running on http://0.0.0.0:${PORT}`);
   });
 }
 

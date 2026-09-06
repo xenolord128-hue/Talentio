@@ -1,6 +1,6 @@
 {
   "name": "Talentio",
   "description": "A modern, premium international freelancer marketplace featuring vetted global talent, escrow-protected project workstations, interactive gig explorer, real-time client negotiation, and comprehensive earnings analytics adhering to the official Talentio color system.",
-  "requestFramePermissions": ["microphone"],
+  "requestFramePermissions": ["microphone", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

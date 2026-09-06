@@ -86,17 +86,81 @@
       },
       "required": ["id", "totalAmount", "status"]
     },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Chat conversation between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participantIds": { "type": "array" },
+        "participants": { "type": "object" },
+        "lastMessage": { "type": "object" },
+        "unreadCounts": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "participantIds"]
+    },
     "Message": {
       "title": "Message",
       "description": "Chat message in conversation",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "conversationId": { "type": "string" },
         "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "type": { "type": "string" },
         "text": { "type": "string" },
+        "status": { "type": "string" },
         "timestamp": { "type": "string" }
       },
-      "required": ["id", "text"]
+      "required": ["id", "senderId", "receiverId"]
+    },
+    "Call": {
+      "title": "Call",
+      "description": "Voice or video call session between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "callerId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "type": { "type": "string", "enum": ["audio", "video"] },
+        "status": { "type": "string", "enum": ["calling", "ringing", "connected", "declined", "ended", "missed"] },
+        "durationSeconds": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "callerId", "receiverId", "type", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification for messages, calls, and orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "message"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Abuse or message report for moderation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "reporterId", "targetId", "reason"]
     },
     "AdminLog": {
       "title": "AdminLog",
@@ -150,9 +214,25 @@
       "schema": "Order",
       "description": "Escrow contracts and milestone orders"
     },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Chat conversations between users"
+    },
     "/conversations/{conversationId}/messages/{messageId}": {
       "schema": "Message",
       "description": "Messages inside direct chat conversations"
+    },
+    "/calls/{callId}": {
+      "schema": "Call",
+      "description": "Voice and video call session history and state"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Real-time user push and in-app notifications"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "User moderation reports"
     },
     "/adminLogs/{logId}": {
       "schema": "AdminLog",

@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useGuide } from '../context/GuideContext';
+import talentioBannerFlippedImg from '../assets/images/talentio_banner_flipped.jpg';
 import talentioUserBannerImg from '../assets/images/talentio_user_banner.jpg';
 
 export const HomeHeroBanner: React.FC = () => {
@@ -23,7 +24,7 @@ export const HomeHeroBanner: React.FC = () => {
 
   const [heroSearch, setHeroSearch] = useState('');
   const [searchCategory, setSearchCategory] = useState('all');
-  const [bannerSrc, setBannerSrc] = useState<string>('https://i.ibb.co.com/7JJ2LHcZ/1788611720567.jpg');
+  const [bannerSrc, setBannerSrc] = useState<string>(talentioBannerFlippedImg);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,22 +44,21 @@ export const HomeHeroBanner: React.FC = () => {
       aria-label="Talentio Marketplace Hero Banner"
     >
       {/* ========================================================================= */}
-      {/* BANNER BACKGROUND: Exact User Image with Mirror Effect (Horizontal Flip) */}
+      {/* BANNER BACKGROUND: Person shifted to the far right for maximum clarity */}
       {/* ========================================================================= */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <img
           id="hero-background-image"
           src={bannerSrc}
-          alt="1788611720567"
+          alt="Talentio Creative Workstation"
           referrerPolicy="no-referrer"
           onError={() => setBannerSrc(talentioUserBannerImg)}
-          style={{ transform: 'scaleX(-1)' }}
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-right sm:object-[95%_center] lg:object-[98%_center] transform scale-100 transition-transform duration-700"
           loading="eager"
         />
-        {/* Soft natural gradient on text side only; person & setup on right remain 100% clear and bright */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0E0B1F]/40 via-transparent to-black/15 pointer-events-none" />
+        {/* Soft directional gradient: dark on the left for crisp text contrast, 100% transparent on the right so the person is crystal clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0C091C]/92 via-[#0C091C]/55 sm:via-[#0C091C]/25 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0E0B1F]/60 via-transparent to-[#0E0B1F]/20 pointer-events-none" />
       </div>
 
       {/* Main Banner Content Container: Buttons, Texts, and Search Bar */}

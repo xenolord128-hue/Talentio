@@ -339,6 +339,71 @@ export async function updateEscrowOrderDocument(orderId: string, data: Partial<E
 // CHAT CONVERSATIONS & MESSAGES
 // ============================================================================
 
+export function generateCanonicalConversationId(userId1: string, userId2: string): string {
+  const sorted = [userId1, userId2].sort();
+  return `conv_${sorted[0]}__${sorted[1]}`;
+}
+
+export async function getOrCreateDirectConversation(
+  currentUser: { id: string; name: string; handle?: string; avatar: string; role?: string },
+  targetUser: { id: string; name: string; handle?: string; avatar: string; role?: string; verified?: boolean; title?: string }
+): Promise<any> {
+  const convId = generateCanonicalConversationId(currentUser.id, targetUser.id);
+  const convRef = doc(db, 'conversations', convId);
+
+  try {
+    const snap = await getDoc(convRef);
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() };
+    }
+
+    const newConv = {
+      id: convId,
+      participantIds: [currentUser.id, targetUser.id],
+      participants: {
+        [currentUser.id]: {
+          id: currentUser.id,
+          name: currentUser.name,
+          handle: currentUser.handle || `@${currentUser.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+          avatar: currentUser.avatar,
+          role: currentUser.role || 'client'
+        },
+        [targetUser.id]: {
+          id: targetUser.id,
+          name: targetUser.name,
+          handle: targetUser.handle || `@${targetUser.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+          avatar: targetUser.avatar,
+          role: targetUser.role || 'freelancer',
+          verified: targetUser.verified ?? true,
+          title: targetUser.title || ''
+        }
+      },
+      unreadCounts: {
+        [currentUser.id]: 0,
+        [targetUser.id]: 0
+      },
+      isPinned: false,
+      isMuted: false,
+      category: 'direct',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(convRef, newConv);
+    return newConv;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, `conversations/${convId}`);
+    return {
+      id: convId,
+      participantIds: [currentUser.id, targetUser.id],
+      participants: {
+        [currentUser.id]: currentUser,
+        [targetUser.id]: targetUser
+      }
+    };
+  }
+}
+
 export function subscribeToConversations(userId: string, callback: (conversations: any[]) => void) {
   const path = 'conversations';
   try {
@@ -351,7 +416,13 @@ export function subscribeToConversations(userId: string, callback: (conversation
         const list = snapshot.docs.map(d => ({
           id: d.id,
           ...d.data()
-        }));
+        })).filter((c: any) => {
+          if (!userId) return true;
+          if (Array.isArray(c.participantIds)) {
+            return c.participantIds.includes(userId);
+          }
+          return true;
+        });
         callback(list);
       },
       (err) => {
@@ -361,6 +432,61 @@ export function subscribeToConversations(userId: string, callback: (conversation
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, path);
     return () => {};
+  }
+}
+
+export async function markConversationMessagesAsSeen(conversationId: string, currentUserId: string): Promise<void> {
+  try {
+    const msgsRef = collection(db, 'conversations', conversationId, 'messages');
+    const q = query(msgsRef, where('receiverId', '==', currentUserId));
+    const snap = await getDocs(q);
+
+    const batch = writeBatch(db);
+    let count = 0;
+    snap.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.status !== 'seen' && data.status !== 'read') {
+        batch.update(docSnap.ref, {
+          status: 'seen',
+          read_status: 'seen',
+          seenAt: serverTimestamp()
+        });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    // Reset unread count on conversation document
+    const convRef = doc(db, 'conversations', conversationId);
+    await updateDoc(convRef, {
+      [`unreadCounts.${currentUserId}`]: 0,
+      'lastMessage.status': 'seen',
+      'lastMessage.read_status': 'seen'
+    }).catch(() => {});
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `conversations/${conversationId}/messages`);
+  }
+}
+
+export async function markMessagesSeenInFirestore(conversationId: string, messageIds: string[]): Promise<void> {
+  if (!messageIds || messageIds.length === 0) return;
+  try {
+    const batch = writeBatch(db);
+    messageIds.forEach(msgId => {
+      const ref = doc(db, 'conversations', conversationId, 'messages', msgId);
+      batch.update(ref, {
+        status: 'seen',
+        read_status: 'seen',
+        seen: true,
+        seenAt: serverTimestamp()
+      });
+    });
+    await batch.commit();
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `conversations/${conversationId}/messages`);
   }
 }
 
@@ -436,7 +562,7 @@ export async function sendChatMessageDocument(conversationId: string, msg: ChatM
   try {
     const msgsRef = collection(db, 'conversations', conversationId, 'messages');
     
-    // Exact standard fields for database storage (Requirement 5)
+    // Exact standard fields for database storage
     const payload = {
       ...msg,
       sender_id: msg.senderId || msg.sender_id || auth.currentUser?.uid || 'user-me',
@@ -481,6 +607,154 @@ export async function sendChatMessageDocument(conversationId: string, msg: ChatM
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
     return msg.id;
+  }
+}
+
+// ============================================================================
+// CALL SESSIONS (VOICE & VIDEO)
+// ============================================================================
+
+export async function createCallDocument(callData: any): Promise<string> {
+  const path = `calls/${callData.id}`;
+  try {
+    const ref = doc(db, 'calls', callData.id);
+    await setDoc(ref, {
+      ...callData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    return callData.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    return callData.id;
+  }
+}
+
+export async function updateCallDocument(callId: string, updates: any): Promise<void> {
+  const path = `calls/${callId}`;
+  try {
+    const ref = doc(db, 'calls', callId);
+    await updateDoc(ref, {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export function subscribeToCallDocument(callId: string, callback: (call: any | null) => void) {
+  const path = `calls/${callId}`;
+  try {
+    const ref = doc(db, 'calls', callId);
+    return onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        callback({ id: snap.id, ...snap.data() });
+      } else {
+        callback(null);
+      }
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, path);
+    return () => {};
+  }
+}
+
+export function subscribeToIncomingCalls(userId: string, callback: (call: any | null) => void) {
+  const path = 'calls';
+  try {
+    const callsRef = collection(db, 'calls');
+    const q = query(
+      callsRef,
+      where('receiverId', '==', userId),
+      where('status', 'in', ['calling', 'ringing'])
+    );
+
+    return onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const firstDoc = snap.docs[0];
+        callback({ id: firstDoc.id, ...firstDoc.data() });
+      } else {
+        callback(null);
+      }
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, path);
+    return () => {};
+  }
+}
+
+// ============================================================================
+// REAL-TIME NOTIFICATIONS
+// ============================================================================
+
+export async function createUserNotification(notification: any): Promise<string> {
+  const path = `notifications/${notification.id}`;
+  try {
+    const ref = doc(db, 'notifications', notification.id);
+    await setDoc(ref, {
+      ...notification,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+    return notification.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    return notification.id;
+  }
+}
+
+export function subscribeToUserNotifications(userId: string, callback: (notifs: any[]) => void) {
+  const path = 'notifications';
+  try {
+    const notifsRef = collection(db, 'notifications');
+    const q = query(
+      notifsRef,
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    return onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      callback(list);
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, path);
+    return () => {};
+  }
+}
+
+// ============================================================================
+// MODERATION REPORTS
+// ============================================================================
+
+export async function submitModerationReport(report: any): Promise<string> {
+  const path = `reports/${report.id}`;
+  try {
+    const ref = doc(db, 'reports', report.id);
+    await setDoc(ref, {
+      ...report,
+      createdAt: serverTimestamp()
+    });
+    return report.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    return report.id;
+  }
+}
+
+export function subscribeToModerationReports(callback: (reports: any[]) => void) {
+  const path = 'reports';
+  try {
+    const ref = collection(db, 'reports');
+    const q = query(ref, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      callback(list);
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, path);
+    return () => {};
   }
 }
 

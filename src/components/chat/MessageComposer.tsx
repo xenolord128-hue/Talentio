@@ -49,6 +49,7 @@ interface MessageComposerProps {
   editingMessage: ChatMessage | null;
   onSaveEdit: (newText: string) => void;
   onCancelEdit: () => void;
+  onTyping?: (isTyping: boolean) => void;
 }
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'stopping';
@@ -64,10 +65,12 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   onCancelReply,
   editingMessage,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
+  onTyping
 }) => {
   const { showToast } = useGuide();
   const [inputText, setInputText] = useState('');
+  const typingTimerRef = useRef<any>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showUnifiedMenu, setShowUnifiedMenu] = useState(false);
@@ -293,6 +296,14 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     const text = e.target.value;
     setInputText(text);
 
+    if (onTyping) {
+      onTyping(true);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        onTyping(false);
+      }, 2500);
+    }
+
     // Escrow policy check (off-platform contact warning)
     const prohibitedRegex = /(whatsapp|telegram|email|@gmail|@yahoo|\+?[0-9]{10,}|pay outside|direct wire)/i;
     if (prohibitedRegex.test(text)) {
@@ -305,6 +316,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
+
+    if (onTyping) {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      onTyping(false);
+    }
 
     if (isDictating) {
       stopDictation();

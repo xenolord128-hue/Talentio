@@ -14,8 +14,10 @@ import { INITIAL_CONVERSATIONS, INITIAL_CONVERSATION_MESSAGES } from '../data/ch
 import { 
   subscribeToChatMessages, 
   sendChatMessageDocument, 
-  saveConversationDocument 
+  saveConversationDocument,
+  markMessagesSeenInFirestore 
 } from '../lib/firestore';
+import { realtimeService } from '../lib/realtimeService';
 import { ConversationList } from '../components/chat/ConversationList';
 import { ActiveChatHeader } from '../components/chat/ActiveChatHeader';
 import { MessageTimeline } from '../components/chat/MessageTimeline';
@@ -116,6 +118,179 @@ export const ChatPage: React.FC = () => {
     }
   }, [messagesMap]);
 
+  // Register current user in realtime service
+  useEffect(() => {
+    if (user?.id) {
+      realtimeService.setUser(user.id);
+    }
+  }, [user?.id]);
+
+  // Real-time Socket.IO event listeners for live account-to-account communication
+  useEffect(() => {
+    // 1. Live incoming chat message
+    const unsubMsg = realtimeService.on('new_message', (msg: ChatMessage) => {
+      const convId = msg.conversationId || msg.conversation_id;
+      if (!convId) return;
+
+      setMessagesMap(prev => {
+        const existing = prev[convId] || [];
+        if (existing.some(m => m.id === msg.id)) return prev;
+        return {
+          ...prev,
+          [convId]: [...existing, msg]
+        };
+      });
+
+      const isCurrentActive = activeConversationId === convId;
+
+      setConversations(prev => {
+        const match = prev.find(c => c.id === convId);
+        if (match) {
+          return prev.map(c => c.id === convId ? {
+            ...c,
+            lastMessage: {
+              text: msg.text || msg.message || 'New message',
+              timestamp: msg.timestamp || 'Just now',
+              senderId: msg.senderId || msg.sender_id,
+              sender_id: msg.senderId || msg.sender_id,
+              receiver_id: msg.receiverId || msg.receiver_id,
+              status: isCurrentActive ? 'read' : 'delivered',
+              read_status: isCurrentActive ? 'read' : 'delivered',
+              isVoice: !!msg.voiceNote,
+              hasAttachment: !!(msg.attachments && msg.attachments.length > 0)
+            },
+            unreadCount: isCurrentActive ? 0 : (c.unreadCount + 1)
+          } : c);
+        } else {
+          const newConv: Conversation = {
+            id: convId,
+            participant: {
+              id: msg.senderId || 'user-sender',
+              name: msg.senderName || 'Talentio User',
+              handle: `@user_${(msg.senderId || 'user').slice(-4)}`,
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+              role: 'freelancer',
+              verified: true,
+              online: true,
+              lastSeen: 'Online'
+            },
+            participantIds: [user?.id || 'me', msg.senderId || 'user-sender'],
+            lastMessage: {
+              text: msg.text || msg.message || 'New message',
+              timestamp: msg.timestamp || 'Just now',
+              senderId: msg.senderId,
+              status: isCurrentActive ? 'read' : 'delivered',
+              read_status: isCurrentActive ? 'read' : 'delivered'
+            },
+            unreadCount: isCurrentActive ? 0 : 1,
+            isPinned: false,
+            isMuted: false,
+            category: 'direct'
+          };
+          return [newConv, ...prev];
+        }
+      });
+
+      // Mark as seen immediately if active
+      if (isCurrentActive && msg.senderId && msg.senderId !== user?.id) {
+        realtimeService.markMessagesAsSeen(convId, msg.senderId, [msg.id]);
+        markMessagesSeenInFirestore(convId, [msg.id]).catch(() => {});
+      }
+
+      soundEffects.playMessageReceived();
+    });
+
+    // 2. Typing status event
+    const unsubTyping = realtimeService.on('typing', ({ conversationId, userId, isTyping }: any) => {
+      setConversations(prev => prev.map(c => {
+        if (c.id === conversationId || c.participant.id === userId) {
+          return {
+            ...c,
+            participant: {
+              ...c.participant,
+              isTyping
+            }
+          };
+        }
+        return c;
+      }));
+    });
+
+    // 3. Messages seen receipts (blue double ticks)
+    const unsubSeen = realtimeService.on('messages_seen', ({ conversationId, messageIds }: any) => {
+      setMessagesMap(prev => {
+        const msgs = prev[conversationId];
+        if (!msgs) return prev;
+        return {
+          ...prev,
+          [conversationId]: msgs.map(m => messageIds.includes(m.id) ? { ...m, status: 'read', read_status: 'read', seen: true } : m)
+        };
+      });
+    });
+
+    // 4. Messages delivered receipts (grey double ticks)
+    const unsubDelivered = realtimeService.on('messages_delivered', ({ conversationId, messageIds }: any) => {
+      setMessagesMap(prev => {
+        const msgs = prev[conversationId];
+        if (!msgs) return prev;
+        return {
+          ...prev,
+          [conversationId]: msgs.map(m => messageIds.includes(m.id) && m.status !== 'read' ? { ...m, status: 'delivered', read_status: 'delivered' } : m)
+        };
+      });
+    });
+
+    // 5. Presence event
+    const unsubPresence = realtimeService.on('presence', ({ userId, online, lastSeen }: any) => {
+      setConversations(prev => prev.map(c => {
+        if (c.participant.id === userId) {
+          return {
+            ...c,
+            participant: {
+              ...c.participant,
+              online,
+              lastSeen: online ? 'Online' : (lastSeen || 'Recently')
+            }
+          };
+        }
+        return c;
+      }));
+    });
+
+    // 6. Incoming call event
+    const unsubCall = realtimeService.on('incoming_call', (data: any) => {
+      setCallSession({
+        active: true,
+        callId: data.callId,
+        type: data.type,
+        isIncoming: true,
+        participant: {
+          id: data.callerId,
+          name: data.callerName || 'Talentio User',
+          avatar: data.callerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          role: 'freelancer',
+          verified: true,
+          online: true,
+          lastSeen: 'Calling'
+        },
+        status: 'ringing',
+        durationSeconds: 0,
+        isMuted: false,
+        isCameraOff: false,
+        isSpeaker: true
+      });
+    });
+
+    return () => {
+      unsubMsg();
+      unsubTyping();
+      unsubSeen();
+      unsubDelivered();
+      unsubPresence();
+      unsubCall();
+    };
+  }, [activeConversationId, user?.id]);
+
   // Real-time Firestore message listener for active conversation
   useEffect(() => {
     if (!activeConversationId) return;
@@ -140,6 +315,29 @@ export const ChatPage: React.FC = () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, [activeConversationId]);
+
+  // Mark unread messages as read when opening conversation
+  useEffect(() => {
+    if (!activeConversationId || !activeConversation) return;
+
+    const msgs = messagesMap[activeConversationId] || [];
+    const currentUserId = user?.id || 'user-me';
+    const unseenIds = msgs
+      .filter(m => m.senderId && m.senderId !== currentUserId && m.status !== 'read')
+      .map(m => m.id);
+
+    if (unseenIds.length > 0) {
+      realtimeService.markMessagesAsSeen(activeConversationId, activeConversation.participant.id, unseenIds);
+      markMessagesSeenInFirestore(activeConversationId, unseenIds).catch(() => {});
+      
+      setMessagesMap(prev => ({
+        ...prev,
+        [activeConversationId]: (prev[activeConversationId] || []).map(m => 
+          unseenIds.includes(m.id) ? { ...m, status: 'read', read_status: 'read', seen: true } : m
+        )
+      }));
+    }
+  }, [activeConversationId, messagesMap[activeConversationId || '']?.length]);
 
   // When selectedFreelancer updates from another page, create or jump to conversation
   useEffect(() => {
@@ -341,7 +539,8 @@ export const ChatPage: React.FC = () => {
     setReplyingMessage(null);
     soundEffects.playMessageSent();
 
-    // Persist to Firestore database for real-time delivery to recipient
+    // Broadcast via live socket and persist to Firestore database for recipient
+    realtimeService.sendMessage(activeConversationId, newMessage);
     try {
       await sendChatMessageDocument(activeConversationId, newMessage);
     } catch (err) {
@@ -403,6 +602,7 @@ export const ChatPage: React.FC = () => {
     ));
 
     soundEffects.playMessageSent();
+    realtimeService.sendMessage(activeConversationId, newMessage);
 
     try {
       await sendChatMessageDocument(activeConversationId, newMessage);
@@ -465,6 +665,7 @@ export const ChatPage: React.FC = () => {
     ));
 
     soundEffects.playMessageSent();
+    realtimeService.sendMessage(activeConversationId, newMessage);
 
     try {
       await sendChatMessageDocument(activeConversationId, newMessage);
@@ -536,6 +737,7 @@ export const ChatPage: React.FC = () => {
 
     soundEffects.playMessageSent();
     showToast('Official Milestone Offer sent to partner', 'success');
+    realtimeService.sendMessage(activeConversationId, newMessage);
 
     try {
       await sendChatMessageDocument(activeConversationId, newMessage);
@@ -977,8 +1179,10 @@ export const ChatPage: React.FC = () => {
   // Start Audio Call
   const handleStartAudioCall = () => {
     if (!activeConversation) return;
+    const callId = `call_voice_${Date.now()}`;
     setCallSession({
       active: true,
+      callId,
       type: 'audio',
       participant: activeConversation.participant,
       status: 'calling',
@@ -992,8 +1196,10 @@ export const ChatPage: React.FC = () => {
   // Start Video Call
   const handleStartVideoCall = () => {
     if (!activeConversation) return;
+    const callId = `call_video_${Date.now()}`;
     setCallSession({
       active: true,
+      callId,
       type: 'video',
       participant: activeConversation.participant,
       status: 'calling',
@@ -1002,6 +1208,13 @@ export const ChatPage: React.FC = () => {
       isCameraOff: false,
       isSpeaker: true
     });
+  };
+
+  // Handle Typing indicator event emission
+  const handleTyping = (isTyping: boolean) => {
+    if (activeConversationId && activeConversation) {
+      realtimeService.sendTyping(activeConversationId, activeConversation.participant.id, isTyping);
+    }
   };
 
   return (
@@ -1080,7 +1293,7 @@ export const ChatPage: React.FC = () => {
               <MessageTimeline
                 messages={activeMessages}
                 searchQuery={searchInChatQuery}
-                isTyping={false}
+                isTyping={!!activeConversation.participant.isTyping}
                 participantName={activeConversation.participant.name}
                 participantAvatar={activeConversation.participant.avatar}
                 pinnedMessageId={activeConversation.pinnedMessageId}
@@ -1110,6 +1323,7 @@ export const ChatPage: React.FC = () => {
                 editingMessage={editingMessage}
                 onSaveEdit={handleSaveEdit}
                 onCancelEdit={() => setEditingMessage(null)}
+                onTyping={handleTyping}
               />
             </div>
 
@@ -1205,12 +1419,14 @@ export const ChatPage: React.FC = () => {
       <AudioCallModal
         callState={callSession}
         onEndCall={() => setCallSession(null)}
+        currentUser={user ? { id: user.id, name: user.name, avatar: user.avatar } : null}
       />
 
       {/* Video Calling Interface */}
       <VideoCallModal
         callState={callSession}
         onEndCall={() => setCallSession(null)}
+        currentUser={user ? { id: user.id, name: user.name, avatar: user.avatar } : null}
       />
 
     </div>

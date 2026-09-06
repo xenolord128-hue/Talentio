@@ -255,8 +255,8 @@ export interface ChatMessage {
   isoDate?: string;
   createdAt?: string;
   created_at?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
-  read_status?: 'sent' | 'delivered' | 'read';
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'seen';
+  read_status?: 'sent' | 'delivered' | 'read' | 'seen';
   isEdited?: boolean;
   isDeleted?: boolean;
   isPinned?: boolean;
@@ -338,6 +338,8 @@ export interface CallSessionState {
   isCameraOff: boolean;
   isSpeaker: boolean;
   isScreenSharing?: boolean;
+  callId?: string;
+  isIncoming?: boolean;
 }
 
 // ==========================================

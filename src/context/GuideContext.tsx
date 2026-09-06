@@ -59,6 +59,7 @@ import {
   markNoticeAsRead
 } from '../lib/firestore';
 import { PlatformNotice, NoticeCategory } from '../types';
+import { realtimeService } from '../lib/realtimeService';
 
 export type TalentioPage = 
   | 'explore' 
@@ -1433,12 +1434,18 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!requireAuth('Please sign in to send messages.')) return;
     if (!text.trim()) return;
 
+    const currentUserId = user?.id || 'user-me';
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: user?.userType === 'freelancer' ? 'freelancer' : 'client',
-      senderName: user ? `${user.name} (${user.userType})` : 'You',
+      senderId: currentUserId,
+      sender_id: currentUserId,
+      senderName: user ? `${user.name}` : 'You',
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      createdAt: new Date().toISOString(),
+      status: 'sent',
+      read_status: 'sent',
       isOffer,
       offerDetails: isOffer ? {
         title: 'Custom Milestone Contract Offer',
@@ -1449,22 +1456,6 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     setChatMessages(prev => [...prev, newMsg]);
-
-    setTimeout(() => {
-      const isClientUser = user?.userType === 'client';
-      const replyMsg: ChatMessage = {
-        id: `reply-${Date.now()}`,
-        sender: isClientUser ? 'freelancer' : 'client',
-        senderName: isClientUser 
-          ? (selectedFreelancer ? selectedFreelancer.name : 'Elena Rostova')
-          : 'Alexander Vance (VP Product)',
-        text: isOffer 
-          ? "I've reviewed the scope and offer terms! Everything looks crystal clear. Let's proceed with Milestone 1 under Talentio Escrow."
-          : "Thanks for the details! I can certainly handle this requirement. Would you like me to formalize a custom milestone offer?",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setChatMessages(curr => [...curr, replyMsg]);
-    }, 1200);
   };
 
   const acceptOffer = (msgId: string) => {
