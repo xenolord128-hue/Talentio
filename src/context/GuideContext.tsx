@@ -56,11 +56,12 @@ import {
   subscribeToAdminLogs,
   createNoticeDocument,
   subscribeToNotices,
-  markNoticeAsRead
+  markNoticeAsRead,
+  subscribeToUserNotifications
 } from '../lib/firestore';
 import { PlatformNotice, NoticeCategory } from '../types';
 import { realtimeService } from '../lib/realtimeService';
-import { subscribeUserToPush } from '../utils/serviceWorkerRegistration';
+import { subscribeUserToPush, triggerDeviceNotification, updateAppBadge } from '../utils/serviceWorkerRegistration';
 
 export type TalentioPage = 
   | 'explore' 
@@ -799,13 +800,44 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Realtime Service User Binding, Push Notifications, and Incoming Call Listener
   useEffect(() => {
-    if (user?.id) {
-      realtimeService.connect();
-      realtimeService.setUser(user.id);
+    if (!user?.id) return;
 
-      // Auto-register push subscription if permitted
-      subscribeUserToPush(user.id).catch(() => {});
-    }
+    realtimeService.connect();
+    realtimeService.setUser(user.id);
+
+    // Auto-register push subscription if permitted
+    subscribeUserToPush(user.id).catch(() => {});
+
+    // Live Firestore notification listener
+    let initialLoad = true;
+    const unsubNotifs = subscribeToUserNotifications(user.id, (incomingNotifs) => {
+      if (!incomingNotifs) return;
+
+      if (incomingNotifs.length > 0) {
+        setNotifications(incomingNotifs as AppNotification[]);
+      }
+
+      // Calculate unread count and update mobile App Badge
+      const unreadCount = incomingNotifs.filter(n => !n.read).length;
+      updateAppBadge(unreadCount);
+
+      // If a new notification arrived after initial load, trigger mobile device notification
+      if (!initialLoad && incomingNotifs.length > 0) {
+        const latest = incomingNotifs[0];
+        if (latest && !latest.read) {
+          triggerDeviceNotification(latest.title || 'Talentio Alert', {
+            body: latest.description || 'You have a new update.',
+            url: latest.actionUrl === 'chat' ? '/?page=chat' : '/?page=orders',
+            tag: latest.id
+          }).catch(() => {});
+        }
+      }
+      initialLoad = false;
+    });
+
+    return () => {
+      unsubNotifs();
+    };
   }, [user?.id]);
 
   const setActivePage = (page: TalentioPage) => {

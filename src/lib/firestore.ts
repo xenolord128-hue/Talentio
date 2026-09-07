@@ -603,6 +603,22 @@ export async function sendChatMessageDocument(conversationId: string, msg: ChatM
       updatedAt: serverTimestamp()
     }, { merge: true });
 
+    // Auto-create real-time notification document for the receiver
+    if (payload.receiver_id && payload.receiver_id !== payload.sender_id) {
+      const notifId = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      createUserNotification({
+        id: notifId,
+        userId: payload.receiver_id,
+        recipientId: payload.receiver_id,
+        title: `Message from ${msg.senderName || 'Talentio Member'}`,
+        description: msg.text || (msg.voiceNote ? '🎤 Sent a voice message' : (msg.attachments && msg.attachments.length > 0 ? '📎 Sent an attachment' : 'Sent a new message')),
+        type: 'message',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        actionUrl: 'chat',
+        conversationId: conversationId
+      }).catch(() => {});
+    }
+
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);

@@ -51,6 +51,81 @@ export function registerServiceWorker(onUpdate?: (registration: ServiceWorkerReg
 }
 
 /**
+ * Triggers an immediate device notification with vibration and sound.
+ * Uses ServiceWorkerRegistration.showNotification() which is mandatory for Mobile Chrome & Android.
+ */
+export async function triggerDeviceNotification(title: string, options?: {
+  body?: string;
+  icon?: string;
+  badge?: string;
+  url?: string;
+  tag?: string;
+  data?: any;
+}): Promise<boolean> {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return false;
+  }
+
+  if (Notification.permission !== 'granted') {
+    const granted = await Notification.requestPermission();
+    if (granted !== 'granted') return false;
+  }
+
+  const defaultIcon = '/icons/icon-192.png';
+  const notifOptions: NotificationOptions = {
+    body: options?.body || '',
+    icon: options?.icon || defaultIcon,
+    badge: options?.badge || defaultIcon,
+    tag: options?.tag || `talentio-${Date.now()}`,
+    data: options?.data || { url: options?.url || '/?page=chat' },
+    // @ts-ignore - Mobile device vibration pattern (200ms vibe, 100ms pause, 200ms vibe)
+    vibrate: [200, 100, 200],
+    renotify: true
+  };
+
+  // 1. Mobile & PWA standard: ServiceWorkerRegistration.showNotification
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, notifOptions);
+        return true;
+      }
+    } catch (err) {
+      console.warn('Service worker notification note:', err);
+    }
+  }
+
+  // 2. Desktop fallback: new Notification()
+  try {
+    new Notification(title, notifOptions);
+    return true;
+  } catch (err) {
+    console.warn('Notification construct note:', err);
+    return false;
+  }
+}
+
+/**
+ * Sets the notification badge counter on the mobile app home screen icon (PWA Badging API)
+ */
+export function updateAppBadge(count: number) {
+  if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
+    try {
+      if (count > 0) {
+        // @ts-ignore
+        navigator.setAppBadge(count).catch(() => {});
+      } else {
+        // @ts-ignore
+        navigator.clearAppBadge().catch(() => {});
+      }
+    } catch {
+      // Ignored if not supported
+    }
+  }
+}
+
+/**
  * Subscribes current user device to Web Push Notifications
  */
 export async function subscribeUserToPush(userId: string): Promise<PushSubscription | null> {
@@ -68,14 +143,23 @@ export async function subscribeUserToPush(userId: string): Promise<PushSubscript
 
     const registration = await navigator.serviceWorker.ready;
 
-    // 1. Fetch server VAPID public key
-    const res = await fetch('/api/push/vapid-public-key');
-    if (!res.ok) {
-      throw new Error(`Failed to fetch VAPID key: ${res.statusText}`);
+    // 1. Attempt to fetch server VAPID public key
+    let res: Response;
+    try {
+      res = await fetch('/api/push/vapid-public-key');
+    } catch (fetchErr) {
+      console.info('Backend push endpoint not reachable on current host (e.g. Netlify static mode). Local device notifications active.');
+      return null;
     }
+
+    if (!res.ok) {
+      console.info(`Push server endpoint responded with ${res.statusText}. Local device notifications remain active.`);
+      return null;
+    }
+
     const { publicKey } = await res.json();
     if (!publicKey) {
-      throw new Error('VAPID public key was empty');
+      return null;
     }
 
     const applicationServerKey = urlBase64ToUint8Array(publicKey);
@@ -102,7 +186,7 @@ export async function subscribeUserToPush(userId: string): Promise<PushSubscript
 
     return subscription;
   } catch (err) {
-    console.warn('Error subscribing to Web Push notifications:', err);
+    console.warn('Web Push registration note (device notifications remain operational):', err);
     return null;
   }
 }

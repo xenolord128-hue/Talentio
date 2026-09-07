@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { ChatMessage } from '../types';
+import { triggerDeviceNotification } from '../utils/serviceWorkerRegistration';
 
 class RealtimeService {
   private socket: Socket | null = null;
@@ -146,17 +147,20 @@ class RealtimeService {
     return Promise.resolve('denied');
   }
 
-  public showNativeNotification(title: string, body: string) {
+  public async showNativeNotification(title: string, body: string, data?: any) {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
-    if (Notification.permission === 'granted' && document.hidden) {
+    if (Notification.permission === 'granted') {
       try {
-        new Notification(`Talentio: ${title}`, {
+        await triggerDeviceNotification(`Talentio: ${title}`, {
           body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico'
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
+          data: data || { url: '/?page=chat' },
+          url: '/?page=chat',
+          tag: `talentio-msg-${Date.now()}`
         });
-      } catch {
-        // Ignored
+      } catch (err) {
+        console.warn('Native notification note:', err);
       }
     }
   }
