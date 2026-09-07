@@ -3,7 +3,6 @@ import { useGuide, TalentioPage } from '../context/GuideContext';
 import { TalentioLogo } from './TalentioLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { CurrencySelectorModal } from './CurrencySelectorModal';
-import { DualGiftRewardsModal } from './DualGiftRewardsModal';
 import { CURRENCIES_DATA } from '../data/currenciesData';
 import { 
   Search, 
@@ -26,7 +25,6 @@ import {
   Sliders,
   User,
   Zap,
-  Gift,
   Keyboard,
   ShieldAlert,
   SlidersHorizontal,
@@ -62,7 +60,6 @@ export const Navbar: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false);
-  const [isDualGiftModalOpen, setIsDualGiftModalOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
 
@@ -229,6 +226,14 @@ export const Navbar: React.FC = () => {
                   )}
 
                   <button
+                    onClick={() => { setActivePage('profile'); setDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[#3D2FD1]/30 hover:bg-[#3D2FD1] transition-colors cursor-pointer border border-[#A38BFF]/30 mb-1"
+                  >
+                    <User className="w-4 h-4 text-[#A38BFF]" />
+                    <span>My Profile</span>
+                  </button>
+
+                  <button
                     onClick={() => { setActivePage('dashboard'); setDropdownOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                   >
@@ -273,17 +278,6 @@ export const Navbar: React.FC = () => {
                         {unreadNoticesCount}
                       </span>
                     )}
-                  </button>
-
-                  <button
-                    onClick={() => { setIsDualGiftModalOpen(true); setDropdownOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors cursor-pointer border border-amber-500/20 my-1"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Gift className="w-4 h-4 text-amber-400" />
-                      <span>2 Guaranteed Gifts</span>
-                    </div>
-                    <span className="text-[10px] bg-amber-400 text-black px-1.5 py-0.2 rounded font-black font-mono uppercase">Claim</span>
                   </button>
 
                   <button
@@ -401,23 +395,34 @@ export const Navbar: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 mt-3 pt-2.5 border-t border-white/10">
+                      <div className="grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-white/10">
+                        <button
+                          onClick={() => {
+                            setActivePage('profile');
+                            setDesktopMenuOpen(false);
+                          }}
+                          className="px-2 py-1.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                          title="View Profile"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span>Profile</span>
+                        </button>
                         <button
                           onClick={() => {
                             setIsOnboardingModalOpen(true);
                             setDesktopMenuOpen(false);
                           }}
-                          className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="px-2 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Sliders className="w-3.5 h-3.5 text-[#6E5BFF]" />
-                          <span>Profile & KYC</span>
+                          <span>KYC Details</span>
                         </button>
                         <button
                           onClick={() => {
                             setActivePage('dashboard');
                             setDesktopMenuOpen(false);
                           }}
-                          className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="px-2 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Wallet className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Dashboard</span>
@@ -592,20 +597,25 @@ export const Navbar: React.FC = () => {
                       </button>
                     )}
 
-                    {/* 2 Guaranteed Gifts & Shortcuts */}
+                    {/* Profile & Shortcuts */}
                     <div className="grid grid-cols-2 gap-1.5 pt-1">
                       <button
                         onClick={() => {
-                          setIsDualGiftModalOpen(true);
+                          if (isAuthenticated && user) {
+                            setActivePage('profile');
+                          } else {
+                            setIsAuthModalOpen(true);
+                          }
                           setDesktopMenuOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+                        className="p-2 rounded-xl bg-[#3D2FD1]/30 hover:bg-[#3D2FD1]/60 border border-[#A38BFF]/30 text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+                        title="View User Profile"
                       >
                         <div className="flex items-center gap-1.5">
-                          <Gift className="w-3.5 h-3.5 text-amber-400" />
-                          <span>2 Gifts</span>
+                          <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                          <span>Profile</span>
                         </div>
-                        <span className="text-[9px] bg-amber-400 text-black px-1.5 py-0.2 rounded font-black font-mono uppercase">Claim</span>
+                        <ArrowRight className="w-3 h-3 text-[#A38BFF]" />
                       </button>
 
                       <button
@@ -744,15 +754,25 @@ export const Navbar: React.FC = () => {
           {/* User Account / Sign In Header Card in Mobile Drawer */}
           {isAuthenticated && user ? (
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#1E1940] to-[#2B2358] border border-white/15 flex items-center justify-between gap-3 shadow-md">
-              <div className="flex items-center gap-3">
+              <div 
+                onClick={() => {
+                  setActivePage('profile');
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-3 cursor-pointer flex-1 overflow-hidden"
+                title="View My Profile"
+              >
                 <img
                   src={user.avatar}
                   alt={user.name}
                   referrerPolicy="no-referrer"
-                  className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#A38BFF]"
+                  className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#A38BFF] shrink-0"
                 />
                 <div className="overflow-hidden">
-                  <div className="text-xs sm:text-sm font-extrabold text-white truncate">{user.name}</div>
+                  <div className="text-xs sm:text-sm font-extrabold text-white truncate flex items-center gap-1.5">
+                    <span>{user.name}</span>
+                    <span className="text-[10px] text-[#A38BFF] font-normal">({user.handle || 'Profile'})</span>
+                  </div>
                   <div className="text-[11px] text-slate-300 truncate">{user.email}</div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#3D2FD1] text-white border border-[#A38BFF]/30 uppercase">
@@ -829,27 +849,37 @@ export const Navbar: React.FC = () => {
           {/* User Account Quick Section */}
           {isAuthenticated && user && (
             <div className="space-y-1.5 pt-1">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Account & KYC</div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Account & Profile</div>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => {
+                    setActivePage('profile');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="p-2.5 rounded-xl bg-[#3D2FD1] text-white border border-[#A38BFF]/40 text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer shadow-sm"
+                >
+                  <User className="w-4 h-4 text-white" />
+                  <span>Profile</span>
+                </button>
                 <button
                   onClick={() => {
                     setIsOnboardingModalOpen(true);
                     setMobileMenuOpen(false);
                   }}
-                  className="p-3 rounded-xl bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center gap-2 text-left"
+                  className="p-2.5 rounded-xl bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10 text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer"
                 >
                   <Sliders className="w-4 h-4 text-[#6E5BFF]" />
-                  <span>Profile & KYC</span>
+                  <span>KYC Info</span>
                 </button>
                 <button
                   onClick={() => {
                     setActivePage('dashboard');
                     setMobileMenuOpen(false);
                   }}
-                  className="p-3 rounded-xl bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center gap-2 text-left"
+                  className="p-2.5 rounded-xl bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10 text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer"
                 >
                   <Wallet className="w-4 h-4 text-emerald-400" />
-                  <span>Balance & Stats</span>
+                  <span>Wallet</span>
                 </button>
               </div>
             </div>
@@ -902,12 +932,6 @@ export const Navbar: React.FC = () => {
       <CurrencySelectorModal 
         isOpen={isCurrencyModalOpen} 
         onClose={() => setIsCurrencyModalOpen(false)} 
-      />
-
-      {/* Dual Welcome Gifts Modal */}
-      <DualGiftRewardsModal
-        isOpen={isDualGiftModalOpen}
-        onClose={() => setIsDualGiftModalOpen(false)}
       />
 
     </header>

@@ -4,6 +4,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { GoogleGenAI } from "@google/genai";
+import webpush from "web-push";
 
 dotenv.config();
 
@@ -21,6 +22,73 @@ const io = new SocketIOServer(httpServer, {
   pingInterval: 10000
 });
 
+// Web Push Configuration & In-Memory Store
+interface PushSubRecord {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  userAgent?: string;
+}
+
+const pushSubscriptionsMap = new Map<string, Map<string, PushSubRecord>>();
+
+let vapidPublicKey = process.env.VAPID_PUBLIC_KEY || "";
+let vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "";
+
+if (!vapidPublicKey || !vapidPrivateKey) {
+  const generated = webpush.generateVAPIDKeys();
+  vapidPublicKey = generated.publicKey;
+  vapidPrivateKey = generated.privateKey;
+  console.info("Talentio: Auto-generated operational VAPID keys for PWA push notifications.");
+}
+
+webpush.setVapidDetails(
+  "mailto:support@talentio.com",
+  vapidPublicKey,
+  vapidPrivateKey
+);
+
+async function sendPushToUser(userId: string, payload: {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  data?: any;
+  actions?: Array<{ action: string; title: string }>;
+  vibrate?: number[];
+  renotify?: boolean;
+}) {
+  const userSubs = pushSubscriptionsMap.get(userId);
+  if (!userSubs || userSubs.size === 0) return;
+
+  const payloadString = JSON.stringify(payload);
+  const deadEndpoints: string[] = [];
+
+  for (const [endpoint, sub] of userSubs.entries()) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: sub.keys
+        },
+        payloadString,
+        {
+          TTL: 120
+        }
+      );
+    } catch (err: any) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        deadEndpoints.push(endpoint);
+      }
+    }
+  }
+
+  deadEndpoints.forEach(ep => userSubs.delete(ep));
+}
+
 // Track online user presence and active calls in memory
 interface UserPresenceRecord {
   userId: string;
@@ -30,12 +98,11 @@ interface UserPresenceRecord {
 }
 
 const userPresenceMap = new Map<string, UserPresenceRecord>();
-const activeCallsMap = new Map<string, any>();
 const moderationReports: Array<{
   id: string;
   reporterId: string;
   reporterName?: string;
-  targetType: 'message' | 'user' | 'call';
+  targetType: 'message' | 'user';
   targetId: string;
   reason: string;
   details?: string;
@@ -43,7 +110,7 @@ const moderationReports: Array<{
   status: 'pending' | 'resolved' | 'dismissed';
 }> = [];
 
-// Socket.IO Real-time Messaging, WebRTC Signaling, and Presence Handlers
+// Socket.IO Real-time Messaging and Presence Handlers
 io.on("connection", (socket: Socket) => {
   let boundUserId: string | null = null;
 
@@ -94,13 +161,31 @@ io.on("connection", (socket: Socket) => {
     });
   });
 
-  // 3. Instant Real-time Message Forwarding
-  socket.on("message_send", (data: { conversationId: string; message: any }) => {
+  // 3. Instant Real-time Message Forwarding & Push Notification Dispatch
+  socket.on("message_send", async (data: { conversationId: string; message: any }) => {
     if (!data.message || !data.message.receiverId) return;
     const receiverRoom = `user:${data.message.receiverId}`;
     socket.to(receiverRoom).emit("message_received", {
       conversationId: data.conversationId,
       message: data.message
+    });
+
+    // Send Web Push notification to receiver
+    const previewText = data.message.text 
+      ? (data.message.text.length > 70 ? `${data.message.text.slice(0, 70)}...` : data.message.text)
+      : (data.message.voiceNote ? '🎤 Sent a voice message' : (data.message.attachment ? '📎 Sent an attachment' : 'New message'));
+
+    await sendPushToUser(data.message.receiverId, {
+      title: `Message from ${data.message.senderName || 'Talentio Client'}`,
+      body: previewText,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: `msg-${data.message.id || Date.now()}`,
+      data: {
+        type: 'new_message',
+        conversationId: data.conversationId,
+        url: `/?page=chat&conversationId=${data.conversationId}`
+      }
     });
   });
 
@@ -124,70 +209,7 @@ io.on("connection", (socket: Socket) => {
     });
   });
 
-  // 5. WebRTC Account-to-Account Voice & Video Calling Signaling
-  socket.on("call_initiate", (callData: {
-    callId: string;
-    conversationId?: string;
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    receiverId: string;
-    receiverName: string;
-    receiverAvatar?: string;
-    type: 'audio' | 'video';
-  }) => {
-    if (!callData.receiverId) return;
-    activeCallsMap.set(callData.callId, {
-      ...callData,
-      status: "ringing",
-      startedAt: Date.now()
-    });
-
-    // Notify recipient across all their open tabs/devices
-    socket.to(`user:${callData.receiverId}`).emit("call_incoming", callData);
-  });
-
-  socket.on("call_accept", (data: { callId: string; callerId: string; receiverId: string }) => {
-    const active = activeCallsMap.get(data.callId);
-    if (active) {
-      active.status = "connected";
-      active.connectedAt = Date.now();
-    }
-    socket.to(`user:${data.callerId}`).emit("call_accepted", data);
-  });
-
-  socket.on("call_decline", (data: { callId: string; callerId: string; receiverId: string; reason?: string }) => {
-    activeCallsMap.delete(data.callId);
-    socket.to(`user:${data.callerId}`).emit("call_declined", data);
-  });
-
-  socket.on("call_end", (data: { callId: string; otherUserId: string; durationSeconds?: number }) => {
-    activeCallsMap.delete(data.callId);
-    if (data.otherUserId) {
-      socket.to(`user:${data.otherUserId}`).emit("call_ended", data);
-    }
-  });
-
-  // WebRTC SDP & ICE Candidate Exchange
-  socket.on("webrtc_signal", (data: {
-    toUserId: string;
-    fromUserId: string;
-    callId: string;
-    signal: {
-      type: 'offer' | 'answer' | 'candidate';
-      sdp?: any;
-      candidate?: any;
-    };
-  }) => {
-    if (!data.toUserId) return;
-    socket.to(`user:${data.toUserId}`).emit("webrtc_signal", {
-      fromUserId: data.fromUserId,
-      callId: data.callId,
-      signal: data.signal
-    });
-  });
-
-  // 6. Presence Heartbeat
+  // 5. Presence Heartbeat
   socket.on("presence_heartbeat", (data: { userId: string }) => {
     if (!data.userId) return;
     const record = userPresenceMap.get(data.userId);
@@ -243,6 +265,70 @@ function getGenAI(): GoogleGenAI | null {
 // Health check
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", app: "Talentio", timestamp: new Date().toISOString() });
+});
+
+// Web Push: VAPID Public Key for client subscription
+app.get("/api/push/vapid-public-key", (_req: Request, res: Response) => {
+  res.json({ publicKey: vapidPublicKey });
+});
+
+// Web Push: Subscribe endpoint
+app.post("/api/push/subscribe", (req: Request, res: Response) => {
+  const { userId, subscription, userAgent } = req.body;
+  if (!userId || !subscription || !subscription.endpoint) {
+    return res.status(400).json({ error: "userId and valid subscription are required" });
+  }
+
+  if (!pushSubscriptionsMap.has(userId)) {
+    pushSubscriptionsMap.set(userId, new Map());
+  }
+
+  pushSubscriptionsMap.get(userId)!.set(subscription.endpoint, {
+    endpoint: subscription.endpoint,
+    keys: subscription.keys,
+    userAgent
+  });
+
+  res.json({
+    success: true,
+    message: "Device registered for Web Push notifications",
+    registeredDevices: pushSubscriptionsMap.get(userId)!.size
+  });
+});
+
+// Web Push: Unsubscribe endpoint
+app.post("/api/push/unsubscribe", (req: Request, res: Response) => {
+  const { userId, endpoint } = req.body;
+  if (!userId || !endpoint) {
+    return res.status(400).json({ error: "userId and endpoint are required" });
+  }
+
+  const userSubs = pushSubscriptionsMap.get(userId);
+  if (userSubs) {
+    userSubs.delete(endpoint);
+  }
+  res.json({ success: true, message: "Device unregistered from Web Push" });
+});
+
+// Web Push: Trigger Test Notification
+app.post("/api/push/test", async (req: Request, res: Response) => {
+  const { userId, title, body } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
+  }
+
+  await sendPushToUser(userId, {
+    title: title || "Talentio Test Notification",
+    body: body || "Web Push is operating seamlessly across your PWA devices!",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    tag: `test-${Date.now()}`,
+    data: {
+      url: "/?page=chat"
+    }
+  });
+
+  res.json({ success: true, message: "Test notification dispatched." });
 });
 
 // AI: Natural Language Talent Search
@@ -506,12 +592,12 @@ app.get("/api/chat/admin-stats", (_req: Request, res: Response) => {
   });
 
   res.json({
-    activeCalls: activeCallsMap.size,
+    activeCalls: 0,
     onlineUsersCount: onlineCount,
     totalReports: moderationReports.length,
     pendingReports: moderationReports.filter(r => r.status === 'pending').length,
     systemStatus: "operational",
-    activeCallsList: Array.from(activeCallsMap.values())
+    activeCallsList: []
   });
 });
 
@@ -602,7 +688,7 @@ async function startServer() {
   }
 
   httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Talentio server with Real-Time WebRTC & Socket.IO running on http://0.0.0.0:${PORT}`);
+    console.log(`Talentio server with Socket.IO running on http://0.0.0.0:${PORT}`);
   });
 }
 

@@ -5,7 +5,6 @@ import {
   ChatMessage, 
   MessageAttachment, 
   VoiceNoteData, 
-  CallSessionState, 
   ConversationParticipant,
   OrderRequestDetails,
   EscrowContract
@@ -22,8 +21,6 @@ import { ConversationList } from '../components/chat/ConversationList';
 import { ActiveChatHeader } from '../components/chat/ActiveChatHeader';
 import { MessageTimeline } from '../components/chat/MessageTimeline';
 import { MessageComposer } from '../components/chat/MessageComposer';
-import { AudioCallModal } from '../components/chat/AudioCallModal';
-import { VideoCallModal } from '../components/chat/VideoCallModal';
 import { NewChatModal } from '../components/chat/NewChatModal';
 import { ForwardMessageModal } from '../components/chat/ForwardMessageModal';
 import { ConfirmOrderModal } from '../components/chat/ConfirmOrderModal';
@@ -91,7 +88,6 @@ export const ChatPage: React.FC = () => {
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isConfirmOrderModalOpen, setIsConfirmOrderModalOpen] = useState(false);
   const [forwardModalData, setForwardModalData] = useState<ChatMessage | null>(null);
-  const [callSession, setCallSession] = useState<CallSessionState | null>(null);
 
   // In-chat search state
   const [isSearchInChatOpen, setIsSearchInChatOpen] = useState(false);
@@ -257,37 +253,12 @@ export const ChatPage: React.FC = () => {
       }));
     });
 
-    // 6. Incoming call event
-    const unsubCall = realtimeService.on('incoming_call', (data: any) => {
-      setCallSession({
-        active: true,
-        callId: data.callId,
-        type: data.type,
-        isIncoming: true,
-        participant: {
-          id: data.callerId,
-          name: data.callerName || 'Talentio User',
-          avatar: data.callerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          role: 'freelancer',
-          verified: true,
-          online: true,
-          lastSeen: 'Calling'
-        },
-        status: 'ringing',
-        durationSeconds: 0,
-        isMuted: false,
-        isCameraOff: false,
-        isSpeaker: true
-      });
-    });
-
     return () => {
       unsubMsg();
       unsubTyping();
       unsubSeen();
       unsubDelivered();
       unsubPresence();
-      unsubCall();
     };
   }, [activeConversationId, user?.id]);
 
@@ -1176,40 +1147,6 @@ export const ChatPage: React.FC = () => {
     setActivePage('workstation');
   };
 
-  // Start Audio Call
-  const handleStartAudioCall = () => {
-    if (!activeConversation) return;
-    const callId = `call_voice_${Date.now()}`;
-    setCallSession({
-      active: true,
-      callId,
-      type: 'audio',
-      participant: activeConversation.participant,
-      status: 'calling',
-      durationSeconds: 0,
-      isMuted: false,
-      isCameraOff: false,
-      isSpeaker: true
-    });
-  };
-
-  // Start Video Call
-  const handleStartVideoCall = () => {
-    if (!activeConversation) return;
-    const callId = `call_video_${Date.now()}`;
-    setCallSession({
-      active: true,
-      callId,
-      type: 'video',
-      participant: activeConversation.participant,
-      status: 'calling',
-      durationSeconds: 0,
-      isMuted: false,
-      isCameraOff: false,
-      isSpeaker: true
-    });
-  };
-
   // Handle Typing indicator event emission
   const handleTyping = (isTyping: boolean) => {
     if (activeConversationId && activeConversation) {
@@ -1246,7 +1183,7 @@ export const ChatPage: React.FC = () => {
         {activeConversation ? (
           <div className="flex flex-col h-full w-full overflow-hidden">
             
-            {/* 1. STICKY TOP CHAT HEADER: Fixed at top of conversation, call/video call buttons never scroll away (Requirement 3) */}
+            {/* 1. STICKY TOP CHAT HEADER: Fixed at top of conversation */}
             <div className="sticky top-0 z-20 shrink-0 w-full">
               <ActiveChatHeader
                 participant={activeConversation.participant}
@@ -1255,8 +1192,6 @@ export const ChatPage: React.FC = () => {
                 isMuted={activeConversation.isMuted}
                 isFreelancerView={true}
                 onBack={() => setActiveConversationId(null)}
-                onStartAudioCall={handleStartAudioCall}
-                onStartVideoCall={handleStartVideoCall}
                 onToggleSearch={() => setIsSearchInChatOpen(!isSearchInChatOpen)}
                 onTogglePin={() => handleTogglePin(activeConversation.id)}
                 onToggleMute={() => handleToggleMute(activeConversation.id)}
@@ -1345,7 +1280,7 @@ export const ChatPage: React.FC = () => {
             </h3>
             
             <p className="text-xs text-slate-500 max-w-md leading-relaxed mb-6">
-              Select an account from the left list to open the conversation, review milestones, conduct voice/video calls, and exchange project deliverables.
+              Select an account from the left list to open the conversation, review milestones, and exchange project deliverables.
             </p>
 
             <div className="flex items-center gap-3">
@@ -1413,20 +1348,6 @@ export const ChatPage: React.FC = () => {
         conversations={conversations}
         onClose={() => setForwardModalData(null)}
         onForward={handleForward}
-      />
-
-      {/* Audio Calling Interface */}
-      <AudioCallModal
-        callState={callSession}
-        onEndCall={() => setCallSession(null)}
-        currentUser={user ? { id: user.id, name: user.name, avatar: user.avatar } : null}
-      />
-
-      {/* Video Calling Interface */}
-      <VideoCallModal
-        callState={callSession}
-        onEndCall={() => setCallSession(null)}
-        currentUser={user ? { id: user.id, name: user.name, avatar: user.avatar } : null}
       />
 
     </div>

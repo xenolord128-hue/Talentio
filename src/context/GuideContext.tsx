@@ -16,7 +16,7 @@ import {
   GigStatus, 
   AdminAction, 
   AdminNotification,
-  AppNotification 
+  AppNotification
 } from '../types';
 import { 
   TALENTIO_FREELANCERS, 
@@ -60,6 +60,7 @@ import {
 } from '../lib/firestore';
 import { PlatformNotice, NoticeCategory } from '../types';
 import { realtimeService } from '../lib/realtimeService';
+import { subscribeUserToPush } from '../utils/serviceWorkerRegistration';
 
 export type TalentioPage = 
   | 'explore' 
@@ -390,6 +391,7 @@ interface GuideContextType {
   toasts: ToastState[];
   showToast: (msg: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   removeToast: (id: string) => void;
+  clearAllNotifications: () => void;
 
   // Legacy Guides compatibility
   activeGuideId: string;
@@ -630,6 +632,11 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const unreadNoticesCount = notices.filter(n => !n.read && (!n.targetUserId || n.targetUserId === 'all' || n.targetUserId === user?.id)).length;
 
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    showToast('Notifications cleared', 'info');
+  };
+
   // Contract & Workstation
   const [contract, setContract] = useState<EscrowContract>(() => {
     const saved = localStorage.getItem('talentio_contract');
@@ -789,6 +796,17 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('talentio_steps', JSON.stringify(completedSteps));
   }, [completedSteps]);
+
+  // Realtime Service User Binding, Push Notifications, and Incoming Call Listener
+  useEffect(() => {
+    if (user?.id) {
+      realtimeService.connect();
+      realtimeService.setUser(user.id);
+
+      // Auto-register push subscription if permitted
+      subscribeUserToPush(user.id).catch(() => {});
+    }
+  }, [user?.id]);
 
   const setActivePage = (page: TalentioPage) => {
     const protectedPages = ['workstation', 'escrow', 'orders', 'chat', 'messages', 'dashboard', 'earnings', 'payouts', 'post-job'];
@@ -1039,11 +1057,17 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
-    const updated = { ...user, ...data };
+    const updated: UserProfile = { ...user, ...data, updatedAt: new Date().toISOString() };
     if (firebaseUser) {
       await updateUserRecord(firebaseUser.uid, updated);
     }
     setUser(updated);
+    try {
+      localStorage.setItem('talentio_user_profile', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Could not save user profile to localStorage', e);
+    }
+    setAllUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
     showToast('Profile updated successfully!', 'success');
   };
 
@@ -1575,6 +1599,7 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         notifications,
         markNotificationRead,
         markAllNotificationsRead,
+        clearAllNotifications,
         notices,
         unreadNoticesCount,
         addNotice,

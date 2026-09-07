@@ -328,20 +328,6 @@ export interface Conversation {
   updatedAt?: string;
 }
 
-export interface CallSessionState {
-  active: boolean;
-  type: 'audio' | 'video';
-  participant: ConversationParticipant;
-  status: 'calling' | 'ringing' | 'connected' | 'ended';
-  durationSeconds: number;
-  isMuted: boolean;
-  isCameraOff: boolean;
-  isSpeaker: boolean;
-  isScreenSharing?: boolean;
-  callId?: string;
-  isIncoming?: boolean;
-}
-
 // ==========================================
 // USER, AUTH & ONBOARDING TYPES
 // ==========================================
@@ -367,10 +353,12 @@ export interface UserProposal {
 export interface UserProfile {
   id: string;
   name: string;
+  fullName?: string;
   handle: string;
   email?: string;
   phone?: string;
   avatar: string;
+  coverImage?: string;
   authMethod: 'email' | 'phone' | 'github' | 'google' | 'demo';
   passwordStatus?: 'Encrypted (PBKDF2/Argon2)' | 'OAuth Managed' | 'Phone OTP Verified' | 'Set & Verified';
   passwordHashPlaceholder?: string;

@@ -14,6 +14,9 @@ import { useGuide } from '../context/GuideContext';
 import talentioBannerFlippedImg from '../assets/images/talentio_banner_flipped.jpg';
 import talentioUserBannerImg from '../assets/images/talentio_user_banner.jpg';
 
+const DESKTOP_BANNER_IMG = 'https://i.ibb.co.com/pjRVkqkn/file-00000000243881fda51e55d49f3fd5f8.png';
+const MOBILE_BANNER_IMG = 'https://i.ibb.co.com/LXsgHy6p/file-00000000fb6881f893219df2cf9b39c9.png';
+
 export const HomeHeroBanner: React.FC = () => {
   const { 
     setActivePage, 
@@ -24,7 +27,6 @@ export const HomeHeroBanner: React.FC = () => {
 
   const [heroSearch, setHeroSearch] = useState('');
   const [searchCategory, setSearchCategory] = useState('all');
-  const [bannerSrc, setBannerSrc] = useState<string>(talentioBannerFlippedImg);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,19 +46,32 @@ export const HomeHeroBanner: React.FC = () => {
       aria-label="Talentio Marketplace Hero Banner"
     >
       {/* ========================================================================= */}
-      {/* BANNER BACKGROUND: Person shifted to the far right for maximum clarity */}
+      {/* BANNER BACKGROUND: Responsive Desktop & Mobile Banner Imagery             */}
       {/* ========================================================================= */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        <img
-          id="hero-background-image"
-          src={bannerSrc}
-          alt="Talentio Creative Workstation"
-          referrerPolicy="no-referrer"
-          onError={() => setBannerSrc(talentioUserBannerImg)}
-          className="w-full h-full object-cover object-right sm:object-[95%_center] lg:object-[98%_center] transform scale-100 transition-transform duration-700"
-          loading="eager"
-        />
-        {/* Soft directional gradient: dark on the left for crisp text contrast, 100% transparent on the right so the person is crystal clear */}
+        <picture className="w-full h-full block">
+          <source
+            media="(max-width: 639px)"
+            srcSet={MOBILE_BANNER_IMG}
+          />
+          <source
+            media="(min-width: 640px)"
+            srcSet={DESKTOP_BANNER_IMG}
+          />
+          <img
+            id="hero-background-image"
+            src={DESKTOP_BANNER_IMG}
+            alt="Talentio Marketplace Banner"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.src = talentioBannerFlippedImg;
+            }}
+            className="w-full h-full object-cover object-center sm:object-right sm:object-[95%_center] lg:object-[98%_center] transform scale-100 transition-transform duration-700"
+            loading="eager"
+          />
+        </picture>
+        {/* Soft directional gradient: dark on the left for crisp text contrast, transparent on the right */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0C091C]/92 via-[#0C091C]/55 sm:via-[#0C091C]/25 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0E0B1F]/60 via-transparent to-[#0E0B1F]/20 pointer-events-none" />
       </div>

@@ -1,11 +1,14 @@
-// Talentio PWA Service Worker (talentio-pwa-v1)
-const CACHE_NAME = 'talentio-pwa-v1';
+// Talentio PWA Service Worker (talentio-pwa-v2)
+const CACHE_NAME = 'talentio-pwa-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
-  '/logo.svg'
+  '/logo.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png'
 ];
 
 // Install Event: Pre-cache essential app shell assets
@@ -104,3 +107,94 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// ============================================================================
+// REAL WEB PUSH NOTIFICATIONS IN SERVICE WORKER
+// ============================================================================
+
+// 1. Push Event Listener: Triggers when backend pushes a Web Push payload
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let payload = {};
+  try {
+    payload = event.data.json();
+  } catch (err) {
+    payload = {
+      title: 'Talentio Notification',
+      body: event.data.text()
+    };
+  }
+
+  const title = payload.title || 'Talentio';
+  const type = payload.type || 'general';
+
+  // Customize actions for messages
+  let actions = [];
+  if (type === 'message') {
+    actions = [
+      { action: 'open_chat', title: '💬 Open Chat' }
+    ];
+  }
+
+  const options = {
+    body: payload.body || '',
+    icon: payload.icon || '/icons/icon-192.png',
+    badge: payload.badge || '/icons/icon-192.png',
+    tag: payload.tag || `talentio-${Date.now()}`,
+    data: {
+      url: payload.url || (payload.conversationId ? `/?page=chat&convId=${payload.conversationId}` : '/?page=chat'),
+      type: payload.type,
+      conversationId: payload.conversationId,
+      timestamp: Date.now()
+    },
+    actions,
+    requireInteraction: false,
+    renotify: true,
+    vibrate: [200, 100, 200],
+    silent: false
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// 2. Notification Click Listener: Handles clicking notification or actions
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const action = event.action;
+  const notifData = event.notification.data || {};
+  let targetUrl = notifData.url || '/?page=chat';
+
+  if (action === 'open_chat' && notifData.conversationId) {
+    targetUrl = `/?page=chat&convId=${notifData.conversationId}`;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a tab is already open, focus it and post a navigation message
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.focus();
+          client.postMessage({
+            type: 'TALENTIO_NOTIFICATION_CLICK',
+            action,
+            data: notifData,
+            url: targetUrl
+          });
+          if (client.navigate) {
+            return client.navigate(targetUrl);
+          }
+          return;
+        }
+      }
+      // If no tab is open, open a new window with the target URL
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+

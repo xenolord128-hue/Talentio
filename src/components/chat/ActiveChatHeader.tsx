@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ConversationParticipant } from '../../types';
 import { 
   ArrowLeft, 
-  Phone, 
-  Video, 
   Search, 
   MoreVertical, 
   ShieldCheck, 
@@ -25,8 +23,6 @@ interface ActiveChatHeaderProps {
   isMuted: boolean;
   isFreelancerView?: boolean;
   onBack: () => void;
-  onStartAudioCall: () => void;
-  onStartVideoCall: () => void;
   onToggleSearch: () => void;
   onTogglePin: () => void;
   onToggleMute: () => void;
@@ -43,8 +39,6 @@ export const ActiveChatHeader: React.FC<ActiveChatHeaderProps> = ({
   isMuted,
   isFreelancerView = true,
   onBack,
-  onStartAudioCall,
-  onStartVideoCall,
   onToggleSearch,
   onTogglePin,
   onToggleMute,
@@ -143,7 +137,7 @@ export const ActiveChatHeader: React.FC<ActiveChatHeaderProps> = ({
 
       </div>
 
-      {/* Right: Audio Call, Video Call, Contract Button, Search, Menu */}
+      {/* Right: Contract Button, Search, Menu */}
       <div className="flex items-center gap-1 sm:gap-2">
         
         {/* Active Contract Quick Link if applicable */}
@@ -157,24 +151,6 @@ export const ActiveChatHeader: React.FC<ActiveChatHeaderProps> = ({
             <span>Escrow Contract</span>
           </button>
         )}
-
-        {/* Audio Call Button */}
-        <button
-          onClick={onStartAudioCall}
-          className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
-          title="Start Audio Call"
-        >
-          <Phone className="w-4 h-4 text-[#A38BFF]" />
-        </button>
-
-        {/* Video Call Button */}
-        <button
-          onClick={onStartVideoCall}
-          className="p-2 sm:p-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white transition-all cursor-pointer shadow-sm shadow-[#3D2FD1]/30 hover:scale-105 active:scale-95"
-          title="Start Video Call"
-        >
-          <Video className="w-4 h-4 text-white" />
-        </button>
 
         {/* Search in conversation */}
         <button

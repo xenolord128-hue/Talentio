@@ -2,7 +2,6 @@
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
-  private ringingInterval: any = null;
   private activeVoiceOscillators: any[] = [];
   private voiceStopTimeout: any = null;
 
@@ -118,114 +117,6 @@ class SoundEngine {
     }
   }
 
-  // Start outgoing call ringing sound loop
-  startRinging() {
-    this.stopRinging();
-    const playRingBurst = () => {
-      const ctx = this.getContext();
-      if (!ctx) return;
-
-      try {
-        const now = ctx.currentTime;
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'sine';
-        osc2.type = 'sine';
-
-        osc1.frequency.setValueAtTime(440, now);
-        osc2.frequency.setValueAtTime(480, now);
-
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.setValueAtTime(0.08, now + 1.2);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(now);
-        osc2.start(now);
-        osc1.stop(now + 1.35);
-        osc2.stop(now + 1.35);
-      } catch {
-        // Ignored
-      }
-    };
-
-    playRingBurst();
-    this.ringingInterval = setInterval(playRingBurst, 3000);
-  }
-
-  stopRinging() {
-    if (this.ringingInterval) {
-      clearInterval(this.ringingInterval);
-      this.ringingInterval = null;
-    }
-  }
-
-  // Call connected celebratory double chime
-  playCallConnected() {
-    this.stopRinging();
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    try {
-      const now = ctx.currentTime;
-      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-      freqs.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const startTime = now + idx * 0.08;
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, startTime);
-
-        gain.gain.setValueAtTime(0.12, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.35);
-      });
-    } catch {
-      // Ignored
-    }
-  }
-
-  // Call ended chime
-  playCallEnded() {
-    this.stopRinging();
-    const ctx = this.getContext();
-    if (!ctx) return;
-
-    try {
-      const now = ctx.currentTime;
-      const freqs = [440, 349.23, 261.63]; // A4, F4, C4
-      freqs.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const startTime = now + idx * 0.1;
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, startTime);
-
-        gain.gain.setValueAtTime(0.1, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.3);
-      });
-    } catch {
-      // Ignored
-    }
-  }
   // Dictation listening started chime (gentle rising double-pip)
   playDictationStart() {
     const ctx = this.getContext();

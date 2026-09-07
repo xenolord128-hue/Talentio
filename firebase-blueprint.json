@@ -116,24 +116,9 @@
       },
       "required": ["id", "senderId", "receiverId"]
     },
-    "Call": {
-      "title": "Call",
-      "description": "Voice or video call session between users",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "callerId": { "type": "string" },
-        "receiverId": { "type": "string" },
-        "type": { "type": "string", "enum": ["audio", "video"] },
-        "status": { "type": "string", "enum": ["calling", "ringing", "connected", "declined", "ended", "missed"] },
-        "durationSeconds": { "type": "number" },
-        "createdAt": { "type": "string" }
-      },
-      "required": ["id", "callerId", "receiverId", "type", "status"]
-    },
     "Notification": {
       "title": "Notification",
-      "description": "User notification for messages, calls, and orders",
+      "description": "User notification for messages and orders",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -191,9 +176,28 @@
         "actionUrl": { "type": "string" }
       },
       "required": ["id", "title", "description", "category"]
+    },
+    "PushSubscription": {
+      "title": "PushSubscription",
+      "description": "Web push subscription details for authenticated user devices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "keys": { "type": "object" },
+        "userAgent": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "endpoint", "keys"]
     }
   },
   "firestore": {
+    "/push_subscriptions/{subId}": {
+      "schema": "PushSubscription",
+      "description": "Web push notification subscriptions for user devices"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "User accounts and public freelancer profiles"
@@ -221,10 +225,6 @@
     "/conversations/{conversationId}/messages/{messageId}": {
       "schema": "Message",
       "description": "Messages inside direct chat conversations"
-    },
-    "/calls/{callId}": {
-      "schema": "Call",
-      "description": "Voice and video call session history and state"
     },
     "/notifications/{notificationId}": {
       "schema": "Notification",
