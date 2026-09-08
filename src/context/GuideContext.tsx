@@ -61,7 +61,13 @@ import {
 } from '../lib/firestore';
 import { PlatformNotice, NoticeCategory } from '../types';
 import { realtimeService } from '../lib/realtimeService';
-import { subscribeUserToPush, triggerDeviceNotification, updateAppBadge } from '../utils/serviceWorkerRegistration';
+import { 
+  subscribeUserToPush, 
+  triggerDeviceNotification, 
+  updateAppBadge,
+  triggerRichAdminNoticeNotification,
+  triggerRichChatNotification 
+} from '../utils/serviceWorkerRegistration';
 
 export type TalentioPage = 
   | 'explore' 
@@ -335,6 +341,8 @@ interface GuideContextType {
   setIsCreateGigModalOpen: (open: boolean) => void;
   isShortcutsModalOpen: boolean;
   setIsShortcutsModalOpen: (open: boolean) => void;
+  isWidgetManagerOpen: boolean;
+  setIsWidgetManagerOpen: (open: boolean) => void;
   closeAllModals: () => void;
   isAnyModalOpen: boolean;
   proposalJobTarget: ProjectJob | null;
@@ -485,7 +493,18 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
   const [isCreateGigModalOpen, setIsCreateGigModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isWidgetManagerOpen, setIsWidgetManagerOpen] = useState(false);
   const [proposalJobTarget, setProposalJobTarget] = useState<ProjectJob | null>(null);
+
+  // Auto-detect ?action=widgets from home screen widget shortcut
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('action') === 'widgets') {
+        setIsWidgetManagerOpen(true);
+      }
+    }
+  }, []);
 
   const isAnyModalOpen = isSearchModalOpen || 
     isPostJobModalOpen || 
@@ -495,7 +514,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isOnboardingModalOpen || 
     isProposalModalOpen || 
     isCreateGigModalOpen || 
-    isShortcutsModalOpen;
+    isShortcutsModalOpen ||
+    isWidgetManagerOpen;
 
   const closeAllModals = () => {
     setIsSearchModalOpen(false);
@@ -507,6 +527,7 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsProposalModalOpen(false);
     setIsCreateGigModalOpen(false);
     setIsShortcutsModalOpen(false);
+    setIsWidgetManagerOpen(false);
   };
 
   // Selected Entities
@@ -1324,7 +1345,14 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     await createNoticeDocument(newNotice);
     setNotices(prev => [newNotice, ...prev]);
-    showToast('Notice broadcasted successfully', 'success');
+    // Trigger rich device notification matching Android shade (Talentio Logo, Open Link, Mark Read)
+    triggerRichAdminNoticeNotification(
+      newNotice.title,
+      newNotice.description,
+      newNotice.actionUrl || 'notices',
+      newNotice.id
+    ).catch(() => {});
+    showToast('Notice broadcasted successfully with rich device notification', 'success');
   };
 
   const markNoticeRead = async (id: string) => {
@@ -1606,6 +1634,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsCreateGigModalOpen,
         isShortcutsModalOpen,
         setIsShortcutsModalOpen,
+        isWidgetManagerOpen,
+        setIsWidgetManagerOpen,
         closeAllModals,
         isAnyModalOpen,
         proposalJobTarget,

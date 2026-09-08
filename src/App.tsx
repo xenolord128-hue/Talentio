@@ -13,6 +13,9 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { ProposalModal } from './components/ProposalModal';
 import { CreateGigModal } from './components/CreateGigModal';
 import { ShortcutsHelpModal } from './components/ShortcutsHelpModal';
+import { WidgetManagerModal } from './components/WidgetManagerModal';
+import { TalentioAIAssistant } from './components/TalentioAIAssistant';
+import { TalentioAIProvider } from './context/TalentioAIContext';
 import { ToastContainer } from './components/ToastContainer';
 import { OfflineNoticeBanner } from './components/OfflineNoticeBanner';
 import { AuthGateway } from './components/AuthGateway';
@@ -55,6 +58,7 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen w-full bg-[#0E0B1F]">
         <OfflineNoticeBanner />
         <AuthGateway initialMode={activePage === 'register' ? 'register' : 'login'} />
+        <TalentioAIAssistant />
         <ToastContainer />
       </div>
     );
@@ -181,6 +185,12 @@ const AppContent: React.FC = () => {
       {/* Global Keyboard Shortcuts Reference Modal (Triggered by ? or Cmd+/) */}
       <ShortcutsHelpModal />
 
+      {/* Android Live Home Screen Widget Manager & Customizer Modal */}
+      <WidgetManagerModal />
+
+      {/* TALENTIO AI Built-in Assistant & Voice Companion */}
+      <TalentioAIAssistant />
+
       {/* Toast Notification Container */}
       <ToastContainer />
 
@@ -192,7 +202,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <GuideProvider>
-        <AppContent />
+        <TalentioAIProvider>
+          <AppContent />
+        </TalentioAIProvider>
       </GuideProvider>
     </ThemeProvider>
   );

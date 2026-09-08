@@ -129,29 +129,39 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'Talentio';
   const type = payload.type || 'general';
 
-  // Customize actions for messages
-  let actions = [];
-  if (type === 'message') {
-    actions = [
-      { action: 'open_chat', title: '💬 Open Chat' }
-    ];
+  // Customize actions for messages vs notices (as requested by user screenshot)
+  let actions = payload.actions || [];
+  if (!actions || actions.length === 0) {
+    if (type === 'message' || (payload.url && payload.url.includes('chat'))) {
+      actions = [
+        { action: 'open_chat', title: '💬 OPEN CHAT' },
+        { action: 'mark_read', title: '✓ MARK AS READ' }
+      ];
+    } else {
+      actions = [
+        { action: 'open_link', title: '🌐 OPEN LINK' },
+        { action: 'mark_read', title: '✓ MARK AS READ' }
+      ];
+    }
   }
 
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/icons/icon-192.png',
     badge: payload.badge || '/icons/icon-192.png',
+    image: payload.image || undefined,
     tag: payload.tag || `talentio-${Date.now()}`,
     data: {
       url: payload.url || (payload.conversationId ? `/?page=chat&convId=${payload.conversationId}` : '/?page=chat'),
       type: payload.type,
       conversationId: payload.conversationId,
+      noticeId: payload.noticeId,
       timestamp: Date.now()
     },
     actions,
-    requireInteraction: false,
+    requireInteraction: true,
     renotify: true,
-    vibrate: [200, 100, 200],
+    vibrate: [250, 100, 250, 100, 250],
     silent: false
   };
 
@@ -170,10 +180,23 @@ self.addEventListener('notificationclick', (event) => {
 
   if (action === 'open_chat' && notifData.conversationId) {
     targetUrl = `/?page=chat&convId=${notifData.conversationId}`;
+  } else if (action === 'open_link' && notifData.url) {
+    targetUrl = notifData.url;
   }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If user clicked 'MARK AS READ', notify open clients
+      if (action === 'mark_read') {
+        for (const client of clientList) {
+          client.postMessage({
+            type: 'TALENTIO_MARK_READ',
+            data: notifData
+          });
+        }
+        return;
+      }
+
       // If a tab is already open, focus it and post a navigation message
       for (const client of clientList) {
         if ('focus' in client) {

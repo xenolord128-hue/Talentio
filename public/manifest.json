@@ -68,6 +68,38 @@
       "description": "Publish a milestone-based job RFP",
       "url": "/?action=post-job",
       "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Live Home Widgets",
+      "short_name": "Widgets",
+      "description": "Customize and add aesthetic live widgets to your home screen",
+      "url": "/?action=widgets",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Talentio Chat & Live Activity",
+      "short_name": "Talentio Widget",
+      "description": "Live unread client/freelancer chats, active escrow orders, and milestone status directly on your Android home screen.",
+      "tag": "talentio-activity-widget",
+      "template": "widget-chat",
+      "ms_ac_template": "widget-chat.json",
+      "data": "/api/widget-data",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "512x512",
+          "label": "Talentio Android Glassmorphic Widget"
+        }
+      ],
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

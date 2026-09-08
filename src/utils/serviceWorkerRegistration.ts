@@ -50,18 +50,22 @@ export function registerServiceWorker(onUpdate?: (registration: ServiceWorkerReg
   });
 }
 
-/**
- * Triggers an immediate device notification with vibration and sound.
- * Uses ServiceWorkerRegistration.showNotification() which is mandatory for Mobile Chrome & Android.
- */
-export async function triggerDeviceNotification(title: string, options?: {
+export interface DeviceNotificationOptions {
   body?: string;
   icon?: string;
   badge?: string;
+  image?: string;
   url?: string;
   tag?: string;
+  actions?: { action: string; title: string; icon?: string }[];
   data?: any;
-}): Promise<boolean> {
+}
+
+/**
+ * Triggers an immediate device notification with vibration, sound, and interactive action buttons.
+ * Uses ServiceWorkerRegistration.showNotification() which is mandatory for Mobile Chrome & Android.
+ */
+export async function triggerDeviceNotification(title: string, options?: DeviceNotificationOptions): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return false;
   }
@@ -72,15 +76,35 @@ export async function triggerDeviceNotification(title: string, options?: {
   }
 
   const defaultIcon = '/icons/icon-192.png';
-  const notifOptions: NotificationOptions = {
+  const defaultBadge = '/icons/icon-192.png';
+
+  // Determine intelligent actions based on notification context
+  let actions = options?.actions;
+  if (!actions || actions.length === 0) {
+    if (options?.url && options.url.includes('chat')) {
+      actions = [
+        { action: 'open_chat', title: '💬 OPEN CHAT' },
+        { action: 'mark_read', title: '✓ MARK AS READ' }
+      ];
+    } else {
+      actions = [
+        { action: 'open_link', title: '🌐 OPEN LINK' },
+        { action: 'mark_read', title: '✓ MARK AS READ' }
+      ];
+    }
+  }
+
+  const notifOptions: any = {
     body: options?.body || '',
     icon: options?.icon || defaultIcon,
-    badge: options?.badge || defaultIcon,
+    badge: options?.badge || defaultBadge,
+    image: options?.image || undefined,
     tag: options?.tag || `talentio-${Date.now()}`,
     data: options?.data || { url: options?.url || '/?page=chat' },
-    // @ts-ignore - Mobile device vibration pattern (200ms vibe, 100ms pause, 200ms vibe)
-    vibrate: [200, 100, 200],
-    renotify: true
+    actions,
+    vibrate: [250, 100, 250, 100, 250],
+    renotify: true,
+    requireInteraction: true
   };
 
   // 1. Mobile & PWA standard: ServiceWorkerRegistration.showNotification
@@ -104,6 +128,61 @@ export async function triggerDeviceNotification(title: string, options?: {
     console.warn('Notification construct note:', err);
     return false;
   }
+}
+
+/**
+ * Triggers a Rich Chat Message Notification (matching Android shade in screenshot)
+ */
+export async function triggerRichChatNotification(
+  senderName: string,
+  messageText: string,
+  avatar?: string,
+  conversationId?: string
+): Promise<boolean> {
+  return triggerDeviceNotification(`💬 ${senderName} • Talentio Chat`, {
+    body: messageText,
+    icon: avatar || '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: `chat-${conversationId || 'general'}`,
+    url: conversationId ? `/?page=chat&convId=${conversationId}` : '/?page=chat',
+    actions: [
+      { action: 'open_chat', title: '💬 OPEN CHAT' },
+      { action: 'mark_read', title: '✓ MARK AS READ' }
+    ],
+    data: {
+      type: 'message',
+      conversationId,
+      url: conversationId ? `/?page=chat&convId=${conversationId}` : '/?page=chat'
+    }
+  });
+}
+
+/**
+ * Triggers a Rich Admin Notice / Broadcast Notification (with Talentio branding & link)
+ */
+export async function triggerRichAdminNoticeNotification(
+  title: string,
+  description: string,
+  actionUrl?: string,
+  noticeId?: string
+): Promise<boolean> {
+  const targetUrl = actionUrl ? (actionUrl.startsWith('/') ? actionUrl : `/?page=${actionUrl}`) : '/?page=notices';
+  return triggerDeviceNotification(`📢 Talentio: ${title}`, {
+    body: description,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: `notice-${noticeId || Date.now()}`,
+    url: targetUrl,
+    actions: [
+      { action: 'open_link', title: '🌐 OPEN LINK' },
+      { action: 'mark_read', title: '✓ MARK AS READ' }
+    ],
+    data: {
+      type: 'notice',
+      noticeId,
+      url: targetUrl
+    }
+  });
 }
 
 /**

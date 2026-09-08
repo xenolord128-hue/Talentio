@@ -652,14 +652,25 @@ export function subscribeToUserNotifications(userId: string, callback: (notifs: 
     const notifsRef = collection(db, 'notifications');
     const q = query(
       notifsRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
 
-    return onSnapshot(q, (snap) => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      callback(list);
-    });
+    return onSnapshot(
+      q,
+      (snap) => {
+        const list = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as any))
+          .sort((a, b) => {
+            const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+            const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+            return tB - tA;
+          });
+        callback(list);
+      },
+      (err) => {
+        handleFirestoreError(err, OperationType.LIST, path);
+      }
+    );
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, path);
     return () => {};
@@ -689,11 +700,22 @@ export function subscribeToModerationReports(callback: (reports: any[]) => void)
   const path = 'reports';
   try {
     const ref = collection(db, 'reports');
-    const q = query(ref, orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snap) => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      callback(list);
-    });
+    return onSnapshot(
+      ref,
+      (snap) => {
+        const list = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as any))
+          .sort((a, b) => {
+            const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+            const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+            return tB - tA;
+          });
+        callback(list);
+      },
+      (err) => {
+        handleFirestoreError(err, OperationType.LIST, path);
+      }
+    );
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, path);
     return () => {};

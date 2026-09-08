@@ -1,0 +1,60 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "bleed": true,
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "Image",
+                  "url": "https://ais-pre-cehvwen3lcgmtuggptmbtl-93224844379.asia-east1.run.app/favicon.svg",
+                  "size": "Small",
+                  "style": "Person"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Talentio Chat & Milestones",
+                  "weight": "Bolder",
+                  "size": "Medium"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Live unread client messages and escrow progress",
+                  "isSubtle": true,
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Open Messages",
+      "url": "https://ais-pre-cehvwen3lcgmtuggptmbtl-93224844379.asia-east1.run.app/?page=chat"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Active Orders",
+      "url": "https://ais-pre-cehvwen3lcgmtuggptmbtl-93224844379.asia-east1.run.app/?page=workstation"
+    }
+  ]
+}

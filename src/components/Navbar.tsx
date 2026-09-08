@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGuide, TalentioPage } from '../context/GuideContext';
+import { useTalentioAI } from '../context/TalentioAIContext';
 import { TalentioLogo } from './TalentioLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { CurrencySelectorModal } from './CurrencySelectorModal';
@@ -33,10 +34,13 @@ import {
   Clock,
   Sparkle,
   Trophy,
-  Bell
+  Bell,
+  Smartphone,
+  Bot
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
+  const { setIsOpen: setAIOpen, setIsMinimized: setAIMinimized } = useTalentioAI();
   const { 
     activePage, 
     setActivePage, 
@@ -46,6 +50,7 @@ export const Navbar: React.FC = () => {
     setIsOnboardingModalOpen,
     setIsCreateGigModalOpen,
     setIsShortcutsModalOpen,
+    setIsWidgetManagerOpen,
     currency,
     setCurrency,
     user,
@@ -125,6 +130,17 @@ export const Navbar: React.FC = () => {
 
           {/* Right Action Bar - Only Currency, Profile, and Menu */}
           <div className="flex items-center gap-2 sm:gap-2.5">
+
+            {/* TALENTIO AI Top Assistant Quick Trigger */}
+            <button
+              onClick={() => { setAIOpen(true); setAIMinimized(false); }}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-gradient-to-r from-[#3D2FD1]/40 to-[#6E5BFF]/30 hover:from-[#3D2FD1]/70 hover:to-[#6E5BFF]/60 backdrop-blur-md text-xs font-bold text-white border border-[#6E5BFF]/40 transition-all cursor-pointer shadow-sm active:scale-95 group"
+              title="Open TALENTIO AI Website Guide & Voice Assistant"
+            >
+              <Bot className="w-4 h-4 text-[#A38BFF] group-hover:text-white transition-colors" />
+              <span>AI Guide</span>
+              <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+            </button>
 
             {/* Currency Switcher - Visible on Mobile and Desktop */}
             <button
@@ -278,6 +294,31 @@ export const Navbar: React.FC = () => {
                         {unreadNoticesCount}
                       </span>
                     )}
+                  </button>
+
+                  <button
+                    onClick={() => { setAIOpen(true); setAIMinimized(false); setDropdownOpen(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3D2FD1]/30 to-[#6E5BFF]/30 hover:from-[#3D2FD1]/60 hover:to-[#6E5BFF]/60 border border-[#6E5BFF]/30 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Bot className="w-4 h-4 text-[#A38BFF]" />
+                      <span>TALENTIO AI Assistant</span>
+                    </div>
+                    <span className="px-1.5 py-0.2 rounded-md bg-[#3D2FD1] text-white text-[10px] font-bold flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                      <span>Voice</span>
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => { setIsWidgetManagerOpen(true); setDropdownOpen(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Smartphone className="w-4 h-4 text-emerald-400" />
+                      <span>Android Home Widgets</span>
+                    </div>
+                    <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">New</span>
                   </button>
 
                   <button
@@ -620,6 +661,20 @@ export const Navbar: React.FC = () => {
 
                       <button
                         onClick={() => {
+                          setIsWidgetManagerOpen(true);
+                          setDesktopMenuOpen(false);
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Home Widgets</span>
+                        </div>
+                        <span className="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded border border-emerald-500/30">PWA</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
                           setIsShortcutsModalOpen(true);
                           setDesktopMenuOpen(false);
                         }}
@@ -884,6 +939,23 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Android Home Screen Widgets Trigger */}
+          <div className="pt-2 border-t border-white/10">
+            <button
+              onClick={() => {
+                setIsWidgetManagerOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className="w-full py-2.5 px-3 min-h-[44px] rounded-xl bg-gradient-to-r from-[#181335] to-[#241B4B] hover:bg-white/10 border border-[#6E5BFF]/30 text-white font-bold text-xs flex items-center justify-between transition-colors cursor-pointer shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Android Home Widgets</span>
+              </div>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold">PWA Ready</span>
+            </button>
+          </div>
 
           {/* Mobile Currency & Theme Settings */}
           <div className="pt-2 border-t border-white/10 space-y-2">
