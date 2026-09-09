@@ -1,0 +1,16 @@
+# Talentio Robots Configuration
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /workstation
+Disallow: /orders
+Disallow: /chat
+Disallow: /messages
+Disallow: /dashboard
+Disallow: /earnings
+Disallow: /payouts
+Disallow: /settings
+Disallow: /profile
+
+# Sitemap
+Sitemap: https://talentio1.netlify.app/sitemap.xml
