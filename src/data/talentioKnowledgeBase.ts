@@ -196,6 +196,106 @@ export const TALENTIO_KNOWLEDGE_BASE: KnowledgeItem[] = [
       labelEn: 'Open Widget Customizer',
       labelBn: 'উইজেট কাস্টমাইজার ওপেন করুন'
     }
+  },
+
+  // 6. Conversational, Greetings & Platform Identity
+  {
+    id: 'greeting',
+    topic: 'Greetings & Welcome',
+    keywords: ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good evening', 'হাই', 'হ্যালো', 'হেই', 'কেমন আছেন', 'কেমন আছো', 'সালাম', 'আসসালামু আলাইকুম', 'আদাব', 'kemon acho', 'kemon achen', 'halu'],
+    audience: 'public',
+    answerEn: 'Hello! I am **TALENTIO AI**, your dedicated 24/7 marketplace assistant. How can I help you today?\n\nHere are some things you can ask me:\n- 💼 How to post a project or hire top freelancers\n- 🛡️ How milestone escrow payments protect your money\n- 🚀 How to start freelancing and publish service gigs\n- 💳 Payment methods, withdrawals, and fee structure',
+    answerBn: 'হ্যালো! আমি **TALENTIO AI**, আপনার সার্বক্ষণিক মার্কেটপ্লেস ও এসক্রো সহকারী। আমি আপনাকে কীভাবে সাহায্য করতে পারি?\n\nআপনি আমাকে নিচের বিষয়গুলো সম্পর্কে জিজ্ঞাসা করতে পারেন:\n- 💼 কীভাবে প্রজেক্ট পোস্ট করবেন বা দক্ষ ফ্রিল্যান্সার হায়ার করবেন\n- 🛡️ এসক্রো পেমেন্ট সিস্টেম কীভাবে আপনার অর্থ সম্পূর্ণ সুরক্ষিত রাখে\n- 🚀 ফ্রিল্যান্সার হিসেবে অ্যাকাউন্ট খুলে কীভাবে গিগ পাবলিশ করবেন\n- 💳 পেমেন্ট মেথড, টাকা উত্তোলন (উইথড্র) ও প্ল্যাটফর্ম ফি সংক্রান্ত তথ্য',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'explore',
+      labelEn: 'Explore Marketplace',
+      labelBn: 'মার্কেটপ্লেস দেখুন'
+    }
+  },
+  {
+    id: 'who-are-you',
+    topic: 'Identity & Capabilities',
+    keywords: ['who are you', 'what are you', 'your name', 'about you', 'what can you do', 'তুমি কে', 'তোমার নাম কি', 'তোমার পরিচয়', 'কি করতে পারো', 'tumi ke', 'ki korte paro'],
+    audience: 'public',
+    answerEn: 'I am **TALENTIO AI**, the official intelligent guide built directly into the Talentio platform.\n\nMy primary capabilities include:\n1. **Client Guidance:** Assisting you in posting project RFPs, discovering verified talent, and managing secure milestone payments.\n2. **Freelancer Coaching:** Helping you set up professional profiles, build winning service gigs, submit proposals, and deliver milestones.\n3. **Escrow Protection:** Explaining our 100% dispute-proof milestone escrow system and payout policies.\n4. **Instant Navigation:** Opening modals, guiding you to messages, workstation, or dashboard on command.',
+    answerBn: 'আমি **TALENTIO AI**, ট্যালেন্টিও প্ল্যাটফর্মের অফিশিয়াল ইন্টেলিজেন্ট এআই সহকারী।\n\nআমার প্রধান কাজ ও সক্ষমতাসমূহ:\n১. **ক্লায়েন্ট সহায়তা:** নির্ভুলভাবে প্রজেক্ট পোস্ট করা, সেরা ফ্রিল্যান্সার খুঁজে বের করা এবং নিরাপদ মাইলস্টোন চুক্তি করা।\n২. **ফ্রিল্যান্সার গাইডেন্স:** আকর্ষণীয় গিগ তৈরি করা, নিখুঁত বিড বা প্রপোজাল লেখা এবং সফলভাবে কাজ জমা দেওয়া।\n৩. **এসক্রো নিরাপত্তা:** বায়ার ও সেলার উভয়ের ১০০% নিরাপদ লেনদেন ও উইথড্রয়াল নিয়মাবলী স্পষ্ট করা।\n৪. **প্ল্যাটফর্ম নেভিগেশন:** আপনার নির্দেশে তাৎক্ষণিকভাবে বিভিন্ন পেজ, চ্যাট ও সার্ভিস উইন্ডো খুলে দেওয়া।',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'explore',
+      labelEn: 'Explore Platform',
+      labelBn: 'প্ল্যাটফর্ম ঘুরে দেখুন'
+    }
+  },
+  {
+    id: 'payments-and-withdrawals',
+    topic: 'Payment Methods & Withdrawals',
+    keywords: ['payment method', 'withdraw', 'payout', 'bkash', 'nagad', 'bank transfer', 'card', 'টাকা তুলব কিভাবে', 'উইথড্র', 'পেমেন্ট মেথড', 'বিকাশ', 'নগদ', 'টাকা কীভাবে পাব', 'টাকা তোলা'],
+    audience: 'public',
+    answerEn: 'Talentio supports seamless, secure global and local payment processing:\n- **For Deposits (Clients):** Visa, MasterCard, American Express, bKash, Nagad, and direct bank wire.\n- **For Withdrawals (Freelancers):** Once a milestone is approved by the client, funds appear in your available balance. You can withdraw directly to **bKash**, **Nagad**, or your local **Bank Account**.\n- Payouts are typically processed within 2 to 24 hours with strict end-to-end encryption.',
+    answerBn: 'ট্যালেন্টিওতে পেমেন্ট ও টাকা উত্তোলনের বিশ্বস্ত ও সহজ ব্যবস্থা রয়েছে:\n- **ডিপোজিট (বায়ারদের জন্য):** ভিসা, মাস্টারকার্ড, বিকাশ (bKash), নগদ (Nagad) এবং সরাসরি ব্যাংক ট্রান্সফারের মাধ্যমে এসক্রোতে টাকা জমা দেওয়া যায়।\n- **উইথড্রয়াল (ফ্রিল্যান্সারদের জন্য):** বায়ার মাইলস্টোন অনুমোদন করার সাথে সাথে টাকা আপনার ব্যালেন্সে যুক্ত হয়। এরপর আপনি সরাসরি **বিকাশ**, **নগদ** অথবা আপনার **ব্যাংক অ্যাকাউন্টে** টাকা উত্তোলন করতে পারবেন।\n- সাধারণত ২ থেকে ২৪ ঘণ্টার মধ্যে পেমেন্ট সফলভাবে সম্পন্ন হয়।',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'dashboard',
+      labelEn: 'Go to Payout Dashboard',
+      labelBn: 'পে-আউট ড্যাশবোর্ডে যান'
+    }
+  },
+  {
+    id: 'fees-and-commission',
+    topic: 'Fees and Commissions',
+    keywords: ['fee', 'fees', 'commission', 'charges', 'cost', 'percentage', 'কমিশন কত', 'ফি কাটে কত', 'খরচ কত', 'সার্ভিস চার্জ'],
+    audience: 'public',
+    answerEn: 'Talentio maintains a transparent, competitive fee structure:\n- **Clients:** 0% posting fee. Free to browse and post unlimited job RFPs. Standard 3% processing fee on milestone checkout.\n- **Freelancers:** Standard 10% platform commission on completed escrow milestones (drops to 5% for Tier-3 Pro & Enterprise sellers).\n- No hidden subscription costs or forced monthly fees for standard usage.',
+    answerBn: 'ট্যালেন্টিওতে স্বচ্ছ ও ন্যায্য ফি নীতিমালা রয়েছে:\n- **বায়ারদের জন্য:** সম্পূর্ণ বিনামূল্যে আনলিমিটেড জব ও প্রজেক্ট পোস্ট করা যায়। মাইলস্টোন চেকআউটের সময় স্ট্যান্ডার্ড ৩% প্রসেসিং ফি প্রযোজ্য।\n- **ফ্রিল্যান্সারদের জন্য:** সফলভাবে কাজ সম্পন্ন করার পর মাইলস্টোনের উপর স্ট্যান্ডার্ড ১০% প্ল্যাটফর্ম ফি প্রযোজ্য (যা প্রো ও এন্টারপ্রাইজ সেলারদের ক্ষেত্রে কমে ৫% এ নেমে আসে)।\n- সাধারণ কাজের জন্য কোনো বাধ্যতামূলক মাসিক সাবস্ক্রিপশন বা লুকানো ফি নেই।',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'dashboard',
+      labelEn: 'View Earnings & Tiers',
+      labelBn: 'আয় ও টিয়ার দেখুন'
+    }
+  },
+  {
+    id: 'kyc-verification',
+    topic: 'KYC & Profile Verification',
+    keywords: ['kyc', 'verification', 'verify profile', 'nid', 'blue tick', 'verified badge', 'ভেরিফিকেশন', 'আইডি ভেরিফাই', 'ব্লু ব্যাজ', 'ভেরিফাইড'],
+    audience: 'public',
+    answerEn: 'Getting verified on Talentio builds client trust and unlocks higher escrow tiers:\n1. Complete your 6-step profile onboarding.\n2. Submit a clear government-issued National ID (NID), Passport, or Driving License.\n3. Our security team reviews submissions within 24 hours.\n4. Verified profiles receive the official Blue Checkmark badge and increased visibility in search results.',
+    answerBn: 'ট্যালেন্টিওতে প্রোফাইল ভেরিফিকেশন বায়ারের আস্থা বৃদ্ধি করে এবং কাজের সুযোগ বহুগুণ বাড়িয়ে দেয়:\n১. আপনার প্রোফাইলের ৬টি প্রাথমিক ধাপ পূরণ করুন।\n২. সরকারি জাতীয় পরিচয়পত্র (NID), পাসপোর্ট অথবা ড্রাইভিং লাইসেন্সের ছবি আপলোড করুন।\n৩. আমাদের সিকিউরিটি টিম ২৪ ঘণ্টার মধ্যে যাচাই করে অ্যাপ্রুভ করে থাকে।\n৪. ভেরিফিকেশন সফল হলে প্রোফাইলে ব্লু ভেরিফাইড ব্যাজ যুক্ত হয় এবং সার্চে অগ্রাধিকার পাওয়া যায়।',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'profile',
+      labelEn: 'Open Profile Verification',
+      labelBn: 'প্রোফাইল ভেরিফিকেশনে যান'
+    }
+  },
+  {
+    id: 'how-to-earn',
+    topic: 'How to Earn Money as a Freelancer',
+    keywords: ['earn money', 'make money', 'how to get jobs', 'income', 'টাকা আয় করব কিভাবে', 'কাজ পাওয়ার উপায়', 'কিভাবে কাজ পাব', 'বিড জেতার উপায়'],
+    audience: 'freelancer',
+    answerEn: 'Proven tips to win jobs and maximize earnings on Talentio:\n1. **High-Converting Portfolio:** Upload real case studies and screenshot proofs of your work.\n2. **Targeted Proposals:** Tailor your bid directly to the client\'s problem rather than copying generic templates.\n3. **Tiered Gigs:** Create Starter, Pro, and Enterprise packages to cater to different budget brackets.\n4. **Quick Response Time:** Maintain active status in Live Chat; responsive freelancers win 70% more contracts.\n5. **Escrow Delivery:** Always submit files through the Escrow Workstation for prompt milestone approvals.',
+    answerBn: 'ট্যালেন্টিওতে কাজ পাওয়া এবং আয় বাড়ানোর কার্যকর টিপস:\n১. **আকর্ষণীয় পোর্টফোলিও:** আপনার পূর্ববর্তী সফল কাজের নমুনা ও স্ক্রিনশট পোর্টফোলিওতে যুক্ত করুন।\n২. **কাস্টম প্রপোজাল:** কপি-পেস্ট না করে বায়ারের নির্দিষ্ট সমস্যা ও সমাধানের কথা উল্লেখ করে প্রপোজাল লিখুন।\n৩. **টিয়ারড গিগ:** বিভিন্ন বাজেটের ক্লায়েন্টদের জন্য স্টার্টার, প্রো ও এন্টারপ্রাইজ প্যাকেজ তৈরি করুন।\n৪. **দ্রুত রিপ্লাই:** লাইভ চ্যাটে সক্রিয় থাকুন; দ্রুত রিপ্লাই দেওয়া ফ্রিল্যান্সাররা ৭০% বেশি কাজ পেয়ে থাকেন।\n৫. **ওয়ার্কস্টেশনে ডেলিভারি:** সবসময় এসক্রো ওয়ার্কস্টেশনের মাধ্যমে ফাইল জমা দিন যাতে বায়ার দ্রুত মাইলস্টোন রিলিজ করতে পারেন।',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'explore',
+      labelEn: 'Find Open Jobs',
+      labelBn: 'ওপেন জব খুঁজুন'
+    }
+  },
+  {
+    id: 'gratitude-thanks',
+    topic: 'Gratitude & Thanks',
+    keywords: ['thank you', 'thanks', 'thx', 'ধন্যবাদ', 'অনেক ধন্যবাদ', 'থ্যাংকস', 'shukriya', 'ধন্যবাদ এআই'],
+    audience: 'public',
+    answerEn: 'You are very welcome! If you have any other questions about posting jobs, managing orders, or navigating the platform, I am always here to assist you.',
+    answerBn: 'আপনাকে অনেক ধন্যবাদ! প্রজেক্ট পোস্ট, অর্ডার পরিচালনা বা ট্যালেন্টিওর যেকোনো বিষয়ে আপনার সাহায্য প্রয়োজন হলে আমি সবসময় আপনার পাশে আছি।',
+    suggestedAction: {
+      type: 'navigate',
+      target: 'explore',
+      labelEn: 'Explore Talentio',
+      labelBn: 'ট্যালেন্টিও ঘুরে দেখুন'
+    }
   }
 ];
 
@@ -276,7 +376,8 @@ export function queryLocalKnowledgeBase(
   action?: { type: 'navigate' | 'modal'; target: string; label: string };
   isSecurityTrigger?: boolean;
 } {
-  const queryLower = userQuery.trim().toLowerCase();
+  const queryTrimmed = userQuery.trim();
+  const queryLower = queryTrimmed.toLowerCase();
 
   // Detect query language if auto
   const isBangla = language === 'bn' || (language === 'auto' && /[\u0980-\u09FF]/.test(userQuery));
@@ -319,88 +420,130 @@ export function queryLocalKnowledgeBase(
     };
   }
 
-  // 2. ASSISTED NAVIGATION CHECKS ("Take me to...")
-  if (queryLower.includes('post a job') || queryLower.includes('post job') || queryLower.includes('জব পোস্ট') || queryLower.includes('প্রজেক্ট পোস্ট')) {
-    return {
-      reply: isBangla 
-        ? 'আমি আপনাকে প্রজেক্ট পোস্ট করার মডালে নিয়ে যাচ্ছি। সেখানে প্রজেক্টের নাম, বিবরণ ও বাজেট উল্লেখ করে সহজে পাবলিশ করতে পারবেন।'
-        : 'Opening the Job Creation modal where you can define your project scope, deliverables, and milestone budget.',
-      action: { type: 'modal', target: 'post-job-modal', label: isBangla ? 'জব পোস্ট খুলুন' : 'Open Post Job' }
-    };
+  // 2. EXPLICIT NAVIGATION COMMANDS ONLY (e.g., "take me to chat", "open post job modal", "চ্যাটে চলো")
+  // Notice we only trigger this when the user explicitly requests navigation or modal opening,
+  // NOT for general questions like "How does escrow work?" or "How do I message someone?".
+  const isExplicitNav = 
+    queryLower.startsWith('take me to') ||
+    queryLower.startsWith('go to') ||
+    queryLower.startsWith('navigate to') ||
+    queryLower.startsWith('open ') ||
+    queryLower.startsWith('show me ') ||
+    queryLower.includes('নিয়ে যাও') ||
+    queryLower.includes('নিয়ে চলো') ||
+    queryLower.includes('যেতে চাই') ||
+    queryLower.includes('খুলুন') ||
+    queryLower.includes('ওপেন করো') ||
+    queryLower.includes('ওপেন করুন');
+
+  if (isExplicitNav) {
+    if (queryLower.includes('post job') || queryLower.includes('post a job') || queryLower.includes('জব পোস্ট') || queryLower.includes('প্রজেক্ট পোস্ট')) {
+      return {
+        reply: isBangla 
+          ? 'আমি আপনাকে প্রজেক্ট পোস্ট করার মডালে নিয়ে যাচ্ছি। সেখানে প্রজেক্টের নাম, বিবরণ ও বাজেট উল্লেখ করে সহজে পাবলিশ করতে পারবেন।'
+          : 'Opening the Job Creation modal where you can define your project scope, deliverables, and milestone budget.',
+        action: { type: 'modal', target: 'post-job-modal', label: isBangla ? 'জব পোস্ট খুলুন' : 'Open Post Job' }
+      };
+    }
+
+    if (queryLower.includes('create gig') || queryLower.includes('গিগ তৈরি') || queryLower.includes('গিগ বানাব')) {
+      return {
+        reply: isBangla 
+          ? 'আমি গিগ ক্রিয়েশন ফর্মটি ওপেন করছি। আপনার সার্ভিসের আকর্ষণীয় টাইটেল, প্রাইসিং টিয়ার ও বিবরণ যুক্ত করুন।'
+          : 'Opening the Gig Creation wizard where you can configure tiers, pricing, and portfolio showcases.',
+        action: { type: 'modal', target: 'create-gig-modal', label: isBangla ? 'গিগ মডাল খুলুন' : 'Open Create Gig' }
+      };
+    }
+
+    if (queryLower.includes('widget') || queryLower.includes('উইজেট')) {
+      return {
+        reply: isBangla
+          ? 'অ্যান্ড্রয়েড লাইভ হোমস্ক্রিন উইজেট কাস্টমাইজার ওপেন করা হচ্ছে। এখান থেকে আপনি চ্যাট প্রিভিউ, এসক্রো ট্র্যাকার এবং পছন্দমতো কালার থিম নির্বাচন করতে পারবেন।'
+          : 'Opening the Android Live Home Screen Widget Suite and Customizer where you can configure your chat preview or milestone tracker.',
+        action: { type: 'modal', target: 'widgets-modal', label: isBangla ? 'উইজেট কাস্টমাইজার' : 'Open Widgets' }
+      };
+    }
+
+    if (queryLower.includes('chat') || queryLower.includes('message') || queryLower.includes('চ্যাট') || queryLower.includes('মেসেজ')) {
+      return {
+        reply: isBangla 
+          ? 'আপনাকে ট্যালেন্টিওর মেসেঞ্জার পেজে নিয়ে যাওয়া হচ্ছে।'
+          : 'Navigating to the Talentio Live Messaging interface.',
+        action: { type: 'navigate', target: 'chat', label: isBangla ? 'চ্যাটে যান' : 'Go to Chat' }
+      };
+    }
+
+    if (queryLower.includes('workstation') || queryLower.includes('order') || queryLower.includes('ওয়ার্কস্টেশন') || queryLower.includes('অর্ডার')) {
+      return {
+        reply: isBangla
+          ? 'আপনাকে এসক্রো ওয়ার্কস্টেশন পেজে নিয়ে যাচ্ছি।'
+          : 'Navigating to your Escrow Workstation where you can monitor milestones.',
+        action: { type: 'navigate', target: 'workstation', label: isBangla ? 'ওয়ার্কস্টেশনে যান' : 'Go to Workstation' }
+      };
+    }
+
+    if (queryLower.includes('service') || queryLower.includes('gig') || queryLower.includes('সার্ভিস') || queryLower.includes('গিগ')) {
+      return {
+        reply: isBangla
+          ? 'ট্যালেন্টিওর সব ক্যাটাগরির সার্ভিস ও গিগ ব্রাউজ করার পেজে নিয়ে যাওয়া হচ্ছে।'
+          : 'Navigating to the Talentio Services and Gigs catalog.',
+        action: { type: 'navigate', target: 'services', label: isBangla ? 'সার্ভিস পেজে যান' : 'Go to Services' }
+      };
+    }
+
+    if (queryLower.includes('freelancer') || queryLower.includes('talent') || queryLower.includes('ট্যালেন্ট') || queryLower.includes('ফ্রিল্যান্সার')) {
+      return {
+        reply: isBangla
+          ? 'টপ-রেটেড ভেরিফাইড ফ্রিল্যান্সারদের ডিরেক্টরিতে নিয়ে যাচ্ছি।'
+          : 'Navigating to the Talentio Verified Freelancers Directory.',
+        action: { type: 'navigate', target: 'freelancers', label: isBangla ? 'ফ্রিল্যান্সার দেখুন' : 'Browse Talent' }
+      };
+    }
   }
 
-  if (queryLower.includes('create gig') || queryLower.includes('create a gig') || queryLower.includes('গিগ তৈরি') || queryLower.includes('গিগ বানাব')) {
-    return {
-      reply: isBangla 
-        ? 'আমি গিগ ক্রিয়েশন ফর্মটি ওপেন করছি। আপনার সার্ভিসের আকর্ষণীয় টাইটেল, প্রাইসিং টিয়ার ও বিবরণ যুক্ত করুন।'
-        : 'Opening the Gig Creation wizard where you can configure tiers, pricing, and portfolio showcases.',
-      action: { type: 'modal', target: 'create-gig-modal', label: isBangla ? 'গিগ মডাল খুলুন' : 'Open Create Gig' }
-    };
-  }
+  // 3. ADVANCED NLP TOKEN & KEYWORD MATCHING AGAINST KNOWLEDGE BASE
+  // Split query into word tokens (alphanumeric + Bengali characters)
+  const tokens = queryLower.split(/[\s,?.!;:()_/\-+'"]+/).filter(t => t.length > 1);
 
-  if (queryLower.includes('widget') || queryLower.includes('উইজেট') || queryLower.includes('home screen')) {
-    return {
-      reply: isBangla
-        ? 'অ্যান্ড্রয়েড লাইভ হোমস্ক্রিন উইজেট কাস্টমাইজার ওপেন করা হচ্ছে। এখান থেকে আপনি চ্যাট প্রিভিউ, এসক্রো ট্র্যাকার এবং পছন্দমতো কালার থিম নির্বাচন করতে পারবেন।'
-        : 'Opening the Android Live Home Screen Widget Suite and Customizer where you can configure your chat preview or milestone tracker.',
-      action: { type: 'modal', target: 'widgets-modal', label: isBangla ? 'উইজেট কাস্টমাইজার' : 'Open Widgets' }
-    };
-  }
-
-  if (queryLower.includes('chat') || queryLower.includes('message') || queryLower.includes('চ্যাট') || queryLower.includes('মেসেজ')) {
-    return {
-      reply: isBangla 
-        ? 'আপনাকে ট্যালেন্টিওর রিয়েল-টাইম মেসেঞ্জার ও চ্যাট পেজে নিয়ে যাওয়া হচ্ছে।'
-        : 'Navigating to the Talentio Live Messaging & Negotiation interface.',
-      action: { type: 'navigate', target: 'chat', label: isBangla ? 'চ্যাটে যান' : 'Go to Chat' }
-    };
-  }
-
-  if (queryLower.includes('workstation') || queryLower.includes('order') || queryLower.includes('escrow') || queryLower.includes('ওয়ার্কস্টেশন') || queryLower.includes('অর্ডার')) {
-    return {
-      reply: isBangla
-        ? 'আপনাকে এসক্রো ওয়ার্কস্টেশন পেজে নিয়ে যাচ্ছি, যেখানে আপনি আপনার একটিভ অর্ডার, ফাইল ডেলিভারি ও মাইলস্টোন প্রগ্রেস দেখতে পারবেন।'
-        : 'Navigating to your Escrow Workstation where you can monitor milestones, deliverables, and release protected funds.',
-      action: { type: 'navigate', target: 'workstation', label: isBangla ? 'ওয়ার্কস্টেশনে যান' : 'Go to Workstation' }
-    };
-  }
-
-  if (queryLower.includes('services') || queryLower.includes('gigs') || queryLower.includes('সার্ভিস') || queryLower.includes('গিগ')) {
-    return {
-      reply: isBangla
-        ? 'ট্যালেন্টিওর সব ক্যাটাগরির সার্ভিস ও গিগ এক্সপ্লোর করার পেজে নিয়ে যাওয়া হচ্ছে।'
-        : 'Navigating to the Talentio Services and Gigs catalog.',
-      action: { type: 'navigate', target: 'services', label: isBangla ? 'সার্ভিস পেজে যান' : 'Go to Services' }
-    };
-  }
-
-  if (queryLower.includes('freelancer') || queryLower.includes('talent') || queryLower.includes('ট্যালেন্ট') || queryLower.includes('ফ্রিল্যান্সার')) {
-    return {
-      reply: isBangla
-        ? 'টপ-রেটেড ভেরিফাইড ফ্রিল্যান্সারদের ব্রাউজ করার ডিরেক্টরিতে নিয়ে যাচ্ছি।'
-        : 'Navigating to the Talentio Verified Freelancers Directory.',
-      action: { type: 'navigate', target: 'freelancers', label: isBangla ? 'ফ্রিল্যান্সার দেখুন' : 'Browse Talent' }
-    };
-  }
-
-  // 3. MATCH AGAINST CENTRAL KNOWLEDGE BASE
   let bestMatch: KnowledgeItem | null = null;
   let highestScore = 0;
 
   for (const item of TALENTIO_KNOWLEDGE_BASE) {
     let score = 0;
+
+    // Check full string keyword containment (highest weight)
     for (const kw of item.keywords) {
-      if (queryLower.includes(kw)) {
-        score += kw.length;
+      const kwLower = kw.toLowerCase();
+      if (queryLower.includes(kwLower)) {
+        score += kwLower.length * 3; // Full phrase match bonus
+      } else {
+        // Check token overlaps
+        const kwTokens = kwLower.split(/[\s,?.!;:()_/\-+'"]+/).filter(t => t.length > 1);
+        let tokenMatches = 0;
+        for (const kt of kwTokens) {
+          if (tokens.some(qt => qt === kt || (kt.length > 3 && qt.includes(kt)) || (qt.length > 3 && kt.includes(qt)))) {
+            tokenMatches++;
+          }
+        }
+        if (tokenMatches > 0) {
+          score += tokenMatches * 4;
+        }
       }
     }
+
+    // Role relevance bonus
+    if (item.audience === userRole || item.audience === 'public') {
+      score += 2;
+    }
+
     if (score > highestScore) {
       highestScore = score;
       bestMatch = item;
     }
   }
 
-  if (bestMatch && highestScore > 3) {
+  // Threshold: at least a strong match
+  if (bestMatch && highestScore >= 6) {
     const replyText = isBangla ? bestMatch.answerBn : bestMatch.answerEn;
     return {
       reply: replyText,
@@ -412,16 +555,58 @@ export function queryLocalKnowledgeBase(
     };
   }
 
-  // 4. ROLE & PAGE ADAPTIVE FALLBACK
+  // 4. SMART CONTEXTUAL RESPONSES BY QUERY INTENT
+  // Job Posting / RFP intent
+  if (tokens.some(t => ['job', 'jobs', 'rfp', 'post', 'পোস্ট', 'প্রজেক্ট', 'কাজ'].includes(t)) && 
+      tokens.some(t => ['post', 'create', 'give', 'দিব', 'পোস্ট', 'তৈরি', 'করব', 'কিভাবে'].includes(t))) {
+    const item = TALENTIO_KNOWLEDGE_BASE.find(k => k.id === 'client-post-job')!;
+    return {
+      reply: isBangla ? item.answerBn : item.answerEn,
+      action: item.suggestedAction ? {
+        type: item.suggestedAction.type,
+        target: item.suggestedAction.target,
+        label: isBangla ? item.suggestedAction.labelBn : item.suggestedAction.labelEn
+      } : undefined
+    };
+  }
+
+  // Escrow / Payment intent
+  if (tokens.some(t => ['escrow', 'payment', 'money', 'safe', 'security', 'এসক্রো', 'পেমেন্ট', 'টাকা', 'নিরাপদ', 'সুরক্ষা'].includes(t))) {
+    const item = TALENTIO_KNOWLEDGE_BASE.find(k => k.id === 'escrow-system')!;
+    return {
+      reply: isBangla ? item.answerBn : item.answerEn,
+      action: item.suggestedAction ? {
+        type: item.suggestedAction.type,
+        target: item.suggestedAction.target,
+        label: isBangla ? item.suggestedAction.labelBn : item.suggestedAction.labelEn
+      } : undefined
+    };
+  }
+
+  // Freelancer / Hire intent
+  if (tokens.some(t => ['hire', 'freelancer', 'talent', 'developer', 'designer', 'হায়ার', 'ফ্রিল্যান্সার', 'লোক', 'খুঁজছি'].includes(t))) {
+    const item = TALENTIO_KNOWLEDGE_BASE.find(k => k.id === 'client-find-freelancer')!;
+    return {
+      reply: isBangla ? item.answerBn : item.answerEn,
+      action: item.suggestedAction ? {
+        type: item.suggestedAction.type,
+        target: item.suggestedAction.target,
+        label: isBangla ? item.suggestedAction.labelBn : item.suggestedAction.labelEn
+      } : undefined
+    };
+  }
+
+  // 5. ROLE & PAGE ADAPTIVE HELPFUL FALLBACK (Never canned repetition)
   if (isBangla) {
     return {
-      reply: `আমি ট্যালেন্টিও এআই (TALENTIO AI)। আপনি বর্তমানে '${currentPage}' পেজে আছেন। আপনি কি ফ্রিল্যান্সার হায়ার করা, কাজ খোঁজা, নতুন গিগ তৈরি, জব পোস্ট বা এসক্রো পেমেন্ট সংক্রান্ত কোনো তথ্য জানতে চান?`,
-      action: { type: 'navigate', target: 'explore', label: 'মার্কেটপ্লেস দেখুন' }
+      reply: `আমি **TALENTIO AI**, আপনার মার্কেটপ্লেস ও এসক্রো সহকারী। আপনার প্রশ্নের সঠিক বিবরণটি নিশ্চিত করতে পারছি না, তবে আপনি নিচের যেকোনো বিষয়ে জানতে পারেন:\n\n- **জব পোস্ট ও হায়ার:** প্রজেক্ট তৈরি এবং শীর্ষ ফ্রিল্যান্সার খোঁজার নিয়ম।\n- **এসক্রো পেমেন্ট:** বায়ার ও ফ্রিল্যান্সারের ১০০% সুরক্ষিত লেনদেন।\n- **গিগ ও ফ্রিল্যান্সিং:** নিজস্ব সার্ভিস পাবলিশ এবং আয় বৃদ্ধির উপায়।\n- **পেমেন্ট মেথড:** বিকাশ, নগদ ও ব্যাংক উইথড্রয়াল পদ্ধতি।\n\nআপনি কীভাবে সাহায্য চান অনুগ্রহ করে আরেকটু বিস্তারিত লিখুন।`,
+      action: { type: 'navigate', target: 'explore', label: 'মার্কেটপ্লেস ঘুরে দেখুন' }
     };
   } else {
     return {
-      reply: `I am TALENTIO AI, your intelligent marketplace assistant. You are currently on the '${currentPage}' page. Would you like assistance with hiring freelancers, posting a job RFP, creating service gigs, or managing milestone escrow?`,
+      reply: `I am **TALENTIO AI**, your dedicated marketplace and escrow guide. I want to make sure I answer your query precisely. Here are popular topics I can assist you with:\n\n- **Posting Jobs & Hiring:** How to publish RFPs and connect with vetted talent.\n- **Escrow Security:** How milestone payments and funds are 100% safeguarded.\n- **Gig Publishing:** How to structure pricing tiers and win client contracts.\n- **Payouts & Withdrawals:** Withdrawing earnings directly to bKash, Nagad, or bank accounts.\n\nPlease clarify what you would like assistance with!`,
       action: { type: 'navigate', target: 'explore', label: 'Explore Marketplace' }
     };
   }
 }
+

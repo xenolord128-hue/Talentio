@@ -719,7 +719,11 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         wakeRecognizer.onresult = (event: any) => {
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const raw = event.results[i][0].transcript.toLowerCase();
-            const wakeWords = ['talentio', 'hey talentio', 'ট্যালেন্টিও', 'হেই ট্যালেন্টিও', 'help me find'];
+            const wakeWords = [
+              'hey talentio', 'hi talentio', 'hello talentio', 'talentio', 'talento', 'talent io', 'telentio',
+              'হেই ট্যালেন্টিও', 'হ্যালো ট্যালেন্টিও', 'হাই ট্যালেন্টিও', 'ট্যালেন্টিও', 'টালেন্টিও', 'ট্যালেনটিও',
+              'hey google', 'help me find'
+            ];
             const match = wakeWords.some(w => raw.includes(w));
 
             if (match) {

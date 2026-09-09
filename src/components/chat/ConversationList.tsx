@@ -211,6 +211,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           sortedConversations.map((conv) => {
             const isActive = activeConversationId === conv.id;
             const isMeLast = conv.lastMessage.senderId === 'user-me' || conv.lastMessage.senderId === 'client';
+            const isAI = conv.id === 'conv-talentio-ai' || conv.participant.role === 'bot' || conv.participant.role === 'assistant';
 
             return (
               <div
@@ -221,20 +222,41 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                   onClick={() => onSelectConversation(conv.id)}
                   className={`w-full p-3 sm:p-3.5 flex items-center gap-3 text-left transition-all cursor-pointer border-l-4 ${
                     isActive
-                      ? 'bg-[#F2F0FF] border-[#3D2FD1] shadow-sm'
-                      : 'border-transparent hover:bg-slate-50/90'
+                      ? isAI 
+                        ? 'bg-[#F4F1FF] border-[#6E5BFF] shadow-sm'
+                        : 'bg-[#F2F0FF] border-[#3D2FD1] shadow-sm'
+                      : isAI
+                        ? 'border-transparent bg-slate-50/40 hover:bg-[#F8F7FF]'
+                        : 'border-transparent hover:bg-slate-50/90'
                   }`}
                 >
                   
                   {/* Avatar & Online Dot */}
                   <div className="relative shrink-0">
-                    <img
-                      src={conv.participant.avatar}
-                      alt={conv.participant.name}
-                      referrerPolicy="no-referrer"
-                      className="w-12 h-12 rounded-2xl object-cover ring-1 ring-slate-200"
-                    />
-                    {conv.participant.online ? (
+                    {isAI ? (
+                      <div className="p-[2px] rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 shadow-sm animate-pulse">
+                        <img
+                          src={conv.participant.avatar}
+                          alt={conv.participant.name}
+                          referrerPolicy="no-referrer"
+                          className="w-11 h-11 rounded-[14px] object-cover bg-[#1A1633]"
+                        />
+                      </div>
+                    ) : (
+                      <img
+                        src={conv.participant.avatar}
+                        alt={conv.participant.name}
+                        referrerPolicy="no-referrer"
+                        className="w-12 h-12 rounded-2xl object-cover ring-1 ring-slate-200"
+                      />
+                    )}
+
+                    {isAI ? (
+                      <span 
+                        className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 ring-2 ring-white shadow-xs" 
+                        title="TALENTIO AI — Always Active"
+                      />
+                    ) : conv.participant.online ? (
                       <span 
                         className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white" 
                         title="Online now"
@@ -254,20 +276,30 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5 min-w-0 pr-2">
                         <span className={`text-xs sm:text-sm font-extrabold truncate ${
-                          isActive ? 'text-[#3D2FD1]' : 'text-[#1A1633]'
+                          isActive 
+                            ? isAI ? 'text-[#5643FA]' : 'text-[#3D2FD1]'
+                            : 'text-[#1A1633]'
                         }`}>
                           {conv.participant.name}
                         </span>
-                        {conv.participant.countryFlag && (
+
+                        {isAI && (
+                          <span className="px-1.5 py-0.2 text-[9px] font-black tracking-wider uppercase rounded bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-xs flex items-center gap-0.5 shrink-0">
+                            <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                            AI
+                          </span>
+                        )}
+
+                        {conv.participant.countryFlag && !isAI && (
                           <span className="text-xs shrink-0">{conv.participant.countryFlag}</span>
                         )}
-                        {conv.participant.verified && (
+                        {conv.participant.verified && !isAI && (
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#6E5BFF] shrink-0" />
                         )}
                       </div>
 
                       <span className={`text-[10px] font-medium shrink-0 ${
-                        conv.unreadCount > 0 ? 'text-[#3D2FD1] font-bold' : 'text-slate-400'
+                        conv.unreadCount > 0 ? 'text-[#3D2FD1] font-bold' : isAI ? 'text-[#6E5BFF] font-semibold' : 'text-slate-400'
                       }`}>
                         {conv.lastMessage.timestamp}
                       </span>
@@ -303,12 +335,17 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
                         {/* Typing Animation or Snippet */}
                         {conv.participant.isTyping ? (
-                          <span className="text-[#3D2FD1] font-bold italic animate-pulse">
-                            typing...
+                          <span className="text-[#3D2FD1] font-bold italic animate-pulse flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#3D2FD1] animate-ping" />
+                            {isAI ? 'TALENTIO AI is thinking...' : 'typing...'}
                           </span>
                         ) : (
                           <span className={`truncate text-[11px] sm:text-xs ${
-                            conv.unreadCount > 0 ? 'text-[#1A1633] font-bold' : 'text-slate-600'
+                            conv.unreadCount > 0 
+                              ? 'text-[#1A1633] font-bold' 
+                              : isAI 
+                                ? 'text-indigo-900/80 font-medium' 
+                                : 'text-slate-600'
                           }`}>
                             {conv.lastMessage.text}
                           </span>

@@ -1,6 +1,39 @@
-import { Conversation, ChatMessage } from '../types';
+import { Conversation, ConversationParticipant, ChatMessage } from '../types';
+
+export const TALENTIO_AI_CONVERSATION_ID = 'conv-talentio-ai';
+
+export const TALENTIO_AI_PARTICIPANT: ConversationParticipant = {
+  id: 'talentio-ai-bot',
+  name: 'TALENTIO AI',
+  handle: '@talentio_ai',
+  avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&auto=format&fit=crop&q=80',
+  role: 'bot',
+  title: 'Official AI Marketplace & Escrow Assistant',
+  countryFlag: '🤖',
+  verified: true,
+  online: true,
+  lastSeen: 'Always Active',
+  isTyping: false,
+  escrowTier: 3
+};
+
+export const TALENTIO_AI_CONVERSATION: Conversation = {
+  id: TALENTIO_AI_CONVERSATION_ID,
+  participant: TALENTIO_AI_PARTICIPANT,
+  lastMessage: {
+    text: 'Ask me anything about hiring, posting jobs, gigs, or escrow protection!',
+    timestamp: 'Just now',
+    senderId: 'talentio-ai-bot',
+    status: 'read'
+  },
+  unreadCount: 0,
+  isPinned: true,
+  isMuted: false,
+  category: 'direct'
+};
 
 export const INITIAL_CONVERSATIONS: Conversation[] = [
+  TALENTIO_AI_CONVERSATION,
   {
     id: 'conv-elena',
     participant: {
@@ -382,6 +415,21 @@ export const INITIAL_CONVERSATION_MESSAGES: Record<string, ChatMessage[]> = {
           type: 'document'
         }
       ]
+    }
+  ],
+
+  'conv-talentio-ai': [
+    {
+      id: 'ai-msg-welcome',
+      conversationId: 'conv-talentio-ai',
+      sender: 'other',
+      senderId: 'talentio-ai-bot',
+      senderName: 'TALENTIO AI',
+      senderAvatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&auto=format&fit=crop&q=80',
+      text: 'Hello! I am **TALENTIO AI**, your 24/7 intelligent marketplace companion.\n\nI can help you:\n• Find & hire top-rated freelancers\n• Post job RFPs with custom milestone budgets\n• Understand 100% secure escrow protection\n• Create service gigs and withdraw your earnings\n\nHow can I help you today? Ask me anything in English or বাংলা!',
+      timestamp: 'Just now',
+      isoDate: new Date().toISOString(),
+      status: 'read'
     }
   ],
 

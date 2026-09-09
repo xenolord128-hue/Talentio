@@ -41,6 +41,7 @@ interface MessageTimelineProps {
   onTogglePinMessage: (messageId: string) => void;
   onReactMessage: (messageId: string, emoji: string) => void;
   onForwardMessage: (message: ChatMessage) => void;
+  onExecuteAction?: (action: { type: 'navigate' | 'modal'; target: string; label: string }) => void;
 }
 
 export const MessageTimeline: React.FC<MessageTimelineProps> = ({
@@ -58,7 +59,8 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
   onDeleteMessage,
   onTogglePinMessage,
   onReactMessage,
-  onForwardMessage
+  onForwardMessage,
+  onExecuteAction
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -208,86 +210,117 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
                 )}
 
                 {/* Main Message Bubble */}
-                <div
-                  className={`relative max-w-[85%] sm:max-w-md md:max-w-lg p-3.5 sm:p-4 rounded-[22px] transition-all shadow-sm ${
-                    isSearchMatch ? 'ring-2 ring-amber-400' : ''
-                  } ${
-                    isMe
-                      ? 'bg-gradient-to-br from-[#3D2FD1] to-[#5443F0] text-white rounded-br-xs shadow-[#3D2FD1]/15'
-                      : 'bg-[#F2F0FF] text-[#1A1633] rounded-bl-xs border border-slate-200/60'
-                  }`}
-                >
-                  
-                  {/* Sender Name in Group/Other */}
-                  {!isMe && (
-                    <div className="text-[11px] font-bold text-[#3D2FD1] mb-1">
-                      {msg.senderName}
-                    </div>
-                  )}
+                {(() => {
+                  const isAI = !isMe && (msg.senderId === 'talentio-ai-bot' || msg.senderName === 'TALENTIO AI');
 
-                  {/* Milestone Contract Offer Card inside Chat */}
-                  {msg.isOffer && msg.offerDetails ? (
-                    <div className="space-y-3 pt-1">
-                      <div className="flex items-center justify-between pb-2 border-b border-current/20">
-                        <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
-                          isMe ? 'bg-white/20 text-white' : 'bg-[#3D2FD1] text-white'
-                        }`}>
-                          Official Milestone Contract Offer
-                        </span>
-                        <span className={`text-base font-black ${isMe ? 'text-white' : 'text-[#3D2FD1]'}`}>
-                          ${msg.offerDetails.amount} USD
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className={`text-xs sm:text-sm font-bold ${isMe ? 'text-white' : 'text-[#1A1633]'}`}>
-                          {msg.offerDetails.title}
-                        </h4>
-                        <p className={`text-[11px] mt-1 ${isMe ? 'text-white/80' : 'text-slate-600'}`}>
-                          Full escrow protection: Funds remain safely secured in Talentio Escrow Vault until deliverables are formally inspected and approved.
-                        </p>
-                      </div>
-
-                      <div className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-semibold ${
-                        isMe ? 'bg-black/20 text-white' : 'bg-white text-slate-700 border border-slate-200'
-                      }`}>
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{msg.offerDetails.deliveryDays} Days Delivery</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-emerald-600">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>Escrow Protected</span>
-                        </div>
-                      </div>
-
-                      {/* Accept Offer Action */}
-                      <div className="pt-2 flex items-center justify-end">
-                        {msg.offerDetails.status === 'accepted' ? (
-                          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/30 px-3 py-1.5 rounded-xl border border-emerald-500/30">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Offer Accepted & Escrow Funded</span>
+                  return (
+                    <div
+                      className={`relative max-w-[85%] sm:max-w-md md:max-w-lg p-3.5 sm:p-4 rounded-[22px] transition-all shadow-sm ${
+                        isSearchMatch ? 'ring-2 ring-amber-400' : ''
+                      } ${
+                        isMe
+                          ? 'bg-gradient-to-br from-[#3D2FD1] to-[#5443F0] text-white rounded-br-xs shadow-[#3D2FD1]/15'
+                          : isAI
+                            ? 'bg-white text-[#1A1633] rounded-bl-xs border border-[#6E5BFF]/30 shadow-md ring-1 ring-[#6E5BFF]/10'
+                            : 'bg-[#F2F0FF] text-[#1A1633] rounded-bl-xs border border-slate-200/60'
+                      }`}
+                    >
+                      {/* Sender Header */}
+                      {!isMe && (
+                        isAI ? (
+                          <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-slate-100">
+                            <div className="p-0.5 rounded-md bg-gradient-to-tr from-cyan-400 to-[#6E5BFF] text-white">
+                              <Sparkles className="w-3 h-3" />
+                            </div>
+                            <span className="text-xs font-black text-[#5643FA]">TALENTIO AI</span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-2xs tracking-wide">
+                              Assistant
+                            </span>
                           </div>
                         ) : (
+                          <div className="text-[11px] font-bold text-[#3D2FD1] mb-1">
+                            {msg.senderName}
+                          </div>
+                        )
+                      )}
+
+                      {/* Milestone Contract Offer Card inside Chat */}
+                      {msg.isOffer && msg.offerDetails ? (
+                        <div className="space-y-3 pt-1">
+                          <div className="flex items-center justify-between pb-2 border-b border-current/20">
+                            <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                              isMe ? 'bg-white/20 text-white' : 'bg-[#3D2FD1] text-white'
+                            }`}>
+                              Official Milestone Contract Offer
+                            </span>
+                            <span className={`text-base font-black ${isMe ? 'text-white' : 'text-[#3D2FD1]'}`}>
+                              ${msg.offerDetails.amount} USD
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className={`text-xs sm:text-sm font-bold ${isMe ? 'text-white' : 'text-[#1A1633]'}`}>
+                              {msg.offerDetails.title}
+                            </h4>
+                            <p className={`text-[11px] mt-1 ${isMe ? 'text-white/80' : 'text-slate-600'}`}>
+                              Full escrow protection: Funds remain safely secured in Talentio Escrow Vault until deliverables are formally inspected and approved.
+                            </p>
+                          </div>
+
+                          <div className={`p-2.5 rounded-xl flex items-center justify-between text-xs font-semibold ${
+                            isMe ? 'bg-black/20 text-white' : 'bg-white text-slate-700 border border-slate-200'
+                          }`}>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{msg.offerDetails.deliveryDays} Days Delivery</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-emerald-600">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>Escrow Protected</span>
+                            </div>
+                          </div>
+
+                          {/* Accept Offer Action */}
+                          <div className="pt-2 flex items-center justify-end">
+                            {msg.offerDetails.status === 'accepted' ? (
+                              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/30 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Offer Accepted & Escrow Funded</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => onAcceptOffer(msg.id)}
+                                className="px-4 py-2 rounded-xl bg-white text-[#3D2FD1] hover:bg-slate-100 font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                              >
+                                <span>Accept & Fund Escrow</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : msg.voiceNote ? (
+                        /* Voice Note Player */
+                        <VoiceNotePlayer voiceNote={msg.voiceNote} isMe={isMe} />
+                      ) : (
+                        /* Normal Formatted Text */
+                        <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-normal">
+                          {msg.text}
+                        </div>
+                      )}
+
+                      {/* Interactive AI Action Button if provided */}
+                      {msg.action && (
+                        <div className="mt-3 pt-2.5 border-t border-slate-100">
                           <button
-                            onClick={() => onAcceptOffer(msg.id)}
-                            className="px-4 py-2 rounded-xl bg-white text-[#3D2FD1] hover:bg-slate-100 font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                            type="button"
+                            onClick={() => onExecuteAction?.(msg.action!)}
+                            className="w-full px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] hover:from-[#4837E0] hover:to-[#7E6DFF] text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                           >
-                            <span>Accept & Fund Escrow</span>
+                            <span>{msg.action.label}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                      </div>
-                    </div>
-                  ) : msg.voiceNote ? (
-                    /* Voice Note Player */
-                    <VoiceNotePlayer voiceNote={msg.voiceNote} isMe={isMe} />
-                  ) : (
-                    /* Normal Formatted Text */
-                    <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-normal">
-                      {msg.text}
-                    </p>
-                  )}
+                        </div>
+                      )}
 
                   {/* Attachments if present */}
                   {msg.attachments && msg.attachments.length > 0 && (
@@ -372,6 +405,8 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
                   )}
 
                 </div>
+                  );
+                })()}
 
                 {/* Message Hover Actions Bar */}
                 <div className={`hidden group-hover:flex items-center gap-1 p-1 rounded-xl bg-white border border-slate-200 shadow-md absolute -top-3.5 ${

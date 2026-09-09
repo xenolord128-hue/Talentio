@@ -286,6 +286,11 @@ export interface ChatMessage {
     name: string;
     size: string;
   };
+  action?: {
+    type: 'navigate' | 'modal';
+    target: string;
+    label: string;
+  };
 }
 
 export interface ConversationParticipant {
@@ -293,7 +298,7 @@ export interface ConversationParticipant {
   name: string;
   handle: string;
   avatar: string;
-  role: 'freelancer' | 'client' | 'agency' | 'admin';
+  role: 'freelancer' | 'client' | 'agency' | 'admin' | 'bot' | 'assistant';
   title?: string;
   countryFlag?: string;
   verified: boolean;
