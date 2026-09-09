@@ -418,8 +418,131 @@ interface GuideContextType {
 
 const GuideContext = createContext<GuideContextType | undefined>(undefined);
 
+const getInitialPageFromUrl = (): TalentioPage => {
+  if (typeof window === 'undefined') return 'explore';
+  const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  switch (path) {
+    case '/services':
+    case '/marketplace':
+    case '/catalog':
+      return 'services';
+    case '/freelancers':
+    case '/talent':
+      return 'freelancers';
+    case '/categories':
+      return 'categories';
+    case '/leaderboard':
+    case '/ranking':
+    case '/rankings':
+      return 'leaderboard';
+    case '/playbook':
+    case '/guides':
+    case '/security':
+    case '/defense':
+      return 'playbook';
+    case '/notices':
+    case '/notice':
+      return 'notices';
+    case '/help':
+    case '/support':
+      return 'help';
+    case '/dashboard':
+      return 'dashboard';
+    case '/workstation':
+    case '/orders':
+    case '/escrow':
+      return 'workstation';
+    case '/chat':
+    case '/messages':
+      return 'chat';
+    case '/admin':
+      return 'admin';
+    case '/settings':
+      return 'settings';
+    case '/profile':
+      return 'profile';
+    case '/favorites':
+      return 'favorites';
+    case '/search':
+      return 'search';
+    case '/login':
+      return 'login';
+    case '/register':
+      return 'register';
+    default:
+      return 'explore';
+  }
+};
+
+const getPathFromPage = (page: TalentioPage): string => {
+  switch (page) {
+    case 'home':
+    case 'explore':
+      return '/';
+    case 'services':
+    case 'marketplace':
+    case 'catalog':
+      return '/services';
+    case 'freelancers':
+    case 'talent':
+      return '/freelancers';
+    case 'categories':
+      return '/categories';
+    case 'leaderboard':
+      return '/leaderboard';
+    case 'playbook':
+    case 'guides':
+    case 'security':
+      return '/playbook';
+    case 'notices':
+    case 'notice':
+      return '/notices';
+    case 'help':
+    case 'support':
+      return '/help';
+    case 'dashboard':
+    case 'earnings':
+    case 'payouts':
+      return '/dashboard';
+    case 'workstation':
+    case 'orders':
+    case 'escrow':
+      return '/workstation';
+    case 'chat':
+    case 'messages':
+      return '/chat';
+    case 'admin':
+      return '/admin';
+    case 'settings':
+      return '/settings';
+    case 'profile':
+      return '/profile';
+    case 'favorites':
+    case 'saved':
+      return '/favorites';
+    case 'search':
+      return '/search';
+    case 'login':
+      return '/login';
+    case 'register':
+      return '/register';
+    case 'gig-details':
+      return '/services';
+    default:
+      return '/';
+  }
+};
+
 export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activePage, setActivePageState] = useState<TalentioPage>('explore');
+  const [activePage, setActivePageState] = useState<TalentioPage>(() => getInitialPageFromUrl());
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActivePageState(getInitialPageFromUrl());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [language, setLanguageState] = useState<LanguageMode>('en');
   const [currency, setCurrencyState] = useState<string>(() => {
     return localStorage.getItem('talentio_currency') || 'USD';
@@ -873,6 +996,14 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     setActivePageState(page);
+    try {
+      const targetPath = getPathFromPage(page);
+      if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+        window.history.pushState({ page }, '', targetPath);
+      }
+    } catch (e) {
+      // Safe fallback for restricted iframe environments
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

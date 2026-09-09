@@ -123,29 +123,34 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">For Clients</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <button onClick={() => setActivePage('marketplace')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
-                  Explore Gigs & Services
-                </button>
+                <a href="/services" onClick={(e) => { e.preventDefault(); setActivePage('services'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Explore Gigs &amp; Services
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('categories')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/categories" onClick={(e) => { e.preventDefault(); setActivePage('categories'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   All Categories
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('freelancers')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Find Vetted Talent
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('workstation')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/leaderboard" onClick={(e) => { e.preventDefault(); setActivePage('leaderboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Top Talent Leaderboard
+                </a>
+              </li>
+              <li>
+                <a href="/workstation" onClick={(e) => { e.preventDefault(); setActivePage('workstation'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Escrow Contract System
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('dashboard')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/dashboard" onClick={(e) => { e.preventDefault(); setActivePage('dashboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Client Workspace
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -155,56 +160,61 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">For Freelancers</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <button onClick={() => setActivePage('dashboard')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/dashboard" onClick={(e) => { e.preventDefault(); setActivePage('dashboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Freelancer Hub
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('playbook')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
-                  Talentio Academy & Playbook
-                </button>
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Talentio Academy &amp; Playbook
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('chat')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/notices" onClick={(e) => { e.preventDefault(); setActivePage('notices'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Platform Updates &amp; Notices
+                </a>
+              </li>
+              <li>
+                <a href="/chat" onClick={(e) => { e.preventDefault(); setActivePage('chat'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Live Client Chat
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('workstation')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/workstation" onClick={(e) => { e.preventDefault(); setActivePage('workstation'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Milestone Submissions
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('settings')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/settings" onClick={(e) => { e.preventDefault(); setActivePage('settings'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Account Preferences
-                </button>
+                </a>
               </li>
             </ul>
           </div>
 
           {/* Column 3: Trust & Legal */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">Trust & Safety</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">Trust &amp; Safety</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <button onClick={() => setActivePage('help')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
-                  Trust & Support Center
-                </button>
+                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Trust &amp; Support Center
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('playbook')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
                   Security Defense Scanner
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('help')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
-                  Escrow FAQ & Arbitration
-                </button>
+                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Escrow FAQ &amp; Arbitration
+                </a>
               </li>
               <li>
-                <button onClick={() => setActivePage('playbook')} className="hover:text-[#6E5BFF] transition-colors cursor-pointer">
-                  Terms of Service & IP
-                </button>
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Terms of Service &amp; IP
+                </a>
               </li>
             </ul>
           </div>

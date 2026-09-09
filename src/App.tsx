@@ -22,6 +22,7 @@ import { AuthGateway } from './components/AuthGateway';
 import { ProfileCompletionBarrier } from './components/ProfileCompletionBarrier';
 import { SellerStatusBanner } from './components/SellerStatusBanner';
 import { useGlobalKeyShortcuts } from './hooks/useGlobalKeyShortcuts';
+import { SEOHead } from './components/SEOHead';
 
 // Talentio Marketplace Pages
 import { HomePage } from './pages/HomePage';
@@ -56,6 +57,7 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen w-full bg-[#0E0B1F]">
+        <SEOHead />
         <OfflineNoticeBanner />
         <AuthGateway initialMode={activePage === 'register' ? 'register' : 'login'} />
         <TalentioAIAssistant />
@@ -144,6 +146,7 @@ const AppContent: React.FC = () => {
     }`}>
       
       {/* Sticky Compact Global Navigation (Hidden on dedicated Message page as per Requirement 1) */}
+      <SEOHead />
       <OfflineNoticeBanner />
       {!isChatPage && <Navbar />}
 

@@ -50,6 +50,9 @@ export const HomeHeroBanner: React.FC = () => {
       className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-2"
       aria-label="Talentio Marketplace Hero & Social Banner"
     >
+      {/* Semantic Primary SEO Heading */}
+      <h1 className="sr-only">TALENTIO — Find Freelancers, Hire Talent &amp; Get Work Online</h1>
+
       {/* ========================================================================= */}
       {/* SOCIAL BANNER WITH EMBEDDED CONTROLS:                                     */}
       {/* - Top Left: Top 1% Vetted Freelancers                                     */}
@@ -74,8 +77,10 @@ export const HomeHeroBanner: React.FC = () => {
           <img
             id="hero-background-image"
             src={DESKTOP_BANNER_IMG}
-            alt="Talentio Official Marketplace Social Banner"
+            alt="Talentio — Find Freelancers, Hire Talent & Get Work Online"
             referrerPolicy="no-referrer"
+            width={1024}
+            height={512}
             onError={(e) => {
               const target = e.currentTarget;
               target.src = talentioBannerFlippedImg;
