@@ -94,15 +94,15 @@ export const FreelancersPage: React.FC = () => {
         <div className="space-y-3 max-w-2xl relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#3D2FD1]/50 backdrop-blur-md text-[#A38BFF] border border-[#6E5BFF]/40 shadow-sm">
             <Sparkles className="w-4 h-4 text-[#A38BFF]" />
-            <span>Vetted International Network</span>
+            <span>Vetted Freelance Talent &amp; Jobs in Bangladesh</span>
           </div>
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight font-display leading-tight">
-            {viewMode === 'talent' ? 'Find & Hire Global Talent' : 'Open Client Projects & Contracts'}
+            {viewMode === 'talent' ? 'Hire Freelancers in Bangladesh & Global Talent' : 'Freelance Jobs & Client Contracts in Bangladesh'}
           </h1>
           <p className="text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
             {viewMode === 'talent' 
-              ? 'Every contractor is identity verified, technical skill audited, and protected under Talentio Escrow.'
-              : 'Apply directly with custom milestones and guaranteed Escrow funding before starting work.'}
+              ? 'Connect with top vetted freelancers in Bangladesh and international experts in web development, design, SEO, and marketing — all protected under Talentio Escrow.'
+              : 'Explore verified freelance jobs in Bangladesh and international remote projects. Apply with tailored milestone proposals and guaranteed escrow payment.'}
           </p>
         </div>
 

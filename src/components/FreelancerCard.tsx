@@ -39,7 +39,8 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
           <div className="relative">
             <img
               src={freelancer.avatar}
-              alt={freelancer.name}
+              alt={`${freelancer.name} - ${freelancer.title} in ${freelancer.location}`}
+              loading="lazy"
               className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover ring-2 ring-[#F2F0FF] group-hover:scale-105 transition-transform duration-200 shadow-sm"
             />
             {freelancer.availableNow && (

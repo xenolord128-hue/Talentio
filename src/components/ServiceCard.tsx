@@ -47,7 +47,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full overflow-hidden bg-slate-100">
         <img
           src={service.coverImage}
-          alt={service.title}
+          alt={`${service.title} - Freelance Service by ${service.freelancerName}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />

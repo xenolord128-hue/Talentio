@@ -54,15 +54,15 @@ export const ServicesPage: React.FC = () => {
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#F2F0FF] text-[#3D2FD1] border border-[#A38BFF]/30">
           <Layers className="w-4 h-4 text-[#3D2FD1]" />
-          <span>Talentio Verified Marketplace</span>
+          <span>Verified Freelance Services in Bangladesh</span>
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#1A1633] tracking-tight font-display">
-              Explore Professional Gigs
+              Freelance Services &amp; Fixed-Price Gigs in Bangladesh
             </h1>
             <p className="text-xs sm:text-sm md:text-base text-slate-600 font-normal mt-1 max-w-2xl">
-              Browse pre-scoped services with milestone deliverables, transparent pricing, and 100% smart escrow vault protection.
+              Browse pre-scoped digital services with milestone deliverables, upfront pricing, fast turnaround, and guaranteed escrow protection on Talentio.
             </p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shrink-0">

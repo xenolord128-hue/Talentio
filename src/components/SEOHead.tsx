@@ -13,20 +13,20 @@ const SITE_URL = 'https://talentio1.netlify.app';
 
 const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
   home: {
-    title: 'TALENTIO — Find Freelancers, Hire Talent & Get Work Online',
-    description: 'Talentio is the premier international marketplace connecting clients with top vetted freelancers. Find work, offer digital services, hire skilled talent, and collaborate with secure milestone escrow protection.',
+    title: 'Talentio — Freelance Marketplace Bangladesh | Hire Freelancers & Find Jobs',
+    description: "Talentio is Bangladesh's premier freelance marketplace connecting businesses and clients with skilled Bangladeshi freelancers. Find freelance jobs, hire developers, designers, and marketers with secure escrow protection.",
     canonicalPath: '/',
     isIndexable: true
   },
   explore: {
-    title: 'TALENTIO — Find Freelancers, Hire Talent & Get Work Online',
-    description: 'Talentio is the premier international marketplace connecting clients with top vetted freelancers. Find work, offer digital services, hire skilled talent, and collaborate with secure milestone escrow protection.',
+    title: 'Talentio — Freelance Marketplace Bangladesh | Hire Freelancers & Find Jobs',
+    description: "Talentio is Bangladesh's premier freelance marketplace connecting businesses and clients with skilled Bangladeshi freelancers. Find freelance jobs, hire developers, designers, and marketers with secure escrow protection.",
     canonicalPath: '/',
     isIndexable: true
   },
   services: {
-    title: 'Hire Freelancers & Order Fixed-Price Gigs | TALENTIO',
-    description: 'Explore verified freelance services and pre-scoped gigs with transparent milestones, fast delivery, and smart escrow vault protection on Talentio.',
+    title: 'Freelance Services in Bangladesh | Order Fixed-Price Gigs | Talentio',
+    description: 'Explore verified freelance services and digital gigs in Bangladesh with transparent milestone deliverables, upfront pricing, fast turnaround, and 100% smart escrow security on Talentio.',
     canonicalPath: '/services',
     isIndexable: true,
     breadcrumbs: [
@@ -35,20 +35,20 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   marketplace: {
-    title: 'Hire Freelancers & Order Fixed-Price Gigs | TALENTIO',
-    description: 'Explore verified freelance services and pre-scoped gigs with transparent milestones, fast delivery, and smart escrow vault protection on Talentio.',
+    title: 'Freelance Services in Bangladesh | Order Fixed-Price Gigs | Talentio',
+    description: 'Explore verified freelance services and digital gigs in Bangladesh with transparent milestone deliverables, upfront pricing, fast turnaround, and 100% smart escrow security on Talentio.',
     canonicalPath: '/services',
     isIndexable: true
   },
   catalog: {
-    title: 'Hire Freelancers & Order Fixed-Price Gigs | TALENTIO',
-    description: 'Explore verified freelance services and pre-scoped gigs with transparent milestones, fast delivery, and smart escrow vault protection on Talentio.',
+    title: 'Freelance Services in Bangladesh | Order Fixed-Price Gigs | Talentio',
+    description: 'Explore verified freelance services and digital gigs in Bangladesh with transparent milestone deliverables, upfront pricing, fast turnaround, and 100% smart escrow security on Talentio.',
     canonicalPath: '/services',
     isIndexable: true
   },
   freelancers: {
-    title: 'Find Vetted Freelancers & Global Tech Talent | TALENTIO',
-    description: 'Hire top-tier vetted international freelancers in software engineering, AI/ML, UI/UX design, cloud architecture, and growth marketing on Talentio.',
+    title: 'Hire Freelancers in Bangladesh | Find Skilled Bangladeshi Talent | Talentio',
+    description: 'Hire top Bangladeshi freelancers and vetted international experts in software engineering, UI/UX design, SEO, and digital marketing with guaranteed milestone escrow protection on Talentio.',
     canonicalPath: '/freelancers',
     isIndexable: true,
     breadcrumbs: [
@@ -57,14 +57,14 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   talent: {
-    title: 'Find Vetted Freelancers & Global Tech Talent | TALENTIO',
-    description: 'Hire top-tier vetted international freelancers in software engineering, AI/ML, UI/UX design, cloud architecture, and growth marketing on Talentio.',
+    title: 'Hire Freelancers in Bangladesh | Find Skilled Bangladeshi Talent | Talentio',
+    description: 'Hire top Bangladeshi freelancers and vetted international experts in software engineering, UI/UX design, SEO, and digital marketing with guaranteed milestone escrow protection on Talentio.',
     canonicalPath: '/freelancers',
     isIndexable: true
   },
   categories: {
-    title: 'Browse Freelance Categories & Specialties | TALENTIO',
-    description: 'Explore specialized digital disciplines on Talentio. Connect with audited specialists in AI, full-stack development, brand identity, and DevOps.',
+    title: 'Freelance Categories & Digital Specialties in Bangladesh | Talentio',
+    description: 'Browse top freelance categories in Bangladesh: web development, graphic design, SEO, digital marketing, content writing, and video editing. Connect with vetted freelance specialists.',
     canonicalPath: '/categories',
     isIndexable: true,
     breadcrumbs: [
@@ -73,8 +73,8 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   leaderboard: {
-    title: 'Top Freelancers Leaderboard & Verified Rankings | TALENTIO',
-    description: 'Discover the top-performing vetted freelancers on Talentio ranked by successful milestone escrow completions, customer satisfaction ratings, and turnaround velocity.',
+    title: 'Top Bangladeshi Freelancers Leaderboard & Vetted Rankings | Talentio',
+    description: 'Discover the top-rated freelancers in Bangladesh and vetted global talent on Talentio. Compare rankings by completed milestone escrow projects, customer ratings, and turnaround velocity.',
     canonicalPath: '/leaderboard',
     isIndexable: true,
     breadcrumbs: [
@@ -83,20 +83,20 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   ranking: {
-    title: 'Top Freelancers Leaderboard & Verified Rankings | TALENTIO',
-    description: 'Discover the top-performing vetted freelancers on Talentio ranked by successful milestone escrow completions, customer satisfaction ratings, and turnaround velocity.',
+    title: 'Top Bangladeshi Freelancers Leaderboard & Vetted Rankings | Talentio',
+    description: 'Discover the top-rated freelancers in Bangladesh and vetted global talent on Talentio. Compare rankings by completed milestone escrow projects, customer ratings, and turnaround velocity.',
     canonicalPath: '/leaderboard',
     isIndexable: true
   },
   rankings: {
-    title: 'Top Freelancers Leaderboard & Verified Rankings | TALENTIO',
-    description: 'Discover the top-performing vetted freelancers on Talentio ranked by successful milestone escrow completions, customer satisfaction ratings, and turnaround velocity.',
+    title: 'Top Bangladeshi Freelancers Leaderboard & Vetted Rankings | Talentio',
+    description: 'Discover the top-rated freelancers in Bangladesh and vetted global talent on Talentio. Compare rankings by completed milestone escrow projects, customer ratings, and turnaround velocity.',
     canonicalPath: '/leaderboard',
     isIndexable: true
   },
   playbook: {
-    title: 'Escrow Security & Freelancer Protection Playbook | TALENTIO',
-    description: 'Read the official Talentio operating guidelines, smart escrow milestones framework, dispute arbitration policies, and intellectual property rights transfer.',
+    title: 'Freelance Escrow Protection & Contract Guidelines | Talentio Playbook',
+    description: 'Read the official Talentio guidelines on smart escrow protection, milestone contracts, intellectual property rights transfer, and contractor dispute arbitration.',
     canonicalPath: '/playbook',
     isIndexable: true,
     breadcrumbs: [
@@ -105,26 +105,26 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   guides: {
-    title: 'Escrow Security & Freelancer Protection Playbook | TALENTIO',
-    description: 'Read the official Talentio operating guidelines, smart escrow milestones framework, dispute arbitration policies, and intellectual property rights transfer.',
+    title: 'Freelance Escrow Protection & Contract Guidelines | Talentio Playbook',
+    description: 'Read the official Talentio guidelines on smart escrow protection, milestone contracts, intellectual property rights transfer, and contractor dispute arbitration.',
     canonicalPath: '/playbook',
     isIndexable: true
   },
   security: {
-    title: 'Escrow Security & Freelancer Protection Playbook | TALENTIO',
-    description: 'Read the official Talentio operating guidelines, smart escrow milestones framework, dispute arbitration policies, and intellectual property rights transfer.',
+    title: 'Freelance Escrow Protection & Contract Guidelines | Talentio Playbook',
+    description: 'Read the official Talentio guidelines on smart escrow protection, milestone contracts, intellectual property rights transfer, and contractor dispute arbitration.',
     canonicalPath: '/playbook',
     isIndexable: true
   },
   defense: {
-    title: 'Escrow Security & Freelancer Protection Playbook | TALENTIO',
-    description: 'Read the official Talentio operating guidelines, smart escrow milestones framework, dispute arbitration policies, and intellectual property rights transfer.',
+    title: 'Freelance Escrow Protection & Contract Guidelines | Talentio Playbook',
+    description: 'Read the official Talentio guidelines on smart escrow protection, milestone contracts, intellectual property rights transfer, and contractor dispute arbitration.',
     canonicalPath: '/playbook',
     isIndexable: true
   },
   notices: {
-    title: 'Official Platform Updates & System Notices | TALENTIO',
-    description: 'Stay informed with official platform announcements, seller verification updates, milestone security notifications, and operational broadcasts from Talentio.',
+    title: 'Official Marketplace Updates & System Notices | Talentio',
+    description: 'Stay informed with official platform announcements, freelancer verification standards, milestone security notifications, and operational broadcasts from Talentio.',
     canonicalPath: '/notices',
     isIndexable: true,
     breadcrumbs: [
@@ -133,14 +133,14 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   notice: {
-    title: 'Official Platform Updates & System Notices | TALENTIO',
-    description: 'Stay informed with official platform announcements, seller verification updates, milestone security notifications, and operational broadcasts from Talentio.',
+    title: 'Official Marketplace Updates & System Notices | Talentio',
+    description: 'Stay informed with official platform announcements, freelancer verification standards, milestone security notifications, and operational broadcasts from Talentio.',
     canonicalPath: '/notices',
     isIndexable: true
   },
   help: {
-    title: 'Trust & Support Center, FAQs & Escrow Guidelines | TALENTIO',
-    description: 'Get help with Talentio milestone escrow, contractor dispute resolution, payments, and account verification from our 24/7 dedicated support team.',
+    title: 'Talentio Support Center — How to Hire Freelancers & Find Work in Bangladesh',
+    description: 'Get help with Talentio milestone escrow, hiring freelancers in Bangladesh, finding freelance jobs, payment methods, and dispute resolution from our 24/7 support team.',
     canonicalPath: '/help',
     isIndexable: true,
     breadcrumbs: [
@@ -149,8 +149,8 @@ const PAGE_SEO_REGISTRY: Record<string, PageSEOMeta> = {
     ]
   },
   support: {
-    title: 'Trust & Support Center, FAQs & Escrow Guidelines | TALENTIO',
-    description: 'Get help with Talentio milestone escrow, contractor dispute resolution, payments, and account verification from our 24/7 dedicated support team.',
+    title: 'Talentio Support Center — How to Hire Freelancers & Find Work in Bangladesh',
+    description: 'Get help with Talentio milestone escrow, hiring freelancers in Bangladesh, finding freelance jobs, payment methods, and dispute resolution from our 24/7 support team.',
     canonicalPath: '/help',
     isIndexable: true
   },

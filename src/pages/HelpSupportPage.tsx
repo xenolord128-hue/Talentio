@@ -15,16 +15,24 @@ import {
 
 const FAQS = [
   {
+    q: 'How do I hire freelancers in Bangladesh on Talentio?',
+    a: 'You can explore verified Bangladeshi freelancer profiles by skill or post a project with your custom requirements, budget, and timeline. Milestone payments are deposited into Talentio’s institutional escrow vault and released only when you inspect and approve the completed deliverables.'
+  },
+  {
     q: 'How does Talentio Smart Escrow protect my project funds?',
     a: 'When you order a gig or accept a proposal, your milestone deposit is locked into Talentio\'s secure cryptographic escrow vault. The freelancer begins work knowing funds are guaranteed, but the money is only disbursed to the freelancer once you review and approve the final milestone deliverable.'
   },
   {
-    q: 'What happens if a deliverable does not match specifications?',
-    a: 'You can request unlimited included revisions through the Workstation tab. If specifications are still unmet, you can initiate Talentio Dispute Arbitration. An impartial specialist will review contract milestones, deliverable files, and chat records to ensure fair resolution.'
+    q: 'Can I pay freelancers using local payment methods like bKash or cards?',
+    a: 'Yes! Talentio supports local payment channels in Bangladesh including bKash, Nagad, and local bank cards, alongside international cards, Wise, and bank wire transfers with transparent real-time BDT and USD currency conversion.'
   },
   {
-    q: 'How do freelancer payouts and currency conversion work?',
-    a: 'Talentio supports real-time multi-currency conversions (USD, EUR, GBP, BDT, INR, CAD, AUD, JPY). Upon milestone release, earnings can be withdrawn via Bank Wire, Wise, Payoneer, or Stripe Connect.'
+    q: 'How do Bangladeshi freelancers find jobs and withdraw earnings?',
+    a: 'Freelancers can create a verified profile, publish pre-scoped gigs, and submit proposals to open client contracts. Once milestones are approved, earnings are credited instantly and can be withdrawn to Bangladeshi bank accounts, bKash, Wise, or Payoneer.'
+  },
+  {
+    q: 'What happens if a deliverable does not match specifications?',
+    a: 'You can request unlimited included revisions through the Workstation tab. If specifications are still unmet, you can initiate Talentio Dispute Arbitration. An impartial specialist will review contract milestones, deliverable files, and chat records to ensure fair resolution.'
   },
   {
     q: 'Can I negotiate custom milestones with a freelancer?',
@@ -53,13 +61,13 @@ export const HelpSupportPage: React.FC = () => {
       <div className="text-center space-y-3 max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#F2F0FF] text-[#3D2FD1] border border-[#A38BFF]/30">
           <HelpCircle className="w-4 h-4 text-[#3D2FD1]" />
-          <span>Talentio Trust & Support Center</span>
+          <span>Support &amp; FAQs | Hire Freelancers &amp; Find Work in Bangladesh</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-black text-[#1A1633] tracking-tight font-display">
-          How can we assist you?
+          Talentio Support Center &amp; FAQs
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 font-normal leading-relaxed">
-          Learn about escrow milestones, dispute resolution protocols, and account security.
+          Everything you need to know about hiring freelancers in Bangladesh, finding remote freelance jobs, funding escrow safely with bKash and cards, and milestone delivery.
         </p>
       </div>
 

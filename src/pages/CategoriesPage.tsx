@@ -91,13 +91,13 @@ export const CategoriesPage: React.FC = () => {
       <div className="space-y-4 text-center max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#F2F0FF] text-[#3D2FD1] border border-[#A38BFF]/30">
           <Sparkles className="w-4 h-4 text-[#3D2FD1]" />
-          <span>Talentio Specialized Disciplines</span>
+          <span>Freelance Categories &amp; Skills in Bangladesh</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-black text-[#1A1633] tracking-tight font-display">
-          Explore Categories & Specialties
+          Freelance Categories &amp; Digital Specialties in Bangladesh
         </h1>
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-          Browse vetted services by industry discipline. Every order is executed with milestone deliverables and automated smart escrow protection.
+          Explore top freelance specialties in Bangladesh: web development, graphic design, technical SEO, content writing, mobile apps, and video editing. Hire skilled specialists or order fixed-price gigs with milestone escrow protection.
         </p>
       </div>
 

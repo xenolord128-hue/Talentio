@@ -51,7 +51,7 @@ export const HomeHeroBanner: React.FC = () => {
       aria-label="Talentio Marketplace Hero & Social Banner"
     >
       {/* Semantic Primary SEO Heading */}
-      <h1 className="sr-only">TALENTIO — Find Freelancers, Hire Talent &amp; Get Work Online</h1>
+      <h1 className="sr-only">Talentio — Freelance Marketplace Bangladesh | Hire Freelancers &amp; Find Jobs</h1>
 
       {/* ========================================================================= */}
       {/* SOCIAL BANNER WITH EMBEDDED CONTROLS:                                     */}
@@ -77,7 +77,7 @@ export const HomeHeroBanner: React.FC = () => {
           <img
             id="hero-background-image"
             src={DESKTOP_BANNER_IMG}
-            alt="Talentio — Find Freelancers, Hire Talent & Get Work Online"
+            alt="Talentio — Freelance Marketplace Bangladesh"
             referrerPolicy="no-referrer"
             width={1024}
             height={512}

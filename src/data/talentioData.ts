@@ -225,6 +225,113 @@ export const TALENTIO_FREELANCERS: Freelancer[] = [
       text: 'Sophia is the real deal. Our organic inbound signups grew 4x in 4 months under her strategic technical roadmap.',
       date: '1 week ago'
     }
+  },
+  {
+    id: 'freelancer-7',
+    name: 'Tanvir Ahmed',
+    handle: '@tanvir_dev',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80',
+    title: 'Senior Full-Stack Web Developer (React, Next.js & Node.js)',
+    category: 'web-dev',
+    country: 'Bangladesh',
+    countryFlag: '🇧🇩',
+    hourlyRate: 45,
+    startingPrice: 200,
+    rating: 4.97,
+    reviewsCount: 178,
+    jobSuccessScore: 99,
+    verifiedBadge: true,
+    proBadge: true,
+    topRatedBadge: true,
+    availableNow: true,
+    bio: 'Experienced freelance web developer in Bangladesh with 6+ years building performant Next.js, React, Node.js, and WordPress web applications. Completed 170+ projects for international and local clients with 100% on-time milestone delivery.',
+    bioBn: 'বাংলাদেশের অভিজ্ঞ ফুল-স্ট্যাক ওয়েব ডেভেলপার। নেক্সট.জেএস, রিঅ্যাক্ট ও নোড.জেএস এ কাস্টম ওয়েব প্ল্যাটফর্ম তৈরিতে পারদর্শী।',
+    skills: ['Next.js', 'React', 'Node.js', 'TypeScript', 'Tailwind CSS', 'PostgreSQL', 'WordPress'],
+    completedOrdersCount: 194,
+    responseTime: '< 30 mins',
+    languages: ['Bengali (Native)', 'English (Fluent)'],
+    portfolio: [
+      { id: 'p11', title: 'Multi-Vendor eCommerce Platform', image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80', tag: 'Web Development' },
+      { id: 'p12', title: 'Fintech Payment Gateway Integration', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80', tag: 'Full-Stack' }
+    ],
+    featuredReview: {
+      clientName: 'Daniel Vance (Founder @ TechVibe)',
+      clientCountry: 'United States 🇺🇸',
+      rating: 5,
+      text: 'Tanvir is an exceptional freelance web developer. He built our full-stack web application ahead of schedule with clean, modular TypeScript code.',
+      date: '3 days ago'
+    }
+  },
+  {
+    id: 'freelancer-8',
+    name: 'Nusrat Jahan',
+    handle: '@nusrat_design',
+    avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=300&auto=format&fit=crop&q=80',
+    title: 'Lead UI/UX & Graphic Designer (Branding & Figma Systems)',
+    category: 'ui-ux',
+    country: 'Bangladesh',
+    countryFlag: '🇧🇩',
+    hourlyRate: 40,
+    startingPrice: 180,
+    rating: 4.96,
+    reviewsCount: 152,
+    jobSuccessScore: 98,
+    verifiedBadge: true,
+    proBadge: true,
+    topRatedBadge: true,
+    availableNow: true,
+    bio: 'Professional freelance graphic designer and UI/UX specialist in Bangladesh. Specializing in modern brand identity, logo design, mobile app interfaces, and high-converting Figma design systems.',
+    bioBn: 'বাংলাদেশের সার্টিফায়েড UI/UX ও গ্রাফিক ডিজাইনার। আধুনিক লোগো, ব্র্যান্ড আইডেন্টিটি এবং ফিগমা প্রোটোটাইপ ডিজাইন বিশেষজ্ঞ।',
+    skills: ['Figma', 'UI/UX Design', 'Logo Design', 'Graphic Design', 'Brand Identity', 'Mobile App UI'],
+    completedOrdersCount: 165,
+    responseTime: '< 1 hour',
+    languages: ['Bengali (Native)', 'English (Fluent)'],
+    portfolio: [
+      { id: 'p13', title: 'E-commerce Brand Identity & Logo Kit', image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=600&auto=format&fit=crop&q=80', tag: 'Graphic Design' },
+      { id: 'p14', title: 'Healthcare Mobile App UI/UX Prototype', image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&auto=format&fit=crop&q=80', tag: 'UI/UX Design' }
+    ],
+    featuredReview: {
+      clientName: 'Claire Laurent (CMO @ Mode Paris)',
+      clientCountry: 'France 🇫🇷',
+      rating: 5,
+      text: 'Nusrat is a talented freelance graphic designer. Her logo design and brand kit captured our vision perfectly. Highly recommended!',
+      date: '4 days ago'
+    }
+  },
+  {
+    id: 'freelancer-9',
+    name: 'Rakibul Hasan',
+    handle: '@rakib_seo',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+    title: 'Senior SEO Expert & Digital Marketing Specialist',
+    category: 'growth-seo',
+    country: 'Bangladesh',
+    countryFlag: '🇧🇩',
+    hourlyRate: 35,
+    startingPrice: 150,
+    rating: 4.95,
+    reviewsCount: 134,
+    jobSuccessScore: 99,
+    verifiedBadge: true,
+    proBadge: false,
+    topRatedBadge: true,
+    availableNow: true,
+    bio: 'Dedicated freelance SEO expert and digital marketing consultant in Bangladesh. Proven track record in technical SEO audits, keyword research, on-page optimization, Google Ads, and local search rankings.',
+    bioBn: 'বাংলাদেশের প্রফেশনাল এসইও ফ্রিল্যান্সার ও ডিজিটাল মার্কেটিং এক্সপার্ট। গুগল র‍্যাংকিং ও অর্গানিক গ্রোথ স্ট্র্যাটেজিস্ট।',
+    skills: ['Technical SEO', 'On-Page SEO', 'Keyword Research', 'Google Ads', 'Local SEO', 'Digital Marketing'],
+    completedOrdersCount: 148,
+    responseTime: '< 45 mins',
+    languages: ['Bengali (Native)', 'English (Fluent)'],
+    portfolio: [
+      { id: 'p15', title: 'Local Business 300% Organic Traffic Growth', image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=600&auto=format&fit=crop&q=80', tag: 'SEO Strategy' }
+    ],
+    featuredReview: {
+      clientName: 'Arthur Pendelton (Director @ Global Trade)',
+      clientCountry: 'United Kingdom 🇬🇧',
+      rating: 5,
+      text: 'Rakibul fixed our technical SEO issues in days. Our organic keywords jumped to page 1 on Google within 6 weeks.',
+      date: '1 week ago'
+    }
   }
 ];
 
@@ -396,6 +503,132 @@ export const TALENTIO_SERVICES: TalentioService[] = [
         features: ['SOC2 Compliance Baseline', 'Real-time Datadog/Grafana', 'Zero-trust IAM Policies', 'Automated Backups & DR Plan', '2 Weeks Post-launch Support']
       }
     }
+  },
+  {
+    id: 'service-5',
+    title: 'I will develop a responsive Next.js & React website for your business',
+    slug: 'responsive-nextjs-react-website-development',
+    freelancerId: 'freelancer-7',
+    freelancerName: 'Tanvir Ahmed',
+    freelancerAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80',
+    freelancerBadge: 'Talentio Pro',
+    category: 'web-dev',
+    startingPrice: 200,
+    rating: 4.97,
+    reviewsCount: 178,
+    deliveryDays: 4,
+    coverImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+    tags: ['Web Developer', 'Next.js', 'React', 'Full-Stack', 'Website Development', 'TypeScript'],
+    packages: {
+      basic: {
+        name: 'Single Landing Page',
+        price: 200,
+        deliveryDays: 4,
+        revisions: 3,
+        description: 'Responsive Next.js 15 landing page with Tailwind CSS, contact form, and SEO-ready meta tags.',
+        features: ['Responsive UI', 'SEO Structured Tags', 'Speed Optimized', 'Contact Form Integration']
+      },
+      standard: {
+        name: 'Full Business Website',
+        price: 550,
+        deliveryDays: 7,
+        revisions: 5,
+        description: 'Multi-page Next.js web application with CMS integration, blog, dark mode, and analytics setup.',
+        features: ['5-8 Custom Pages', 'CMS Headless Integration', 'Google Analytics & Tag Manager', 'Mobile Responsive']
+      },
+      pro: {
+        name: 'Custom Web Application / SaaS',
+        price: 1200,
+        deliveryDays: 14,
+        revisions: 'Unlimited',
+        description: 'Full-stack application with authentication, database models, payment gateway integration, and API routes.',
+        features: ['PostgreSQL & Prisma', 'Authentication & Auth0/Clerk', 'Payment Gateway Integration', 'Production Deployment']
+      }
+    }
+  },
+  {
+    id: 'service-6',
+    title: 'I will design a modern brand identity, logo, and UI/UX design in Figma',
+    slug: 'brand-identity-logo-design-figma',
+    freelancerId: 'freelancer-8',
+    freelancerName: 'Nusrat Jahan',
+    freelancerAvatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=300&auto=format&fit=crop&q=80',
+    freelancerBadge: 'Talentio Pro',
+    category: 'ui-ux',
+    startingPrice: 180,
+    rating: 4.96,
+    reviewsCount: 152,
+    deliveryDays: 3,
+    coverImage: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=800&auto=format&fit=crop&q=80',
+    tags: ['Graphic Designer', 'Logo Design', 'Branding', 'Figma', 'UI UX Design', 'Brand Identity'],
+    packages: {
+      basic: {
+        name: 'Logo & Basic Brand Kit',
+        price: 180,
+        deliveryDays: 3,
+        revisions: 3,
+        description: '3 custom logo concepts with vector files (AI, SVG, PNG) and color palette guidelines.',
+        features: ['3 Unique Logo Concepts', 'Vector Source Files', 'Color Palette & Typography', 'Social Media Icons']
+      },
+      standard: {
+        name: 'Complete Brand Identity & Guidelines',
+        price: 450,
+        deliveryDays: 6,
+        revisions: 5,
+        description: 'Full corporate brand guide, stationery kit, social media banners, and presentation deck template.',
+        features: ['Comprehensive Brand Book', 'Stationery Kit (Cards, Letterhead)', 'Social Media Kit', 'Figma Assets']
+      },
+      pro: {
+        name: 'Brand Identity + 5-Screen UI Prototype',
+        price: 950,
+        deliveryDays: 10,
+        revisions: 'Unlimited',
+        description: 'Complete brand identity plus 5 high-converting responsive web or mobile UI screens in Figma.',
+        features: ['Full Brand Identity System', '5 Figma UI Screens', 'Interactive Clickable Prototype', 'Component Library']
+      }
+    }
+  },
+  {
+    id: 'service-7',
+    title: 'I will execute technical SEO and on-page optimization for Google ranking',
+    slug: 'technical-seo-on-page-google-ranking',
+    freelancerId: 'freelancer-9',
+    freelancerName: 'Rakibul Hasan',
+    freelancerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+    freelancerBadge: 'Talentio Pro',
+    category: 'growth-seo',
+    startingPrice: 150,
+    rating: 4.95,
+    reviewsCount: 134,
+    deliveryDays: 5,
+    coverImage: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
+    tags: ['SEO Expert', 'Technical SEO', 'Keyword Research', 'On-Page SEO', 'Digital Marketing'],
+    packages: {
+      basic: {
+        name: 'Technical SEO Audit & Roadmap',
+        price: 150,
+        deliveryDays: 5,
+        revisions: 2,
+        description: 'Comprehensive crawl analysis, indexing error diagnostics, Core Web Vitals report, and actionable fixes.',
+        features: ['Full Technical Audit (PDF)', 'Schema Markup Audit', 'Crawlability & Indexing Report', '30-Min Action Call']
+      },
+      standard: {
+        name: 'Full On-Page SEO & Keyword Strategy',
+        price: 380,
+        deliveryDays: 8,
+        revisions: 4,
+        description: 'In-depth keyword mapping, on-page title/meta optimization, internal linking blueprint, and schema markup.',
+        features: ['Keyword Map (50+ Terms)', 'On-Page Meta Optimization', 'JSON-LD Schema Implementation', 'Competitor Gap Analysis']
+      },
+      pro: {
+        name: 'Complete Monthly SEO Growth Package',
+        price: 850,
+        deliveryDays: 20,
+        revisions: 'Unlimited',
+        description: 'Full-spectrum SEO including technical implementation, 4 optimized content briefs, and local SEO citations.',
+        features: ['Hands-on Technical Fixes', '4 SEO Content Briefs', 'Local SEO & Google Business', 'Monthly Performance Report']
+      }
+    }
   }
 ];
 
@@ -450,6 +683,40 @@ export const TALENTIO_OPEN_PROJECTS: ProjectJob[] = [
     skills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'WebSockets', 'PostgreSQL'],
     verifiedPayment: true,
     category: 'web-dev'
+  },
+  {
+    id: 'job-4',
+    title: 'Hire Freelance Web Developer for Multi-Vendor eCommerce Store in Bangladesh',
+    clientName: 'Bengal Artisan Marketplace',
+    clientCompany: 'Bengal Exports Ltd.',
+    clientCountry: 'Bangladesh 🇧🇩',
+    clientAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    budget: 1200,
+    budgetType: 'fixed',
+    duration: '3-4 weeks',
+    proposalsCount: 11,
+    postedAgo: '6 hours ago',
+    description: 'Looking to hire a skilled freelance web developer in Bangladesh to build a custom eCommerce storefront with bKash, Nagad, and Stripe payment gateways. Must be responsive and fast.',
+    skills: ['React', 'Next.js', 'Node.js', 'eCommerce', 'Payment Gateway Integration', 'Tailwind CSS'],
+    verifiedPayment: true,
+    category: 'web-dev'
+  },
+  {
+    id: 'job-5',
+    title: 'Freelance SEO Expert for Local Business & Organic Google Ranking',
+    clientName: 'Apex Health Services',
+    clientCompany: 'Apex Care',
+    clientCountry: 'Bangladesh 🇧🇩',
+    clientAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80',
+    budget: 650,
+    budgetType: 'fixed',
+    duration: '1-2 months',
+    proposalsCount: 9,
+    postedAgo: '12 hours ago',
+    description: 'Seeking a verified freelance SEO expert in Bangladesh for technical on-page audits, local search visibility, and organic keyword ranking improvements for our expanding clinic network.',
+    skills: ['SEO', 'Technical SEO', 'Local SEO', 'Keyword Research', 'Google Analytics', 'Digital Marketing'],
+    verifiedPayment: true,
+    category: 'growth-seo'
   }
 ];
 

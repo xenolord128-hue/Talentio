@@ -92,20 +92,20 @@ export const Footer: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed max-w-sm">
-              The premier international digital talent marketplace. Connecting forward-thinking enterprises and startups with vetted freelancers through secure milestone escrow.
+              The premier freelance marketplace in Bangladesh. Connecting businesses, startups, and clients with skilled Bangladeshi freelancers and vetted international experts through secure milestone escrow.
             </p>
 
             {/* Newsletter Form */}
             <form onSubmit={handleSubscribe} className="space-y-2 pt-2">
               <span className="text-[11px] font-bold text-[#A38BFF] uppercase tracking-wider block">
-                Stay updated with global tech talent trends
+                Stay updated with freelance talent in Bangladesh
               </span>
               <div className="flex items-center gap-2">
                 <input
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="Enter your corporate email..."
+                  placeholder="Enter your email address..."
                   className="bg-white text-[#1A1633] placeholder:text-slate-400 text-xs px-3.5 py-2.5 rounded-xl border border-white/20 focus:border-[#6E5BFF] focus:outline-none flex-1"
                 />
                 <button
@@ -123,33 +123,28 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">For Clients</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
+                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Hire Freelancers in Bangladesh
+                </a>
+              </li>
+              <li>
                 <a href="/services" onClick={(e) => { e.preventDefault(); setActivePage('services'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Explore Gigs &amp; Services
+                  Freelance Services &amp; Gigs
                 </a>
               </li>
               <li>
                 <a href="/categories" onClick={(e) => { e.preventDefault(); setActivePage('categories'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  All Categories
-                </a>
-              </li>
-              <li>
-                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Find Vetted Talent
+                  Browse Categories &amp; Skills
                 </a>
               </li>
               <li>
                 <a href="/leaderboard" onClick={(e) => { e.preventDefault(); setActivePage('leaderboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Top Talent Leaderboard
+                  Top Bangladeshi Freelancers
                 </a>
               </li>
               <li>
-                <a href="/workstation" onClick={(e) => { e.preventDefault(); setActivePage('workstation'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Escrow Contract System
-                </a>
-              </li>
-              <li>
-                <a href="/dashboard" onClick={(e) => { e.preventDefault(); setActivePage('dashboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Client Workspace
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Escrow Milestones &amp; Protection
                 </a>
               </li>
             </ul>
@@ -160,8 +155,8 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">For Freelancers</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <a href="/dashboard" onClick={(e) => { e.preventDefault(); setActivePage('dashboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Freelancer Hub
+                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Find Freelance Jobs &amp; Projects
                 </a>
               </li>
               <li>
@@ -175,18 +170,8 @@ export const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href="/chat" onClick={(e) => { e.preventDefault(); setActivePage('chat'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Live Client Chat
-                </a>
-              </li>
-              <li>
-                <a href="/workstation" onClick={(e) => { e.preventDefault(); setActivePage('workstation'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Milestone Submissions
-                </a>
-              </li>
-              <li>
-                <a href="/settings" onClick={(e) => { e.preventDefault(); setActivePage('settings'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
-                  Account Preferences
+                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                  Support &amp; Escrow Help
                 </a>
               </li>
             </ul>
