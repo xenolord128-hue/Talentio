@@ -3,6 +3,7 @@ import { useGuide } from '../context/GuideContext';
 import { formatPrice } from '../utils/currency';
 import { ServiceCard } from '../components/ServiceCard';
 import { VerifiedBadge } from '../components/VerifiedBadge';
+import { AdPlacement } from '../components/ads/AdPlacement';
 import { 
   ShieldCheck, 
   Star, 
@@ -591,6 +592,9 @@ export const GigDetailsPage: React.FC = () => {
                   </p>
                 </div>
 
+                {/* Monetization: Sidebar Ad Placement (160×300 Skyscraper or Native) */}
+                <AdPlacement placement="sidebar" className="mt-4" />
+
               </div>
 
             </div>
@@ -598,6 +602,9 @@ export const GigDetailsPage: React.FC = () => {
           </div>
 
         </div>
+
+        {/* Monetization: Between Content Placement */}
+        <AdPlacement placement="between_content" className="my-8" />
       </div>
 
     </div>

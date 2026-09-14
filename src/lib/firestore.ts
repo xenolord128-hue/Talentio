@@ -801,3 +801,32 @@ export async function markNoticeAsRead(noticeId: string): Promise<void> {
   }
 }
 
+// ============================================================================
+// ADMIN COLLECTION OPERATIONS (CUSTOM CLAIM PROTECTED)
+// ============================================================================
+
+export async function setAdminConfig(key: string, data: Record<string, any>): Promise<void> {
+  const path = `admin/${key}`;
+  try {
+    const ref = doc(db, 'admin', key);
+    await setDoc(ref, {
+      ...data,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function getAdminConfig(key: string): Promise<any> {
+  const path = `admin/${key}`;
+  try {
+    const ref = doc(db, 'admin', key);
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+    return null;
+  }
+}
+

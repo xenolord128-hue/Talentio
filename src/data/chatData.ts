@@ -43,7 +43,11 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
       role: 'freelancer',
       title: 'Senior Product Designer & Systems Lead',
+      country: 'United Kingdom',
+      countryCode: 'GB',
       countryFlag: '🇬🇧',
+      preferredLanguage: 'en',
+      autoTranslateMessages: true,
       verified: true,
       online: true,
       lastSeen: 'Online',
@@ -65,6 +69,37 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
     pinnedMessageId: 'elena-msg-3'
   },
   {
+    id: 'conv-tanvir',
+    participant: {
+      id: 'freelancer-bd-1',
+      name: 'Tanvir Hasan',
+      handle: '@tanvir_stack',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80',
+      role: 'freelancer',
+      title: 'Full-Stack Developer & Cloud Architect',
+      country: 'Bangladesh',
+      countryCode: 'BD',
+      countryFlag: '🇧🇩',
+      preferredLanguage: 'bn',
+      autoTranslateMessages: true,
+      verified: true,
+      online: true,
+      lastSeen: 'Online',
+      isTyping: false,
+      escrowTier: 3
+    },
+    lastMessage: {
+      text: 'I want to purchase your service and am interested in starting the escrow contract.',
+      timestamp: '11:15 AM',
+      senderId: 'freelancer-bd-1',
+      status: 'read'
+    },
+    unreadCount: 1,
+    isPinned: true,
+    isMuted: false,
+    category: 'direct'
+  },
+  {
     id: 'conv-marcus',
     participant: {
       id: 'freelancer-2',
@@ -73,7 +108,11 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
       role: 'freelancer',
       title: 'Principal AI Engineer & Full-Stack Architect',
+      country: 'Canada',
+      countryCode: 'CA',
       countryFlag: '🇨🇦',
+      preferredLanguage: 'en',
+      autoTranslateMessages: true,
       verified: true,
       online: true,
       lastSeen: 'Active 5m ago',
@@ -88,7 +127,7 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
       isVoice: true
     },
     unreadCount: 1,
-    isPinned: true,
+    isPinned: false,
     isMuted: false,
     category: 'direct'
   },
@@ -101,7 +140,11 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
       role: 'client',
       title: 'VP of Product @ Curve Fintech',
+      country: 'United States',
+      countryCode: 'US',
       countryFlag: '🇺🇸',
+      preferredLanguage: 'en',
+      autoTranslateMessages: true,
       verified: true,
       online: false,
       lastSeen: 'Last seen today at 9:30 AM',
@@ -130,7 +173,11 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
       role: 'freelancer',
       title: 'Senior React & Node.js Cloud Developer',
+      country: 'United Arab Emirates',
+      countryCode: 'AE',
       countryFlag: '🇦🇪',
+      preferredLanguage: 'ar',
+      autoTranslateMessages: true,
       verified: true,
       online: true,
       lastSeen: 'Online',
@@ -206,6 +253,44 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
 ];
 
 export const INITIAL_CONVERSATION_MESSAGES: Record<string, ChatMessage[]> = {
+  'conv-tanvir': [
+    {
+      id: 'tanvir-msg-1',
+      conversationId: 'conv-tanvir',
+      sender: 'other',
+      senderId: 'freelancer-bd-1',
+      senderName: 'Tanvir Hasan',
+      senderAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80',
+      text: 'I want to purchase your service and am interested in starting the escrow contract.',
+      message: 'I want to purchase your service and am interested in starting the escrow contract.',
+      originalText: 'আমি আপনার সার্ভিসটি নিতে চাই এবং এসক্রো কন্ট্রাক্ট শুরু করতে আগ্রহী।',
+      translatedText: 'I want to purchase your service and am interested in starting the escrow contract.',
+      sourceLanguage: 'bn',
+      targetLanguage: 'en',
+      translationStatus: 'translated',
+      timestamp: '11:15 AM',
+      isoDate: '2026-08-27T11:15:00.000Z',
+      status: 'read'
+    },
+    {
+      id: 'tanvir-msg-2',
+      conversationId: 'conv-tanvir',
+      sender: 'other',
+      senderId: 'freelancer-bd-1',
+      senderName: 'Tanvir Hasan',
+      senderAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80',
+      text: 'Can we divide this into 2 milestones? The first milestone is $400 USD and delivery in 4 days.',
+      message: 'Can we divide this into 2 milestones? The first milestone is $400 USD and delivery in 4 days.',
+      originalText: 'আমরা কি এটি ২টি মাইলস্টোনে ভাগ করতে পারি? প্রথম মাইলস্টোন $৪০০ ডলার এবং ৪ দিনে ডেলিভারি।',
+      translatedText: 'Can we divide this into 2 milestones? The first milestone is $400 USD and delivery in 4 days.',
+      sourceLanguage: 'bn',
+      targetLanguage: 'en',
+      translationStatus: 'translated',
+      timestamp: '11:16 AM',
+      isoDate: '2026-08-27T11:16:00.000Z',
+      status: 'read'
+    }
+  ],
   'conv-elena': [
     {
       id: 'elena-msg-1',

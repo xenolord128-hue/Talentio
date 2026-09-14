@@ -14,9 +14,11 @@ import {
   AlertTriangle,
   ClipboardCheck,
   Sparkles,
-  Mic
+  Mic,
+  Languages
 } from 'lucide-react';
 import { VerifiedBadge } from '../VerifiedBadge';
+import { getLanguageName } from '../../data/languagesData';
 
 interface ActiveChatHeaderProps {
   participant: ConversationParticipant;
@@ -163,6 +165,17 @@ export const ActiveChatHeader: React.FC<ActiveChatHeaderProps> = ({
               <span className="hidden md:inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 <ShieldCheck className="w-2.5 h-2.5" />
                 <span>Tier {participant.escrowTier}</span>
+              </span>
+            )}
+
+            {/* Automatic Translation & Participant Preferred Language */}
+            {participant.preferredLanguage && !isAI && (
+              <span 
+                className="hidden sm:inline-flex items-center gap-1 text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 font-medium"
+                title={`Automatic translation active: ${getLanguageName(participant.preferredLanguage)}`}
+              >
+                <Languages className="w-2.5 h-2.5 text-[#A38BFF]" />
+                <span>{getLanguageName(participant.preferredLanguage)}</span>
               </span>
             )}
           </div>

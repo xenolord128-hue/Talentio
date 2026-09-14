@@ -16,9 +16,11 @@ import { ShortcutsHelpModal } from './components/ShortcutsHelpModal';
 import { WidgetManagerModal } from './components/WidgetManagerModal';
 import { TalentioAIAssistant } from './components/TalentioAIAssistant';
 import { TalentioAIProvider } from './context/TalentioAIContext';
+import { AdProvider } from './context/AdContext';
+import { AdPlacement } from './components/ads/AdPlacement';
 import { ToastContainer } from './components/ToastContainer';
 import { OfflineNoticeBanner } from './components/OfflineNoticeBanner';
-import { AuthGateway } from './components/AuthGateway';
+import { AuthGateway, AdminAuthGatewayCheck } from './components/AuthGateway';
 import { ProfileCompletionBarrier } from './components/ProfileCompletionBarrier';
 import { SellerStatusBanner } from './components/SellerStatusBanner';
 import { useGlobalKeyShortcuts } from './hooks/useGlobalKeyShortcuts';
@@ -45,6 +47,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { NoticesPage } from './pages/NoticesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { HelpSupportPage } from './pages/HelpSupportPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { AccessDeniedPage } from './pages/AccessDeniedPage';
 
 const AppContent: React.FC = () => {
   const { activePage, isAuthenticated, user, authLoading } = useGuide();
@@ -59,7 +63,13 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen w-full bg-[#0E0B1F]">
         <SEOHead />
         <OfflineNoticeBanner />
-        <AuthGateway initialMode={activePage === 'register' ? 'register' : 'login'} />
+        {activePage === 'forgot-password' ? (
+          <ForgotPasswordPage />
+        ) : activePage === 'register' ? (
+          <RegisterPage />
+        ) : (
+          <LoginPage />
+        )}
         <TalentioAIAssistant />
         <ToastContainer />
       </div>
@@ -83,9 +93,13 @@ const AppContent: React.FC = () => {
       case 'search':
         return <SearchResultsPage />;
       case 'login':
-        return <AuthGateway initialMode="login" />;
+        return <LoginPage />;
       case 'register':
-        return <AuthGateway initialMode="register" />;
+        return <RegisterPage />;
+      case 'forgot-password':
+        return <ForgotPasswordPage />;
+      case 'access-denied':
+        return <AccessDeniedPage />;
       case 'profile':
         return <UserProfilePage />;
       case 'favorites':
@@ -122,7 +136,11 @@ const AppContent: React.FC = () => {
       case 'defense':
         return <PlaybookPage />;
       case 'admin':
-        return <AdminPage />;
+        return (
+          <AdminAuthGatewayCheck>
+            <AdminPage />
+          </AdminAuthGatewayCheck>
+        );
       case 'leaderboard':
       case 'ranking':
       case 'rankings':
@@ -148,15 +166,37 @@ const AppContent: React.FC = () => {
       {/* Sticky Compact Global Navigation (Hidden on dedicated Message page as per Requirement 1) */}
       <SEOHead />
       <OfflineNoticeBanner />
+
       {!isChatPage && <Navbar />}
+
+      {/* Top Banner Placement (Public Pages) */}
+      {!isChatPage && activePage !== 'admin' && (
+        <div className="w-full flex justify-center bg-transparent">
+          <AdPlacement placement="top_banner" />
+        </div>
+      )}
 
       {/* Main Dynamic Page Content */}
       <main className={`flex-1 w-full max-w-full ${isChatPage ? 'h-full overflow-hidden' : 'overflow-x-hidden'}`}>
         {renderActivePage()}
       </main>
 
+      {/* Before Footer Placement (Public Pages) */}
+      {!isChatPage && activePage !== 'admin' && (
+        <div className="w-full flex justify-center py-4 bg-transparent border-t border-slate-100 dark:border-white/5">
+          <AdPlacement placement="before_footer" />
+        </div>
+      )}
+
       {/* Global Talentio Marketplace Footer (hidden in full-screen Messenger mode or Admin desk) */}
       {!isChatPage && activePage !== 'admin' && <Footer />}
+
+      {/* Mobile Banner Placement */}
+      {!isChatPage && activePage !== 'admin' && (
+        <div className="sm:hidden w-full flex justify-center pb-16">
+          <AdPlacement placement="mobile_banner" />
+        </div>
+      )}
 
       {/* Mobile Bottom Quick Navigation Bar (Hidden on dedicated Message page) */}
       {!isChatPage && <MobileBottomNav />}
@@ -206,7 +246,9 @@ export default function App() {
     <ThemeProvider>
       <GuideProvider>
         <TalentioAIProvider>
-          <AppContent />
+          <AdProvider>
+            <AppContent />
+          </AdProvider>
         </TalentioAIProvider>
       </GuideProvider>
     </ThemeProvider>

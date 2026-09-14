@@ -10,6 +10,7 @@ import {
   GuideCategory, 
   UserProfile, 
   UserRole, 
+  AccountRole,
   ProviderType, 
   UserProposal, 
   AccountStatus, 
@@ -34,7 +35,9 @@ import {
   loginWithGithubPopup, 
   logoutFirebase,
   syncUserProfileDocument,
-  formatUserProfile
+  formatUserProfile,
+  isAuthorizedAdminEmail,
+  sendPasswordReset
 } from '../lib/firebaseAuth';
 import {
   subscribeToUsers,
@@ -278,7 +281,7 @@ export const DEMO_ADMIN_USER: UserProfile = {
 interface GuideContextType {
   // Navigation & View
   activePage: TalentioPage;
-  setActivePage: (page: TalentioPage) => void;
+  setActivePage: (page: TalentioPage, options?: { search?: string; hash?: string; replace?: boolean }) => void;
   language: LanguageMode;
   setLanguage: (lang: LanguageMode) => void;
   currency: string;
@@ -297,6 +300,9 @@ interface GuideContextType {
   firebaseUser: FirebaseUser | null;
   authLoading: boolean;
   isAuthenticated: boolean;
+  isClient: boolean;
+  isFreelancer: boolean;
+  isAdmin: boolean;
   authPromptReason: string | null;
   setAuthPromptReason: (reason: string | null) => void;
   isAuthModalOpen: boolean;
@@ -305,10 +311,10 @@ interface GuideContextType {
   setIsOnboardingModalOpen: (open: boolean) => void;
   requireAuth: (actionReason?: string, onAuthorized?: () => void) => boolean;
   loginWithEmail: (email: string, pass: string) => Promise<boolean>;
-  loginWithPhone: (phone: string, otp: string) => Promise<boolean>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithGithub: () => Promise<void>;
-  registerAccount: (method: 'email' | 'phone' | 'github', identifier: string, name?: string, password?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<boolean>;
+  loginWithGithub: () => Promise<boolean>;
+  sendPasswordResetEmailLink: (email: string) => Promise<boolean>;
+  registerAccount: (method: 'email' | 'github', identifier: string, name?: string, password?: string) => Promise<void>;
   registerFullAccount: (data: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   switchDemoAccount: (role: 'guest' | 'client' | 'freelancer' | 'agency' | 'admin') => void;
@@ -418,9 +424,19 @@ interface GuideContextType {
 
 const GuideContext = createContext<GuideContextType | undefined>(undefined);
 
-const getInitialPageFromUrl = (): TalentioPage => {
+export const getInitialPageFromUrl = (): TalentioPage => {
   if (typeof window === 'undefined') return 'explore';
   const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  
+  if (path === '/gig-details' || path.startsWith('/gig/') || path.startsWith('/services/')) {
+    return 'gig-details';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('gig') && (path === '/' || path === '/services' || path === '/marketplace' || path === '/catalog')) {
+    return 'gig-details';
+  }
+
   switch (path) {
     case '/services':
     case '/marketplace':
@@ -474,7 +490,7 @@ const getInitialPageFromUrl = (): TalentioPage => {
   }
 };
 
-const getPathFromPage = (page: TalentioPage): string => {
+export const getPathFromPage = (page: TalentioPage): string => {
   switch (page) {
     case 'home':
     case 'explore':
@@ -536,19 +552,62 @@ const getPathFromPage = (page: TalentioPage): string => {
 export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePageState] = useState<TalentioPage>(() => getInitialPageFromUrl());
 
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search).get('q');
+      if (q) return q;
+    }
+    return '';
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const cat = new URLSearchParams(window.location.search).get('category');
+      if (cat) return cat;
+    }
+    return 'all';
+  });
+
   useEffect(() => {
     const handlePopState = () => {
-      setActivePageState(getInitialPageFromUrl());
+      const page = getInitialPageFromUrl();
+      setActivePageState(page);
+
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const gigId = params.get('gig') || params.get('id');
+        if (gigId) {
+          const matched = TALENTIO_SERVICES.find(s => s.id === gigId);
+          if (matched) {
+            setSelectedService(matched);
+            setActivePageState('gig-details');
+          }
+        }
+        const cat = params.get('category');
+        if (cat) {
+          setSelectedCategory(cat);
+        }
+        const q = params.get('q');
+        if (q) {
+          setSearchQuery(q);
+        }
+        const freeId = params.get('freelancer');
+        if (freeId) {
+          const matchedFreelancer = TALENTIO_FREELANCERS.find(f => f.id === freeId);
+          if (matchedFreelancer) {
+            setSelectedFreelancer(matchedFreelancer);
+            setIsHireModalOpen(true);
+          }
+        }
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
   const [language, setLanguageState] = useState<LanguageMode>('en');
   const [currency, setCurrencyState] = useState<string>(() => {
     return localStorage.getItem('talentio_currency') || 'USD';
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const setCurrency = (c: string) => {
     setCurrencyState(c);
@@ -561,23 +620,20 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('talentio_user_profile');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id && !parsed.id.startsWith('demo-') && parsed.id !== 'user-client-1') {
+          return parsed;
+        }
       } catch (e) {
-        return DEMO_CLIENT_USER;
+        return null;
       }
     }
-    return DEMO_CLIENT_USER;
+    return null;
   });
   const [authLoading, setAuthLoading] = useState(true);
 
   // Firestore Realtime Collections
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([
-    DEMO_CLIENT_USER,
-    DEMO_FREELANCER_USER,
-    DEMO_PENDING_SELLER_USER,
-    DEMO_AGENCY_USER,
-    DEMO_ADMIN_USER
-  ]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
 
   const [adminActions, setAdminActions] = useState<AdminAction[]>([
     {
@@ -654,8 +710,26 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Selected Entities
-  const [selectedFreelancer, setSelectedFreelancer] = useState<Freelancer | null>(TALENTIO_FREELANCERS[0]);
-  const [selectedService, setSelectedService] = useState<TalentioService | null>(TALENTIO_SERVICES[0]);
+  const [selectedFreelancer, setSelectedFreelancer] = useState<Freelancer | null>(() => {
+    if (typeof window !== 'undefined') {
+      const freeId = new URLSearchParams(window.location.search).get('freelancer');
+      if (freeId) {
+        const match = TALENTIO_FREELANCERS.find(f => f.id === freeId);
+        if (match) return match;
+      }
+    }
+    return TALENTIO_FREELANCERS[0];
+  });
+  const [selectedService, setSelectedService] = useState<TalentioService | null>(() => {
+    if (typeof window !== 'undefined') {
+      const gigId = new URLSearchParams(window.location.search).get('gig') || new URLSearchParams(window.location.search).get('id');
+      if (gigId) {
+        const match = TALENTIO_SERVICES.find(s => s.id === gigId);
+        if (match) return match;
+      }
+    }
+    return TALENTIO_SERVICES[0];
+  });
 
   // Data Collections
   const [freelancers] = useState<Freelancer[]>(TALENTIO_FREELANCERS);
@@ -818,6 +892,9 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } catch (err) {
           console.warn('Firebase user sync note:', err);
         }
+      } else {
+        setUser(null);
+        localStorage.removeItem('talentio_user_profile');
       }
       setAuthLoading(false);
     });
@@ -984,7 +1061,7 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [user?.id]);
 
-  const setActivePage = (page: TalentioPage) => {
+  const setActivePage = (page: TalentioPage, options?: { search?: string; hash?: string; replace?: boolean }) => {
     const protectedPages = ['workstation', 'escrow', 'orders', 'chat', 'messages', 'dashboard', 'earnings', 'payouts', 'post-job'];
     if (protectedPages.includes(page) && !user) {
       setAuthPromptReason('Please sign in to your Talentio account to view this page.');
@@ -998,13 +1075,29 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActivePageState(page);
     try {
       const targetPath = getPathFromPage(page);
-      if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
-        window.history.pushState({ page }, '', targetPath);
+      const queryPart = options?.search ? (options.search.startsWith('?') ? options.search : `?${options.search}`) : '';
+      const hashPart = options?.hash ? (options.hash.startsWith('#') ? options.hash : `#${options.hash}`) : '';
+      const fullUrl = `${targetPath}${queryPart}${hashPart}`;
+
+      if (typeof window !== 'undefined') {
+        const currentFull = window.location.pathname + window.location.search + window.location.hash;
+        if (options?.replace) {
+          window.history.replaceState({ page }, '', fullUrl);
+        } else if (currentFull !== fullUrl) {
+          window.history.pushState({ page }, '', fullUrl);
+        }
       }
     } catch (e) {
       // Safe fallback for restricted iframe environments
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (options?.hash) {
+      const elem = document.querySelector(options.hash.startsWith('#') ? options.hash : `#${options.hash}`);
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
@@ -1018,6 +1111,10 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  const isClient = Boolean(user && (user.role === 'CLIENT' || user.userType === 'client'));
+  const isFreelancer = Boolean(user && (user.role === 'FREELANCER' || user.userType === 'freelancer' || user.userType === 'agency'));
+  const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'admin' || isAuthorizedAdminEmail(user.email)));
 
   // Auth Protection Interceptor
   const requireAuth = (actionReason?: string, onAuthorized?: () => void): boolean => {
@@ -1047,65 +1144,44 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       showToast(`Welcome back, ${loggedUser.name}!`, 'success');
       return true;
     } catch (err: any) {
-      console.error('Firebase login error:', err);
-      showToast(err.message || 'Login failed. Please check your credentials.', 'error');
+      console.warn('Firebase login notice:', err?.message || err);
+      const friendlyMsg = err?.message || 'Login failed. Please check your credentials.';
+      showToast(friendlyMsg, 'error');
       return false;
     }
   };
 
-  const loginWithPhone = async (phone: string, otp: string): Promise<boolean> => {
-    if (!phone || otp.length < 4) {
-      showToast('Please enter phone number and valid OTP.', 'warning');
-      return false;
-    }
-    const newUser: UserProfile = {
-      id: `user-phone-${Date.now()}`,
-      name: 'Talentio Member',
-      handle: `@user_${phone.slice(-4)}`,
-      phone,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
-      authMethod: 'phone',
-      userType: null,
-      skills: [],
-      verifiedBadge: true,
-      escrowTier: 1,
-      accountStatus: 'pending',
-      onboardingCompleted: false,
-      onboardingStep: 1,
-      profileCompletionScore: 20
-    };
-    setUser(newUser);
-    setIsAuthModalOpen(false);
-    setIsOnboardingModalOpen(true);
-    showToast(`Phone verification completed! Complete profile setup.`, 'success');
-    return true;
-  };
-
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<boolean> => {
     try {
       const profile = await loginWithGooglePopup();
       setUser(profile);
       setIsAuthModalOpen(false);
       showToast(`Google authentication successful! Welcome ${profile.name}.`, 'success');
+      return true;
     } catch (err: any) {
-      console.warn('Google popup error:', err);
-      showToast(err.message || 'Google sign in failed.', 'error');
+      console.warn('Google popup notice:', err?.message || err);
+      const msg = err?.message || 'Google sign in failed.';
+      showToast(msg, 'error');
+      return false;
     }
   };
 
-  const loginWithGithub = async () => {
+  const loginWithGithub = async (): Promise<boolean> => {
     try {
       const profile = await loginWithGithubPopup();
       setUser(profile);
       setIsAuthModalOpen(false);
       showToast(`GitHub OAuth successful! Welcome ${profile.name}.`, 'success');
+      return true;
     } catch (err: any) {
-      console.warn('GitHub popup error:', err);
-      showToast(err.message || 'GitHub sign in failed.', 'error');
+      console.warn('GitHub popup notice:', err?.message || err);
+      const msg = err?.message || 'GitHub sign in failed.';
+      showToast(msg, 'error');
+      return false;
     }
   };
 
-  const registerAccount = async (method: 'email' | 'phone' | 'github', identifier: string, name?: string, password?: string) => {
+  const registerAccount = async (method: 'email' | 'github', identifier: string, name?: string, password?: string) => {
     if (method === 'email' && password) {
       try {
         const newUser = await registerWithFirebase(identifier, password, {
@@ -1118,10 +1194,10 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setUser(newUser);
         setIsAuthModalOpen(false);
         setIsOnboardingModalOpen(true);
-        showToast('Firebase account created! Please complete onboarding.', 'success');
+        showToast('Account created successfully! Please complete your profile.', 'success');
         return;
       } catch (err: any) {
-        console.error('Firebase register error:', err);
+        console.warn('Firebase register notice:', err?.message || err);
         showToast(err.message || 'Registration failed.', 'error');
         return;
       }
@@ -1130,13 +1206,12 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const localUser: UserProfile = {
       id: `user-${Date.now()}`,
       name: name || 'New Member',
-      handle: `@${(name || 'member').toLowerCase().replace(/\s+/g, '_')}`,
-      email: method === 'email' ? identifier : undefined,
-      phone: method === 'phone' ? identifier : undefined,
+      handle: `@${(name || 'member').toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+      email: identifier,
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
       authMethod: method,
       userType: null,
-      role: 'user',
+      role: 'CLIENT',
       accountStatus: 'pending',
       isApprovedSeller: false,
       skills: [],
@@ -1152,66 +1227,84 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Account created! Let’s complete your setup.', 'success');
   };
 
+  const sendPasswordResetEmailLink = async (targetEmail: string): Promise<boolean> => {
+    try {
+      await sendPasswordReset(targetEmail);
+      showToast('Password reset email dispatched successfully.', 'success');
+      return true;
+    } catch (err: any) {
+      console.warn('Reset password notice:', err?.message || err);
+      showToast(err.message || 'Failed to dispatch reset email.', 'error');
+      return false;
+    }
+  };
+
   const registerFullAccount = async (data: Partial<UserProfile>) => {
+    const roleStr = String(data.role || '').toLowerCase();
+    const userTypeStr = String(data.userType || '').toLowerCase();
+    const isSeller = roleStr === 'freelancer' || userTypeStr === 'freelancer' || userTypeStr === 'agency';
+    const targetRole: AccountRole = isSeller ? 'FREELANCER' : 'CLIENT';
+
     const newUser: UserProfile = {
-      id: user?.id || `user-${Date.now()}`,
+      ...data,
+      id: user?.id || firebaseUser?.uid || `user-${Date.now()}`,
+      userId: user?.id || firebaseUser?.uid,
       name: data.name || 'New Member',
+      displayName: data.name || 'New Member',
       handle: `@${(data.name || 'member').toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-      email: data.email,
+      email: data.email || firebaseUser?.email || '',
       phone: data.phone,
-      avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+      avatar: data.avatar || (isSeller 
+        ? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'),
       authMethod: data.authMethod || 'email',
-      userType: data.userType || 'client',
-      role: 'user',
-      accountStatus: data.userType === 'client' ? 'approved' : 'pending',
-      isApprovedSeller: false,
+      role: targetRole,
+      userType: isSeller ? 'freelancer' : 'client',
+      accountStatus: isSeller ? 'pending' : 'approved',
+      subscriptionStatus: 'trial',
+      subscriptionStartDate: new Date().toISOString(),
+      subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      subscriptionPlan: 'one_month_free_trial',
+      platformFeePercent: 0,
+      trialPeriodDays: 30,
+      isApprovedSeller: !isSeller,
       countryFlag: data.countryFlag || '🌐',
       countryCode: data.countryCode || 'US',
       location: data.location || 'International',
-      skills: data.skills || [],
+      skills: data.skills || (isSeller ? ['Full-Stack', 'UI/UX'] : ['Product Strategy', 'Hiring']),
       verifiedBadge: false,
       escrowTier: 1,
       onboardingCompleted: true,
       onboardingStep: 6,
       profileCompletionScore: 100,
-      balanceAvailable: data.userType === 'client' ? 2500 : 0,
-      balanceInEscrow: 0,
-      ...data
+      balanceAvailable: isSeller ? 0 : 2500,
+      balanceInEscrow: 0
     };
     
     if (firebaseUser) {
       await updateUserRecord(firebaseUser.uid, newUser);
     }
     setUser(newUser);
-    showToast(`Welcome to Talentio, ${newUser.name}! Your account is active.`, 'success');
-    setActivePageState('explore');
+    localStorage.setItem('talentio_user_profile', JSON.stringify(newUser));
+    showToast(`Welcome to Talentio, ${newUser.name}! Your account is active with One Month 0% Platform Fee.`, 'success');
+    setActivePageState('dashboard');
   };
 
   const logout = async () => {
-    await logoutFirebase();
+    try {
+      await logoutFirebase();
+    } catch (err) {
+      console.warn('Logout error:', err);
+    }
     setUser(null);
+    setFirebaseUser(null);
     localStorage.removeItem('talentio_user_profile');
     showToast('Logged out of Talentio.', 'info');
-    setActivePageState('explore');
+    setActivePageState('login');
   };
 
-  const switchDemoAccount = (role: 'guest' | 'client' | 'freelancer' | 'agency' | 'admin') => {
-    if (role === 'guest') {
-      setUser(null);
-      showToast('Switched to Guest Browsing Mode.', 'info');
-    } else if (role === 'client') {
-      setUser(DEMO_CLIENT_USER);
-      showToast('Switched to Alexander Vance (Verified Client Account).', 'success');
-    } else if (role === 'freelancer') {
-      setUser(DEMO_FREELANCER_USER);
-      showToast('Switched to Sofia Chen (Senior UI/UX Freelancer Account).', 'success');
-    } else if (role === 'agency') {
-      setUser(DEMO_AGENCY_USER);
-      showToast('Switched to Nova Digital Studios (Agency Account).', 'success');
-    } else if (role === 'admin') {
-      setUser(DEMO_ADMIN_USER);
-      showToast('Switched to Talentio Super Admin (Full Governance Privileges).', 'success');
-    }
+  const switchDemoAccount = (_role: 'guest' | 'client' | 'freelancer' | 'agency' | 'admin') => {
+    showToast('Demo accounts are strictly disabled. Please sign in or create an authentic account.', 'warning');
     setIsAuthModalOpen(false);
   };
 
@@ -1241,7 +1334,15 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!user) return;
-    const updated: UserProfile = { ...user, ...data, updatedAt: new Date().toISOString() };
+    // Protect immutable security and role fields from unauthorized alteration
+    const sanitized = { ...data };
+    delete (sanitized as any).role;
+    delete (sanitized as any).accountStatus;
+    delete (sanitized as any).subscriptionStatus;
+    delete (sanitized as any).platformFeePercent;
+    delete (sanitized as any).trialPeriodDays;
+
+    const updated: UserProfile = { ...user, ...sanitized, updatedAt: new Date().toISOString() };
     if (firebaseUser) {
       await updateUserRecord(firebaseUser.uid, updated);
     }
@@ -1448,12 +1549,28 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const openGigDetails = (service: TalentioService) => {
     setSelectedService(service);
     setActivePageState('gig-details');
+    try {
+      if (typeof window !== 'undefined') {
+        const fullUrl = `/services?gig=${encodeURIComponent(service.id)}`;
+        if (window.location.pathname + window.location.search !== fullUrl) {
+          window.history.pushState({ page: 'gig-details', gigId: service.id }, '', fullUrl);
+        }
+      }
+    } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openCategoryMarketplace = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setActivePageState('marketplace');
+    try {
+      if (typeof window !== 'undefined') {
+        const fullUrl = categoryId === 'all' ? '/services' : `/services?category=${encodeURIComponent(categoryId)}`;
+        if (window.location.pathname + window.location.search !== fullUrl) {
+          window.history.pushState({ page: 'marketplace', categoryId }, '', fullUrl);
+        }
+      }
+    } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1733,15 +1850,18 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsOnboardingModalOpen,
         requireAuth,
         loginWithEmail,
-        loginWithPhone,
         loginWithGoogle,
         loginWithGithub,
+        sendPasswordResetEmailLink,
         registerAccount,
         registerFullAccount,
         logout,
         switchDemoAccount,
         completeOnboarding,
         updateUserProfile,
+        isClient,
+        isFreelancer,
+        isAdmin,
         allUsers,
         adminActions,
         approveUserAccount,

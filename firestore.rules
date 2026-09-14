@@ -13,43 +13,93 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
+    // Strict Custom Claim verification for administrative operations
+    function hasAdminClaim() {
       return isSignedIn() && (
-        request.auth.token.email == 'lord79915@gmail.com' ||
-        request.auth.token.email == 'admin@talentio.com' ||
-        request.auth.token.role == 'admin'
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        ((request.auth.token.email == 'lord79915@gmail.com' || request.auth.token.email == 'xenolord128@gmail.com') && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isAdmin() {
+      return hasAdminClaim();
+    }
+
+    function isClient(userId) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(userId)).data.role == 'CLIENT' ||
+        get(/databases/$(database)/documents/users/$(userId)).data.userType == 'client'
+      );
+    }
+
+    function isFreelancer(userId) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(userId)).data.role == 'FREELANCER' ||
+        get(/databases/$(database)/documents/users/$(userId)).data.userType == 'freelancer'
       );
     }
 
     // ========================================================================
-    // 1. USERS & TALENT PROFILES
+    // 1. ADMIN & ADMINS COLLECTIONS (STRICT CUSTOM CLAIM ACCESS ONLY)
     // ========================================================================
-    match /users/{userId} {
-      allow read: if true;
-      allow create: if isOwner(userId) || isAdmin() || isSignedIn();
-      allow update: if isOwner(userId) || isAdmin() || isSignedIn();
-      allow delete: if isAdmin();
+    match /admin/{document=**} {
+      allow read, write: if hasAdminClaim();
+    }
+
+    match /admins/{adminId} {
+      allow read, write: if hasAdminClaim();
     }
 
     // ========================================================================
-    // 2. GIGS & MARKETPLACE SERVICES
+    // 2. USERS & TALENT PROFILES (RBAC & CLAIM PROTECTED)
+    // ========================================================================
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      // Only owner can create, but cannot grant themselves ADMIN role unless possessing admin claim
+      allow create: if isSignedIn() && isOwner(userId) && (
+        (request.resource.data.role != 'ADMIN' && request.resource.data.role != 'admin') ||
+        hasAdminClaim()
+      );
+      // Owner can update their profile information, but CANNOT modify role, accountStatus, or subscriptionStatus
+      allow update: if isSignedIn() && (
+        (isOwner(userId) && 
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'accountStatus', 'subscriptionStatus', 'subscriptionEndDate', 'platformFeePercent'])) ||
+        hasAdminClaim()
+      );
+      allow delete: if hasAdminClaim();
+    }
+
+    // ========================================================================
+    // 3. GIGS & MARKETPLACE SERVICES (FREELANCER ONLY FOR CREATION)
     // ========================================================================
     match /gigs/{gigId} {
       allow read: if true;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && (
+        (request.resource.data.freelancerId == request.auth.uid && !isClient(request.auth.uid)) ||
+        hasAdminClaim()
+      );
       allow update: if isSignedIn() && (
         resource.data.freelancerId == request.auth.uid ||
         request.resource.data.freelancerId == request.auth.uid ||
-        isAdmin()
+        hasAdminClaim()
       );
       allow delete: if isSignedIn() && (
         resource.data.freelancerId == request.auth.uid ||
-        isAdmin()
+        hasAdminClaim()
       );
     }
 
     // ========================================================================
-    // 3. JOBS & CLIENT PROJECTS
+    // 4. PLATFORM SETTINGS (ADMIN CUSTOM CLAIM REQUIRED FOR MODIFICATIONS)
+    // ========================================================================
+    match /platform_settings/{settingId} {
+      allow read: if true;
+      allow write: if hasAdminClaim();
+    }
+
+    // ========================================================================
+    // 5. JOBS & CLIENT PROJECTS
     // ========================================================================
     match /jobs/{jobId} {
       allow read: if true;
@@ -57,42 +107,42 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         resource.data.clientId == request.auth.uid ||
         request.resource.data.clientId == request.auth.uid ||
-        isAdmin()
+        hasAdminClaim()
       );
       allow delete: if isSignedIn() && (
         resource.data.clientId == request.auth.uid ||
-        isAdmin()
+        hasAdminClaim()
       );
     }
 
     // ========================================================================
-    // 4. PROPOSALS
+    // 6. PROPOSALS
     // ========================================================================
     match /proposals/{proposalId} {
       allow read: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         resource.data.freelancerId == request.auth.uid ||
-        isAdmin()
+        hasAdminClaim()
       );
       allow delete: if isSignedIn() && (
         resource.data.freelancerId == request.auth.uid ||
-        isAdmin()
+        hasAdminClaim()
       );
     }
 
     // ========================================================================
-    // 5. ORDERS & ESCROW CONTRACTS
+    // 7. ORDERS & ESCROW CONTRACTS
     // ========================================================================
     match /orders/{orderId} {
       allow read: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn();
-      allow delete: if isAdmin();
+      allow delete: if hasAdminClaim();
     }
 
     // ========================================================================
-    // 6. CHAT CONVERSATIONS & TIMELINE MESSAGES
+    // 8. CHAT CONVERSATIONS & TIMELINE MESSAGES
     // ========================================================================
     match /conversations/{conversationId} {
       allow read, write: if true;
@@ -103,7 +153,7 @@ service cloud.firestore {
     }
 
     // ========================================================================
-    // 7. REAL-TIME NOTIFICATIONS & WEB PUSH SUBSCRIPTIONS
+    // 9. REAL-TIME NOTIFICATIONS & WEB PUSH SUBSCRIPTIONS
     // ========================================================================
     match /notifications/{notificationId} {
       allow read, write: if true;
@@ -114,7 +164,7 @@ service cloud.firestore {
     }
 
     // ========================================================================
-    // 9. PRESENCE & TYPING INDICATORS
+    // 10. PRESENCE & TYPING INDICATORS
     // ========================================================================
     match /presence/{userId} {
       allow read, write: if true;
@@ -125,41 +175,39 @@ service cloud.firestore {
     }
 
     // ========================================================================
-    // 10. MODERATION & ABUSE REPORTS
+    // 11. MODERATION & ABUSE REPORTS (ADMIN CUSTOM CLAIM FOR REVIEW/DELETE)
     // ========================================================================
     match /reports/{reportId} {
       allow create: if true;
-      allow read, update, delete: if isSignedIn() || isAdmin();
+      allow read, update, delete: if isSignedIn() && hasAdminClaim();
     }
 
     // ========================================================================
-    // 11. NOTICES & PLATFORM ANNOUNCEMENTS
+    // 12. NOTICES & PLATFORM ANNOUNCEMENTS (ADMIN CUSTOM CLAIM FOR PUBLISHING)
     // ========================================================================
     match /notices/{noticeId} {
       allow read: if true;
-      allow create: if isSignedIn() || isAdmin();
-      allow update: if isSignedIn() || isAdmin();
-      allow delete: if isAdmin();
+      allow create, update, delete: if hasAdminClaim();
     }
 
     // ========================================================================
-    // 12. ADMINISTRATIVE AUDIT TRAIL LOGS
+    // 13. ADMINISTRATIVE AUDIT TRAIL LOGS (ADMIN CUSTOM CLAIM REQUIRED)
     // ========================================================================
     match /adminLogs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn() || isAdmin();
+      allow read: if hasAdminClaim();
+      allow create: if hasAdminClaim();
       allow update, delete: if false;
     }
 
     // ========================================================================
-    // 13. HEALTH CHECK / CONNECTION TEST
+    // 14. HEALTH CHECK / CONNECTION TEST
     // ========================================================================
     match /test/{docId} {
       allow read, write: if true;
     }
 
     // ========================================================================
-    // 14. DEFAULT DENY
+    // 15. DEFAULT DENY
     // ========================================================================
     match /{document=**} {
       allow read, write: if false;

@@ -3,6 +3,7 @@ import { useGuide } from '../context/GuideContext';
 import { FreelancerCard } from '../components/FreelancerCard';
 import { ServiceCard } from '../components/ServiceCard';
 import { HomeHeroBanner } from '../components/HomeHeroBanner';
+import { AdPlacement } from '../components/ads/AdPlacement';
 import { 
   Users, 
   Briefcase, 
@@ -46,6 +47,11 @@ export const HomePage: React.FC = () => {
       
       {/* 1. COMPACT HERO BANNER WITH BACKGROUND IMAGE, 24/7 SUPPORT, AND ACTIONS */}
       <HomeHeroBanner />
+
+      {/* Monetization: Below Hero Placement (728×90 Leaderboard / Responsive) */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <AdPlacement placement="below_hero" />
+      </div>
 
       {/* 2. FREELANCER ACCOUNTS: EXACTLY 2 SIDE-BY-SIDE DIRECTLY UNDER BANNER */}
       <section 
@@ -155,6 +161,11 @@ export const HomePage: React.FC = () => {
           </button>
         </div>
       </section>
+
+      {/* Monetization: Between Content Placement */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <AdPlacement placement="between_content" />
+      </div>
 
       {/* 5. HOW TALENTIO WORKS: HOW CLIENTS HIRE & HOW FREELANCERS FIND WORK */}
       <section 

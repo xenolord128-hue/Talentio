@@ -22,8 +22,11 @@ import {
   Maximize2,
   X,
   Sparkles,
-  Info
+  Info,
+  Languages,
+  Globe
 } from 'lucide-react';
+import { isRtlLanguage, getLanguageName } from '../../data/languagesData';
 
 interface MessageTimelineProps {
   messages: ChatMessage[];
@@ -66,6 +69,14 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [activeMenuMsgId, setActiveMenuMsgId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
+
+  const toggleShowOriginal = (id: string) => {
+    setShowOriginalMap(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -212,6 +223,16 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
                 {/* Main Message Bubble */}
                 {(() => {
                   const isAI = !isMe && (msg.senderId === 'talentio-ai-bot' || msg.senderName === 'TALENTIO AI');
+                  const isTranslated = msg.translationStatus === 'translated' && !!msg.translatedText && !!msg.originalText && msg.translatedText.trim() !== msg.originalText.trim();
+                  const showingOriginal = !!showOriginalMap[msg.id];
+                  const activeText = isTranslated
+                    ? (showingOriginal ? msg.originalText! : msg.translatedText!)
+                    : (msg.text || msg.message || '');
+                  const activeLang = isTranslated
+                    ? (showingOriginal ? msg.sourceLanguage : msg.targetLanguage)
+                    : (msg.sourceLanguage || 'en');
+                  const isRtl = isRtlLanguage(activeLang);
+                  const sourceLangName = getLanguageName(msg.sourceLanguage);
 
                   return (
                     <div
@@ -302,9 +323,52 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
                         /* Voice Note Player */
                         <VoiceNotePlayer voiceNote={msg.voiceNote} isMe={isMe} />
                       ) : (
-                        /* Normal Formatted Text */
-                        <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-normal">
-                          {msg.text}
+                        /* Normal Formatted Text with Automatic Translation */
+                        <div className="space-y-1.5">
+                          <div 
+                            dir={isRtl ? 'rtl' : 'ltr'} 
+                            className={`text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words font-normal ${
+                              isRtl ? 'text-right font-sans' : 'text-left'
+                            }`}
+                          >
+                            {activeText}
+                          </div>
+
+                          {/* Automatic Translation Info and View Original Toggle */}
+                          {isTranslated && (
+                            <div className={`mt-2 pt-1.5 border-t flex flex-wrap items-center justify-between gap-1.5 text-[11px] select-none ${
+                              isMe ? 'border-white/20 text-white/90' : 'border-slate-200/80 text-slate-600'
+                            }`}>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className={`p-0.5 rounded flex items-center justify-center shrink-0 ${
+                                  isMe ? 'bg-white/20 text-white' : 'bg-[#3D2FD1]/10 text-[#3D2FD1]'
+                                }`}>
+                                  <Languages className="w-3 h-3" />
+                                </span>
+                                <span className="font-semibold text-[10.5px] truncate">
+                                  {showingOriginal
+                                    ? `Original text (${sourceLangName})`
+                                    : `Translated automatically from ${sourceLangName}`}
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleShowOriginal(msg.id);
+                                }}
+                                className={`text-[11px] font-bold cursor-pointer transition-all hover:underline underline-offset-2 px-1.5 py-0.5 rounded ${
+                                  isMe 
+                                    ? 'text-white hover:bg-white/10' 
+                                    : 'text-[#3D2FD1] hover:text-[#5443F0] hover:bg-[#3D2FD1]/5'
+                                }`}
+                                title={showingOriginal ? "Switch back to translated view" : "View message in its original language"}
+                              >
+                                {showingOriginal ? 'Show translation' : 'View original'}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -437,7 +501,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({
 
                   {/* Copy Text */}
                   <button
-                    onClick={() => handleCopyText(msg.text)}
+                    onClick={() => handleCopyText((showOriginalMap[msg.id] ? msg.originalText : msg.translatedText) || msg.text || msg.message || '')}
                     className="p-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900"
                     title="Copy Text"
                   >

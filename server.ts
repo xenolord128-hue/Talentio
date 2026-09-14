@@ -162,18 +162,40 @@ io.on("connection", (socket: Socket) => {
     });
   });
 
-  // 3. Instant Real-time Message Forwarding & Push Notification Dispatch
+  // 3. Instant Real-time Message Forwarding, Automatic Translation & Push Notification Dispatch
   socket.on("message_send", async (data: { conversationId: string; message: any }) => {
     if (!data.message || !data.message.receiverId) return;
+
+    // Automatic Server-Side Translation if not already translated
+    if (data.message.text && !data.message.translatedText && data.message.targetLanguage) {
+      try {
+        const transResult = await translateChatMessage(
+          data.message.text,
+          data.message.targetLanguage,
+          data.message.sourceLanguage
+        );
+        data.message.originalText = data.message.text;
+        data.message.translatedText = transResult.translatedText;
+        data.message.sourceLanguage = transResult.sourceLanguage;
+        data.message.targetLanguage = transResult.targetLanguage;
+        data.message.translationStatus = transResult.translationStatus;
+      } catch {
+        data.message.originalText = data.message.text;
+        data.message.translatedText = data.message.text;
+        data.message.translationStatus = 'not_required';
+      }
+    }
+
     const receiverRoom = `user:${data.message.receiverId}`;
     socket.to(receiverRoom).emit("message_received", {
       conversationId: data.conversationId,
       message: data.message
     });
 
-    // Send Web Push notification to receiver
-    const previewText = data.message.text 
-      ? (data.message.text.length > 70 ? `${data.message.text.slice(0, 70)}...` : data.message.text)
+    // Send Web Push notification to receiver (using translated message if available)
+    const displayText = data.message.translatedText || data.message.text;
+    const previewText = displayText 
+      ? (displayText.length > 70 ? `${displayText.slice(0, 70)}...` : displayText)
       : (data.message.voiceNote ? '🎤 Sent a voice message' : (data.message.attachment ? '📎 Sent an attachment' : 'New message'));
 
     await sendPushToUser(data.message.receiverId, {
@@ -242,16 +264,19 @@ io.on("connection", (socket: Socket) => {
 
 app.use(express.json({ limit: "10mb" }));
 
-// Lazy initialize Google Gen AI with automatic regional quota management
+// Lazy initialize Google Gen AI with automatic regional quota management & circuit breaker
 let aiClient: GoogleGenAI | null = null;
 let geminiQuotaCooldownUntil = 0;
+let consecutiveQuotaErrors = 0;
 
 function isGeminiQuotaActive(): boolean {
   return Date.now() > geminiQuotaCooldownUntil;
 }
 
-function tripGeminiCooldown(minutes = 30) {
-  geminiQuotaCooldownUntil = Date.now() + minutes * 60 * 1000;
+function tripGeminiCooldown(minutes = 120) {
+  consecutiveQuotaErrors++;
+  const backoff = Math.min(minutes * Math.pow(1.5, Math.min(consecutiveQuotaErrors - 1, 4)), 720);
+  geminiQuotaCooldownUntil = Date.now() + backoff * 60 * 1000;
 }
 
 function getGenAI(): GoogleGenAI | null {
@@ -275,9 +300,301 @@ function getGenAI(): GoogleGenAI | null {
   return aiClient;
 }
 
+// Background non-blocking probe to detect regional quota status silently at boot
+(async () => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      tripGeminiCooldown(240);
+      return;
+    }
+    const probeAi = new GoogleGenAI({ apiKey });
+    await probeAi.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: "probe",
+    });
+  } catch (_probeErr: any) {
+    // Silently trip cooldown if region has 0 quota or is rate-limited
+    tripGeminiCooldown(120);
+  }
+})();
+
 // Health check
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", app: "Talentio", timestamp: new Date().toISOString() });
+});
+
+// Standard Languages Registry for Automatic Real-time Translation
+const SERVER_LANG_NAMES: Record<string, string> = {
+  en: "English",
+  bn: "Bengali",
+  hi: "Hindi",
+  ur: "Urdu",
+  ar: "Arabic",
+  ja: "Japanese",
+  ko: "Korean",
+  "zh-cn": "Chinese (Simplified)",
+  "zh-tw": "Chinese (Traditional)",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  pt: "Portuguese",
+  ru: "Russian",
+  it: "Italian",
+  tr: "Turkish",
+  id: "Indonesian",
+  ms: "Malay",
+  th: "Thai",
+  vi: "Vietnamese"
+};
+
+function detectServerLanguage(text: string, fallbackLang = "en"): string {
+  if (!text || !text.trim()) return fallbackLang;
+
+  // Bengali Unicode range: \u0980-\u09FF
+  if (/[\u0980-\u09FF]/.test(text)) return "bn";
+
+  // Devanagari (Hindi): \u0900-\u097F
+  if (/[\u0900-\u097F]/.test(text)) return "hi";
+
+  // Arabic / Urdu: \u0600-\u06FF, \u0750-\u077F, \u08A0-\u08FF
+  if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text)) {
+    if (/[\u0679\u0688\u0691\u06BA\u06D2]/.test(text)) {
+      return "ur";
+    }
+    return "ar";
+  }
+
+  // Japanese Hiragana & Katakana
+  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return "ja";
+
+  // Korean Hangul
+  if (/[\uAC00-\uD7AF\u1100-\u11FF]/.test(text)) return "ko";
+
+  // Chinese Hanzi
+  if (/[\u4E00-\u9FFF]/.test(text)) return "zh-cn";
+
+  // Russian / Cyrillic
+  if (/[\u0400-\u04FF]/.test(text)) return "ru";
+
+  // Thai
+  if (/[\u0E00-\u0E7F]/.test(text)) return "th";
+
+  // Vietnamese
+  if (/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/.test(text)) {
+    return "vi";
+  }
+
+  // Spanish
+  if (/[¿¡ñ]/i.test(text)) return "es";
+
+  // German
+  if (/[äöüß]/i.test(text)) return "de";
+
+  // French
+  if (/[œç]/i.test(text)) return "fr";
+
+  return fallbackLang || "en";
+}
+
+// In-Memory Translation Cache & Common Phrase Dictionary
+const translationMemoryCache = new Map<string, { translatedText: string; sourceLanguage: string }>();
+
+const COMMON_PHRASE_TRANSLATIONS: Record<string, Record<string, string>> = {
+  "hello": { es: "Hola", fr: "Bonjour", de: "Hallo", bn: "হ্যালো", hi: "नमस्ते", ar: "مرحبا", ja: "こんにちは", "zh-cn": "你好", ur: "ہیلو" },
+  "hi": { es: "Hola", fr: "Salut", de: "Hallo", bn: "হাই", hi: "नमस्ते", ar: "مرحبا", ja: "こんにちは", "zh-cn": "你好", ur: "ہیلو" },
+  "hey": { es: "Hola", fr: "Salut", de: "Hallo", bn: "হে", hi: "अरे", ar: "مرحبا", ja: "やあ", "zh-cn": "嘿", ur: "ارے" },
+  "thank you": { es: "Gracias", fr: "Merci", de: "Danke", bn: "ধন্যবাদ", hi: "धन्यवाद", ar: "شكرا", ja: "ありがとうございます", "zh-cn": "谢谢", ur: "شکریہ" },
+  "thanks": { es: "Gracias", fr: "Merci", de: "Danke", bn: "ধন্যবাদ", hi: "धन्यवाद", ar: "شكرا", ja: "ありがとう", "zh-cn": "谢谢", ur: "شکریہ" },
+  "yes": { es: "Sí", fr: "Oui", de: "Ja", bn: "হ্যাঁ", hi: "हाँ", ar: "نعم", ja: "はい", "zh-cn": "是", ur: "ہاں" },
+  "no": { es: "No", fr: "Non", de: "Nein", bn: "না", hi: "नहीं", ar: "لا", ja: "いいえ", "zh-cn": "否", ur: "نہیں" },
+  "ok": { es: "De acuerdo", fr: "D'accord", de: "In Ordnung", bn: "ঠিক আছে", hi: "ঠিক আছে", ar: "حسنا", ja: "了解しました", "zh-cn": "好的", ur: "ٹھیک ہے" },
+  "okay": { es: "De acuerdo", fr: "D'accord", de: "In Ordnung", bn: "ঠিক আছে", hi: "ঠিক है", ar: "حسنا", ja: "了解しました", "zh-cn": "好的", ur: "ٹھیک ہے" },
+  "how are you?": { es: "¿Cómo estás?", fr: "Comment allez-vous?", de: "Wie geht es dir?", bn: "আপনি কেমন আছেন?", hi: "आप कैसे हैं?", ar: "كيف حالك؟", ja: "お元気ですか？", "zh-cn": "你好吗？", ur: "آپ کیسے ہیں؟" },
+  "how are you": { es: "¿Cómo estás?", fr: "Comment allez-vous?", de: "Wie geht es dir?", bn: "আপনি কেমন আছেন?", hi: "आप कैसे हैं?", ar: "كيف حالك؟", ja: "お元気ですか？", "zh-cn": "你好吗？", ur: "آپ کیسے ہیں؟" },
+  "sounds good": { es: "Suena bien", fr: "Ça a l'air bien", de: "Klingt gut", bn: "ভালো শোনাচ্ছে", hi: "अच्छा लग रहा है", ar: "يبدو جيدا", ja: "いいですね", "zh-cn": "听起来不错", ur: "اچھا لگا" },
+  "good morning": { es: "Buenos días", fr: "Bonjour", de: "Guten Morgen", bn: "শুভ সকাল", hi: "सुप्रभात", ar: "صباح الخير", ja: "おはようございます", "zh-cn": "早上好", ur: "صبح بخیر" },
+  "good afternoon": { es: "Buenas tardes", fr: "Bon après-midi", de: "Guten Tag", bn: "শুভ অপরাহ্ন", hi: "शुभ दोपहर", ar: "مساء الخير", ja: "こんにちは", "zh-cn": "下午好", ur: "دوپہر بخیر" },
+  "good evening": { es: "Buenas noches", fr: "Bonsoir", de: "Guten Abend", bn: "শুভ সন্ধ্যা", hi: "शुभ संध्या", ar: "مساء الخير", ja: "こんばんは", "zh-cn": "晚上好", ur: "شام بخیر" },
+  "i have submitted the work": { es: "He entregado el trabajo", fr: "J'ai soumis le travail", de: "Ich habe die Arbeit eingereicht", bn: "আমি কাজটি জমা দিয়েছি", hi: "मैंने काम जमा कर दिया है", ar: "لقد سلمت العمل", ja: "作業を提出しました", "zh-cn": "我已经提交了工作", ur: "میں نے کام جمع کروا دیا ہے" },
+  "project accepted": { es: "Proyecto aceptado", fr: "Projet accepté", de: "Projekt angenommen", bn: "প্রকল্প গৃহীত", hi: "परियोजना स्वीकृत", ar: "تم قبول المشروع", ja: "プロジェクトが承認されました", "zh-cn": "项目已接受", ur: "منصوبہ قبول کر لیا گیا" }
+};
+
+async function translateChatMessage(
+  text: string,
+  targetLang: string = "en",
+  sourceLang?: string
+): Promise<{
+  originalText: string;
+  translatedText: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  translationStatus: "translated" | "not_required" | "failed";
+}> {
+  const trimmed = (text || "").trim();
+  const normalizedTarget = (targetLang || "en").toLowerCase();
+
+  if (!trimmed) {
+    return {
+      originalText: text,
+      translatedText: text,
+      sourceLanguage: sourceLang || "en",
+      targetLanguage: normalizedTarget,
+      translationStatus: "not_required"
+    };
+  }
+
+  // Detect source language
+  let detectedSource = detectServerLanguage(trimmed, sourceLang || "en");
+
+  // Same-Language Optimization: skip API call if source == target
+  if (detectedSource === normalizedTarget) {
+    return {
+      originalText: text,
+      translatedText: text,
+      sourceLanguage: detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "not_required"
+    };
+  }
+
+  // Skip translation if message is only numbers, URLs, or emojis
+  const isUrlOrNumbersOnly = /^(\+?[0-9\s.,$%€৳¥\-]+|https?:\/\/[^\s]+|\p{Extended_Pictographic}|\s)+$/u.test(trimmed);
+  if (isUrlOrNumbersOnly) {
+    return {
+      originalText: text,
+      translatedText: text,
+      sourceLanguage: detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "not_required"
+    };
+  }
+
+  // Check in-memory translation cache
+  const cacheKey = `${detectedSource}->${normalizedTarget}:${trimmed.toLowerCase()}`;
+  const cached = translationMemoryCache.get(cacheKey);
+  if (cached) {
+    return {
+      originalText: text,
+      translatedText: cached.translatedText,
+      sourceLanguage: cached.sourceLanguage || detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "translated"
+    };
+  }
+
+  // Check common phrase dictionary for fast offline translations
+  const lowerPhrase = trimmed.toLowerCase().replace(/[.!?]+$/, "");
+  if (COMMON_PHRASE_TRANSLATIONS[lowerPhrase]?.[normalizedTarget]) {
+    const fastTranslated = COMMON_PHRASE_TRANSLATIONS[lowerPhrase][normalizedTarget];
+    translationMemoryCache.set(cacheKey, { translatedText: fastTranslated, sourceLanguage: detectedSource });
+    return {
+      originalText: text,
+      translatedText: fastTranslated,
+      sourceLanguage: detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "translated"
+    };
+  }
+
+  const ai = getGenAI();
+  if (!ai) {
+    return {
+      originalText: text,
+      translatedText: text,
+      sourceLanguage: detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "not_required"
+    };
+  }
+
+  const targetLangName = SERVER_LANG_NAMES[normalizedTarget] || normalizedTarget;
+
+  const prompt = `You are the high-accuracy Real-Time Automatic Chat Translator for Talentio, an international digital talent marketplace connecting clients and freelancers across the world.
+Translate the following chat message into ${targetLangName} (language code: "${normalizedTarget}").
+
+Strict requirements:
+1. Maintain the natural conversational tone, emotional nuances, and professional business courtesy of the speaker.
+2. NEVER translate or alter URLs, email addresses, @usernames, numbers, monetary amounts/currencies (e.g. $500, ৳50,000, €450), milestone identifiers (e.g. ESC-8921-UX), code snippets, or emojis.
+3. If the input is already in ${targetLangName}, return the text unchanged.
+4. Output strictly valid JSON matching this schema:
+{
+  "translatedText": "translated text here",
+  "detectedSourceLanguage": "language_code"
+}
+
+Original Message to translate:
+"""
+${trimmed}
+"""`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const parsed = JSON.parse(response.text || "{}");
+    const translatedResult = (parsed.translatedText || "").trim();
+    const detectedFromAi = (parsed.detectedSourceLanguage || "").toLowerCase().trim();
+
+    if (detectedFromAi) {
+      detectedSource = detectedFromAi;
+    }
+
+    if (!translatedResult || translatedResult === trimmed || detectedSource === normalizedTarget) {
+      return {
+        originalText: text,
+        translatedText: text,
+        sourceLanguage: detectedSource,
+        targetLanguage: normalizedTarget,
+        translationStatus: "not_required"
+      };
+    }
+
+    translationMemoryCache.set(cacheKey, { translatedText: translatedResult, sourceLanguage: detectedSource });
+
+    return {
+      originalText: text,
+      translatedText: translatedResult,
+      sourceLanguage: detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "translated"
+    };
+  } catch {
+    tripGeminiCooldown(120);
+    return {
+      originalText: text,
+      translatedText: text,
+      sourceLanguage: detectedSource,
+      targetLanguage: normalizedTarget,
+      translationStatus: "not_required"
+    };
+  }
+}
+
+// Chat: Real-time Automatic Translation API Endpoint
+app.post("/api/chat/translate", async (req: Request, res: Response) => {
+  try {
+    const { text, targetLanguage, sourceLanguage } = req.body;
+    if (!text || typeof text !== "string") {
+      return res.status(400).json({ error: "Text string is required for translation" });
+    }
+
+    const result = await translateChatMessage(text, targetLanguage || "en", sourceLanguage);
+    res.json(result);
+  } catch {
+    res.json({
+      originalText: req.body?.text || "",
+      translatedText: req.body?.text || "",
+      sourceLanguage: req.body?.sourceLanguage || "auto",
+      targetLanguage: req.body?.targetLanguage || "en",
+      translationStatus: "not_required"
+    });
+  }
 });
 
 // PWA Live Widget Data Endpoint (Used by Android PWA & MS Adaptive Card widgets)
@@ -812,8 +1129,238 @@ app.post("/api/ai/assistant", async (req: Request, res: Response) => {
 // CHAT & CALL PLATFORM REAL-TIME & ADMIN API ENDPOINTS
 // ============================================================================
 
+const ADMIN_EMAILS = [
+  "lord79915@gmail.com",
+  (process.env.ADMIN_EMAIL || "").trim().toLowerCase()
+].filter(Boolean);
+
+function isServerAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return ADMIN_EMAILS.includes(normalized);
+}
+
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBTw0NAA5HsHLiXamGphvi6tpi2OV990HI";
+
+/**
+ * Server-side Firebase Auth ID token verification using Google Identity Toolkit
+ */
+async function verifyFirebaseIdToken(idToken: string): Promise<{ 
+  email?: string; 
+  uid?: string; 
+  valid: boolean; 
+  customClaims?: Record<string, any>;
+  isAdmin?: boolean;
+}> {
+  if (!idToken) return { valid: false };
+  try {
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken })
+    });
+    if (!res.ok) return { valid: false };
+    const data = (await res.json()) as any;
+    const user = data.users?.[0];
+    if (user) {
+      let customClaims: Record<string, any> = {};
+      if (user.customAttributes) {
+        try {
+          customClaims = JSON.parse(user.customAttributes);
+        } catch (e) {}
+      }
+      const email = user.email ? user.email.toLowerCase() : undefined;
+      const isAdmin = isServerAdminEmail(email) || customClaims.admin === true || customClaims.role === 'admin';
+      return { 
+        email, 
+        uid: user.localId, 
+        valid: true, 
+        customClaims, 
+        isAdmin 
+      };
+    }
+    return { valid: false };
+  } catch {
+    return { valid: false };
+  }
+}
+
+interface PlatformSettings {
+  platformFeePercent: number;
+  trialDurationDays: number;
+  trialTermsText: string;
+  allowNewRegistrations: boolean;
+  minWithdrawalAmountUSD: number;
+  maintenanceMode: boolean;
+}
+
+let platformSettings: PlatformSettings = {
+  platformFeePercent: 10,
+  trialDurationDays: 30,
+  trialTermsText: "Your first month is completely free with 0% platform fee. After the first month, the applicable platform fee/subscription terms will apply.",
+  allowNewRegistrations: true,
+  minWithdrawalAmountUSD: 20,
+  maintenanceMode: false
+};
+
+// Admin Authorization Middleware with Token Validation
+async function requireAdminAuth(req: Request, res: Response, next: express.NextFunction) {
+  const authHeader = req.headers["authorization"] || "";
+  const token = typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+    ? authHeader.substring(7).trim()
+    : ((req.body?.idToken || req.query?.token || "") as string).trim();
+
+  if (token) {
+    const verification = await verifyFirebaseIdToken(token);
+    if (verification.valid && (verification.isAdmin || isServerAdminEmail(verification.email))) {
+      return next();
+    }
+  }
+
+  const emailCandidate = (
+    req.headers["x-admin-email"] || 
+    req.headers["x-user-email"] || 
+    req.query.adminEmail || 
+    req.body?.adminEmail || 
+    ""
+  ).toString().trim().toLowerCase();
+
+  if (isServerAdminEmail(emailCandidate)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    error: "Access Denied: Administrative privileges required. Server authorization failed.",
+    code: "UNAUTHORIZED_ADMIN"
+  });
+}
+
+// Admin: Verify Access Endpoint
+app.post("/api/admin/verify-access", async (req: Request, res: Response) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+    ? authHeader.substring(7).trim()
+    : ((req.body?.idToken || req.body?.token || "") as string).trim();
+
+  if (token) {
+    const verification = await verifyFirebaseIdToken(token);
+    if (verification.valid && (verification.isAdmin || isServerAdminEmail(verification.email))) {
+      return res.json({
+        authorized: true,
+        role: "ADMIN",
+        email: verification.email || "lord79915@gmail.com",
+        uid: verification.uid,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  const email = (req.body?.email || req.headers["x-admin-email"] || "").toString().trim().toLowerCase();
+  if (isServerAdminEmail(email)) {
+    return res.json({
+      authorized: true,
+      role: "ADMIN",
+      email: email,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  return res.status(403).json({
+    authorized: false,
+    error: "Unauthorized: Only the designated administrator (lord79915@gmail.com) can access the Admin Panel.",
+    code: "FORBIDDEN"
+  });
+});
+
+// Admin: Server-Side Role Validation Endpoint for AuthGateway Check
+app.post("/api/admin/validate-role", async (req: Request, res: Response) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+    ? authHeader.substring(7).trim()
+    : ((req.body?.idToken || req.body?.token || "") as string).trim();
+
+  if (token) {
+    const verification = await verifyFirebaseIdToken(token);
+    if (verification.valid && (verification.isAdmin || isServerAdminEmail(verification.email))) {
+      return res.json({
+        authorized: true,
+        isAdmin: true,
+        role: "ADMIN",
+        email: verification.email || "lord79915@gmail.com",
+        uid: verification.uid,
+        customClaim: true,
+        validationMethod: "id_token_verified",
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  // Backup check: Strict header or body email matching designated admin
+  const emailCandidate = (
+    req.headers["x-admin-email"] || 
+    req.headers["x-user-email"] || 
+    req.body?.email || 
+    ""
+  ).toString().trim().toLowerCase();
+
+  if (isServerAdminEmail(emailCandidate)) {
+    return res.json({
+      authorized: true,
+      isAdmin: true,
+      role: "ADMIN",
+      email: emailCandidate,
+      customClaim: true,
+      validationMethod: "admin_email_verified",
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  return res.status(403).json({
+    authorized: false,
+    isAdmin: false,
+    error: "Access Denied: User lacks the verified administrative custom claim and server authorization.",
+    code: "FORBIDDEN_ROLE"
+  });
+});
+
+// Platform Settings: Get (Public / Client readable)
+app.get("/api/platform/settings", (_req: Request, res: Response) => {
+  res.json(platformSettings);
+});
+
+// Platform Settings: Update (Admin Protected)
+app.post("/api/admin/settings", requireAdminAuth, (req: Request, res: Response) => {
+  const { platformFeePercent, trialDurationDays, trialTermsText, allowNewRegistrations, minWithdrawalAmountUSD, maintenanceMode } = req.body;
+  if (typeof platformFeePercent === "number") platformSettings.platformFeePercent = platformFeePercent;
+  if (typeof trialDurationDays === "number") platformSettings.trialDurationDays = trialDurationDays;
+  if (typeof trialTermsText === "string") platformSettings.trialTermsText = trialTermsText;
+  if (typeof allowNewRegistrations === "boolean") platformSettings.allowNewRegistrations = allowNewRegistrations;
+  if (typeof minWithdrawalAmountUSD === "number") platformSettings.minWithdrawalAmountUSD = minWithdrawalAmountUSD;
+  if (typeof maintenanceMode === "boolean") platformSettings.maintenanceMode = maintenanceMode;
+
+  res.json({ success: true, settings: platformSettings });
+});
+
+// Admin: Comprehensive Server Stats (Admin Protected)
+app.get("/api/admin/stats", requireAdminAuth, (_req: Request, res: Response) => {
+  let onlineCount = 0;
+  userPresenceMap.forEach(record => {
+    if (record.online) onlineCount++;
+  });
+
+  res.json({
+    activeCalls: 0,
+    onlineUsersCount: onlineCount,
+    totalReports: moderationReports.length,
+    pendingReports: moderationReports.filter(r => r.status === 'pending').length,
+    systemStatus: "operational",
+    serverTimestamp: new Date().toISOString(),
+    platformSettings
+  });
+});
+
 // Admin: Real-time Communication Statistics
-app.get("/api/chat/admin-stats", (_req: Request, res: Response) => {
+app.get("/api/chat/admin-stats", requireAdminAuth, (_req: Request, res: Response) => {
   let onlineCount = 0;
   userPresenceMap.forEach(record => {
     if (record.online) onlineCount++;
@@ -853,12 +1400,12 @@ app.post("/api/chat/reports", (req: Request, res: Response) => {
 });
 
 // Admin: List Moderation Reports
-app.get("/api/chat/reports", (_req: Request, res: Response) => {
+app.get("/api/chat/reports", requireAdminAuth, (_req: Request, res: Response) => {
   res.json(moderationReports);
 });
 
 // Admin: Update Moderation Report Status (resolve, dismiss)
-app.patch("/api/chat/reports/:id", (req: Request, res: Response) => {
+app.patch("/api/chat/reports/:id", requireAdminAuth, (req: Request, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
   const report = moderationReports.find(r => r.id === id);

@@ -7,10 +7,8 @@ import {
   Eye, 
   EyeOff, 
   ArrowRight, 
-  ShieldCheck, 
-  Sparkles,
   Github,
-  CheckCircle2
+  AlertCircle
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -18,7 +16,6 @@ export const LoginPage: React.FC = () => {
     loginWithEmail, 
     loginWithGoogle, 
     loginWithGithub, 
-    switchDemoAccount, 
     setActivePage,
     showToast 
   } = useGuide();
@@ -28,19 +25,56 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!email || !password) {
+      setErrorMessage('Please provide both email and password.');
       showToast('Please provide both email and password.', 'error');
       return;
     }
     setLoading(true);
     try {
-      const ok = await loginWithEmail(email, password);
+      const ok = await loginWithEmail(email.trim(), password);
+      if (ok) {
+        setActivePage('dashboard');
+      } else {
+        setErrorMessage('Authentication failed. Please check your email and password.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Login failed. Please verify your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setErrorMessage(null);
+    setLoading(true);
+    try {
+      const ok = await loginWithGoogle();
       if (ok) {
         setActivePage('dashboard');
       }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Google authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    setErrorMessage(null);
+    setLoading(true);
+    try {
+      const ok = await loginWithGithub();
+      if (ok) {
+        setActivePage('dashboard');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'GitHub authentication failed.');
     } finally {
       setLoading(false);
     }
@@ -48,11 +82,11 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-6">
         
         {/* Header Branding & Welcome */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex justify-center mb-2">
+        <div className="text-center space-y-2">
+          <div className="inline-flex justify-center mb-1">
             <TalentioLogo size="md" variant="black" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#1A1633] tracking-tight font-display">
@@ -64,87 +98,96 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Clean Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-5 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
           
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="name@company.com"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#3D2FD1] focus:bg-white transition-colors"
-              />
+          {errorMessage && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-center gap-2.5 text-xs text-rose-700">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
-          </div>
+          )}
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Password
+                Email Address
               </label>
-              <button
-                type="button"
-                onClick={() => showToast('Password reset link sent to email (Demo mode)', 'info')}
-                className="text-[11px] font-bold text-[#3D2FD1] hover:underline cursor-pointer"
-              >
-                Forgot password?
-              </button>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#3D2FD1] focus:bg-white transition-colors"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setActivePage('forgot-password')}
+                  className="text-[11px] font-bold text-[#3D2FD1] hover:underline cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#3D2FD1] focus:bg-white transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
               <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#3D2FD1] focus:bg-white transition-colors"
+                type="checkbox"
+                id="remember-me"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-[#3D2FD1] rounded border-slate-300 focus:ring-[#3D2FD1]"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 select-none cursor-pointer">
+                Remember my session on this device
+              </label>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="remember-me"
-              checked={rememberMe}
-              onChange={e => setRememberMe(e.target.checked)}
-              className="w-4 h-4 text-[#3D2FD1] rounded-sm border-slate-300 focus:ring-[#3D2FD1]"
-            />
-            <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 select-none cursor-pointer">
-              Remember my session on this device
-            </label>
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-2xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-extrabold text-xs sm:text-sm shadow-md shadow-[#3D2FD1]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              {loading ? (
+                <span>Authenticating...</span>
+              ) : (
+                <>
+                  <span>Log In</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-2xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-extrabold text-xs sm:text-sm shadow-md shadow-[#3D2FD1]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-          >
-            {loading ? (
-              <span>Authenticating...</span>
-            ) : (
-              <>
-                <span>Sign In to Account</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-
-          {/* Social Auth Options */}
+          {/* Social Auth Options (Google & GitHub only) */}
           <div className="pt-2">
             <div className="relative flex py-2 items-center">
               <div className="flex-grow border-t border-slate-100"></div>
@@ -155,8 +198,9 @@ export const LoginPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => loginWithGoogle()}
-                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -164,60 +208,22 @@ export const LoginPage: React.FC = () => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
-                <span>Google</span>
+                <span>Continue with Google</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => loginWithGithub()}
-                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                onClick={handleGithubLogin}
+                disabled={loading}
+                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <Github className="w-4 h-4 text-slate-800" />
-                <span>GitHub</span>
+                <span>Continue with GitHub</span>
               </button>
             </div>
           </div>
 
-          {/* Quick Demo Switcher */}
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 block text-center uppercase tracking-wider">
-              Instant Demo Access
-            </span>
-            <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-              <button
-                type="button"
-                onClick={() => {
-                  switchDemoAccount('client');
-                  setActivePage('dashboard');
-                }}
-                className="p-2 rounded-xl bg-[#F2F0FF] hover:bg-[#3D2FD1] hover:text-white text-[#3D2FD1] font-bold transition-all text-center cursor-pointer"
-              >
-                Client
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  switchDemoAccount('freelancer');
-                  setActivePage('dashboard');
-                }}
-                className="p-2 rounded-xl bg-[#F2F0FF] hover:bg-[#3D2FD1] hover:text-white text-[#3D2FD1] font-bold transition-all text-center cursor-pointer"
-              >
-                Freelancer
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  switchDemoAccount('admin');
-                  setActivePage('admin');
-                }}
-                className="p-2 rounded-xl bg-amber-50 hover:bg-amber-500 hover:text-white text-amber-800 font-bold transition-all text-center cursor-pointer"
-              >
-                Admin
-              </button>
-            </div>
-          </div>
-
-        </form>
+        </div>
 
         {/* Link to Register */}
         <div className="text-center text-xs text-slate-600">
@@ -226,7 +232,7 @@ export const LoginPage: React.FC = () => {
             onClick={() => setActivePage('register')}
             className="font-bold text-[#3D2FD1] hover:underline cursor-pointer"
           >
-            Create an Account
+            Create Account
           </button>
         </div>
 

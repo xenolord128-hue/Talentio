@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { TALENTIO_CATEGORIES } from '../data/talentioData';
 import { ServiceCard } from '../components/ServiceCard';
+import { AdPlacement } from '../components/ads/AdPlacement';
 import { 
   Search, 
   Layers, 
@@ -165,17 +166,25 @@ export const ServicesPage: React.FC = () => {
 
       </div>
 
+      {/* Monetization: Between Content Placement */}
+      <AdPlacement placement="between_content" className="my-2" />
+
       {/* 2-Column Marketplace Grid: Desktop/Tablet 2 cards, Mobile 1 card */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {filtered.map(service => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              onSelectService={s => openGigDetails(s)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            {filtered.map(service => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                onSelectService={s => openGigDetails(s)}
+              />
+            ))}
+          </div>
+
+          {/* Monetization: Marketplace Feed Ad Placement */}
+          <AdPlacement placement="feed_marketplace" className="my-4" />
+        </>
       ) : (
         <div className="p-12 sm:p-16 rounded-3xl bg-white border border-slate-200 text-center space-y-4 max-w-md mx-auto">
           <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">

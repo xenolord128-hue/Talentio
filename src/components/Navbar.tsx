@@ -5,6 +5,7 @@ import { TalentioLogo } from './TalentioLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { CurrencySelectorModal } from './CurrencySelectorModal';
 import { CURRENCIES_DATA } from '../data/currenciesData';
+import { isAuthorizedAdminEmail } from '../lib/firebaseAuth';
 import { 
   Search, 
   Sparkles, 
@@ -231,7 +232,7 @@ export const Navbar: React.FC = () => {
                   </div>
 
                   {/* Menu Items */}
-                  {user.role === 'admin' && (
+                  {user && (user.role === 'ADMIN' || user.role === 'admin' || isAuthorizedAdminEmail(user.email)) && (
                     <button
                       onClick={() => { setActivePage('admin'); setDropdownOpen(false); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#3D2FD1]/40 text-[#A38BFF] hover:bg-[#3D2FD1] hover:text-white transition-colors cursor-pointer border border-[#A38BFF]/30 mb-1"
@@ -332,36 +333,23 @@ export const Navbar: React.FC = () => {
                     <span className="text-xs">{currentCurrencyObj.flag}</span>
                   </button>
 
-                  {/* Demo Role Switcher */}
-                  <div className="my-1 border-t border-white/10 pt-1">
-                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      ⚡ Demo Role Quick Switch
+                  {/* Account Role & Subscription Status */}
+                  <div className="my-1 border-t border-white/10 pt-2 pb-1 px-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 px-1 mb-1">
+                      <span>Account Role</span>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] uppercase font-black ${
+                        user.role === 'ADMIN' || user.role === 'admin' 
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : user.role === 'FREELANCER' || user.userType === 'freelancer'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-[#3D2FD1]/30 text-[#A38BFF] border border-[#3D2FD1]/50'
+                      }`}>
+                        {user.role || (user.userType === 'client' ? 'CLIENT' : 'FREELANCER')}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-1 px-1">
-                      <button
-                        onClick={() => { switchDemoAccount('client'); setDropdownOpen(false); }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
-                          user.userType === 'client' && user.role !== 'admin' ? 'bg-[#3D2FD1] text-white' : 'hover:bg-white/10 text-slate-300'
-                        }`}
-                      >
-                        Client
-                      </button>
-                      <button
-                        onClick={() => { switchDemoAccount('freelancer'); setDropdownOpen(false); }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
-                          user.userType === 'freelancer' ? 'bg-[#3D2FD1] text-white' : 'hover:bg-white/10 text-slate-300'
-                        }`}
-                      >
-                        Seller
-                      </button>
-                      <button
-                        onClick={() => { switchDemoAccount('admin'); setDropdownOpen(false); }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
-                          user.role === 'admin' ? 'bg-emerald-600 text-white' : 'hover:bg-white/10 text-emerald-300'
-                        }`}
-                      >
-                        Admin
-                      </button>
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center justify-between">
+                      <span className="text-slate-400">Platform Fee:</span>
+                      <span className="text-emerald-400 font-bold">One Month 0% Fee</span>
                     </div>
                   </div>
 
@@ -622,7 +610,7 @@ export const Navbar: React.FC = () => {
                     </div>
 
                     {/* Admin Desk if Admin */}
-                    {user?.role === 'admin' && (
+                    {user && (user.role === 'ADMIN' || user.role === 'admin' || isAuthorizedAdminEmail(user.email)) && (
                       <button
                         onClick={() => {
                           setActivePage('admin');
@@ -720,54 +708,28 @@ export const Navbar: React.FC = () => {
                     )}
                   </div>
 
-                  {/* 5. Demo Role Switcher & System Preferences */}
+                  {/* 5. Account Role & Subscription Details */}
                   <div className="pt-2 border-t border-white/10 space-y-2">
-                    <div>
-                      <div className="px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        ⚡ Demo Account Role Switch
+                    {user && (
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">Account Role:</span>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                            user?.role === 'ADMIN' || user?.role === 'admin'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              : user?.role === 'FREELANCER' || user?.userType === 'freelancer'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                              : 'bg-[#3D2FD1]/30 text-[#A38BFF] border border-[#3D2FD1]/50'
+                          }`}>
+                            {user?.role || (user?.userType === 'client' ? 'CLIENT' : 'FREELANCER')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">Platform Fee:</span>
+                          <span className="text-emerald-400 font-bold text-[11px]">One Month 0% Fee</span>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <button
-                          onClick={() => {
-                            switchDemoAccount('client');
-                            setDesktopMenuOpen(false);
-                          }}
-                          className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
-                            user?.userType === 'client' && user?.role !== 'admin'
-                              ? 'bg-[#3D2FD1] text-white'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
-                          }`}
-                        >
-                          Client
-                        </button>
-                        <button
-                          onClick={() => {
-                            switchDemoAccount('freelancer');
-                            setDesktopMenuOpen(false);
-                          }}
-                          className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
-                            user?.userType === 'freelancer'
-                              ? 'bg-[#3D2FD1] text-white'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
-                          }`}
-                        >
-                          Seller
-                        </button>
-                        <button
-                          onClick={() => {
-                            switchDemoAccount('admin');
-                            setDesktopMenuOpen(false);
-                          }}
-                          className={`py-1.5 px-2 rounded-lg text-[10px] font-bold text-center transition-colors cursor-pointer ${
-                            user?.role === 'admin'
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-white/5 hover:bg-white/10 text-emerald-300'
-                          }`}
-                        >
-                          Admin
-                        </button>
-                      </div>
-                    </div>
+                    )}
 
                     {/* Sign out if authenticated */}
                     {isAuthenticated && (

@@ -1,5 +1,6 @@
 import React from 'react';
-import { useGuide } from '../context/GuideContext';
+import { useGuide, TalentioPage } from '../context/GuideContext';
+import { TalentioLink } from './TalentioLink';
 import { 
   Home, 
   Layers, 
@@ -7,50 +8,55 @@ import {
   MessageSquare,
   LayoutDashboard,
   ShieldAlert,
-  Bell,
-  Sparkles
+  Bell
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
-  const { activePage, setActivePage, user, unreadNoticesCount } = useGuide();
+  const { activePage, user, unreadNoticesCount } = useGuide();
 
-  const navItems = [
+  const navItems: Array<{
+    id: string;
+    page: TalentioPage;
+    label: string;
+    icon: any;
+    badge?: number | string;
+  }> = [
     {
       id: 'home',
+      page: 'explore',
       label: 'Explore',
-      icon: Home,
-      action: () => setActivePage('home')
+      icon: Home
     },
     {
       id: 'services',
+      page: 'services',
       label: 'Gigs',
-      icon: Layers,
-      action: () => setActivePage('services')
+      icon: Layers
     },
     {
       id: 'notices',
+      page: 'notices',
       label: 'Notice',
       icon: Bell,
-      badge: unreadNoticesCount > 0 ? unreadNoticesCount : undefined,
-      action: () => setActivePage('notices')
+      badge: unreadNoticesCount > 0 ? unreadNoticesCount : undefined
     },
     {
       id: 'workstation',
+      page: 'workstation',
       label: 'Escrow',
-      icon: ShieldCheck,
-      action: () => setActivePage('workstation')
+      icon: ShieldCheck
     },
     {
       id: 'chat',
+      page: 'chat',
       label: 'Chat',
-      icon: MessageSquare,
-      action: () => setActivePage('chat')
+      icon: MessageSquare
     },
     {
       id: user?.role === 'admin' ? 'admin' : 'dashboard',
+      page: user?.role === 'admin' ? 'admin' : 'dashboard',
       label: user?.role === 'admin' ? 'Admin' : 'Ledger',
-      icon: user?.role === 'admin' ? ShieldAlert : LayoutDashboard,
-      action: () => setActivePage(user?.role === 'admin' ? 'admin' : 'dashboard')
+      icon: user?.role === 'admin' ? ShieldAlert : LayoutDashboard
     }
   ];
 
@@ -63,19 +69,19 @@ export const MobileBottomNav: React.FC = () => {
       >
         {navItems.map(item => {
           const Icon = item.icon;
-          const isActive = activePage === item.id || 
-            (item.id === 'home' && activePage === 'explore') ||
-            (item.id === 'services' && (activePage === 'catalog' || activePage === 'marketplace')) ||
-            (item.id === 'notices' && activePage === 'notice') ||
-            (item.id === 'workstation' && (activePage === 'escrow' || activePage === 'orders')) ||
-            (item.id === 'chat' && activePage === 'messages') ||
-            (item.id === 'dashboard' && (activePage === 'earnings' || activePage === 'payouts'));
+          const isActive = activePage === item.page || 
+            (item.page === 'explore' && activePage === 'home') ||
+            (item.page === 'services' && (activePage === 'catalog' || activePage === 'marketplace' || activePage === 'gig-details')) ||
+            (item.page === 'notices' && activePage === 'notice') ||
+            (item.page === 'workstation' && (activePage === 'escrow' || activePage === 'orders')) ||
+            (item.page === 'chat' && activePage === 'messages') ||
+            (item.page === 'dashboard' && (activePage === 'earnings' || activePage === 'payouts'));
 
           return (
-            <button
+            <TalentioLink
               key={item.id}
               id={`nav-dock-${item.id}`}
-              onClick={item.action}
+              to={item.page}
               className={`relative flex flex-col items-center justify-center min-w-[48px] sm:min-w-[62px] min-h-[46px] sm:min-h-[50px] py-1 sm:py-1.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl cursor-pointer transition-colors duration-150 active:scale-95 select-none ${
                 isActive
                   ? 'bg-[#3D2FD1] text-white shadow-sm ring-1 ring-white/30'
@@ -100,7 +106,7 @@ export const MobileBottomNav: React.FC = () => {
               }`}>
                 {item.label}
               </span>
-            </button>
+            </TalentioLink>
           );
         })}
       </nav>

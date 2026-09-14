@@ -24,6 +24,7 @@ import {
   saveConversationDocument,
   markMessagesSeenInFirestore 
 } from '../lib/firestore';
+import { detectLanguageFromText } from '../data/languagesData';
 import { realtimeService } from '../lib/realtimeService';
 import { ConversationList } from '../components/chat/ConversationList';
 import { ActiveChatHeader } from '../components/chat/ActiveChatHeader';
@@ -168,16 +169,69 @@ export const ChatPage: React.FC = () => {
       const convId = msg.conversationId || msg.conversation_id;
       if (!convId) return;
 
+      const myLang = user?.preferredLanguage || 'en';
+      const autoTranslateOn = user?.autoTranslateMessages !== false;
+
+      // Ensure original text and translation status are properly framed
+      const enrichedMsg: ChatMessage = {
+        ...msg,
+        originalText: msg.originalText || msg.text || msg.message || ''
+      };
+
       setMessagesMap(prev => {
         const existing = prev[convId] || [];
-        if (existing.some(m => m.id === msg.id)) return prev;
+        if (existing.some(m => m.id === enrichedMsg.id)) return prev;
         return {
           ...prev,
-          [convId]: [...existing, msg]
+          [convId]: [...existing, enrichedMsg]
         };
       });
 
+      // If incoming message hasn't yet been translated, but recipient has autoTranslate on
+      if (
+        autoTranslateOn &&
+        enrichedMsg.text &&
+        !enrichedMsg.translatedText &&
+        enrichedMsg.translationStatus !== 'original_same_language'
+      ) {
+        const detectedSource = enrichedMsg.sourceLanguage || detectLanguageFromText(enrichedMsg.text, 'en');
+        if (detectedSource !== myLang) {
+          fetch('/api/chat/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: enrichedMsg.text,
+              targetLanguage: myLang,
+              sourceLanguage: detectedSource
+            })
+          })
+          .then(res => res.json())
+          .then(transData => {
+            if (transData && transData.translatedText) {
+              setMessagesMap(prev => {
+                const list = prev[convId];
+                if (!list) return prev;
+                return {
+                  ...prev,
+                  [convId]: list.map(m => m.id === enrichedMsg.id ? {
+                    ...m,
+                    translatedText: transData.translatedText,
+                    sourceLanguage: transData.sourceLanguage || detectedSource,
+                    targetLanguage: transData.targetLanguage || myLang,
+                    translationStatus: transData.translationStatus || 'translated'
+                  } : m)
+                };
+              });
+            }
+          })
+          .catch(() => {});
+        }
+      }
+
       const isCurrentActive = activeConversationId === convId;
+      const displaySummary = (enrichedMsg.translationStatus === 'translated' && enrichedMsg.translatedText)
+        ? enrichedMsg.translatedText
+        : (enrichedMsg.text || enrichedMsg.message || 'New message');
 
       setConversations(prev => {
         const match = prev.find(c => c.id === convId);
@@ -185,15 +239,15 @@ export const ChatPage: React.FC = () => {
           return prev.map(c => c.id === convId ? {
             ...c,
             lastMessage: {
-              text: msg.text || msg.message || 'New message',
-              timestamp: msg.timestamp || 'Just now',
-              senderId: msg.senderId || msg.sender_id,
-              sender_id: msg.senderId || msg.sender_id,
-              receiver_id: msg.receiverId || msg.receiver_id,
+              text: displaySummary,
+              timestamp: enrichedMsg.timestamp || 'Just now',
+              senderId: enrichedMsg.senderId || enrichedMsg.sender_id,
+              sender_id: enrichedMsg.senderId || enrichedMsg.sender_id,
+              receiver_id: enrichedMsg.receiverId || enrichedMsg.receiver_id,
               status: isCurrentActive ? 'read' : 'delivered',
               read_status: isCurrentActive ? 'read' : 'delivered',
-              isVoice: !!msg.voiceNote,
-              hasAttachment: !!(msg.attachments && msg.attachments.length > 0)
+              isVoice: !!enrichedMsg.voiceNote,
+              hasAttachment: !!(enrichedMsg.attachments && enrichedMsg.attachments.length > 0)
             },
             unreadCount: isCurrentActive ? 0 : (c.unreadCount + 1)
           } : c);
@@ -201,18 +255,18 @@ export const ChatPage: React.FC = () => {
           const newConv: Conversation = {
             id: convId,
             participant: {
-              id: msg.senderId || 'user-sender',
-              name: msg.senderName || 'Talentio User',
-              handle: `@user_${(msg.senderId || 'user').slice(-4)}`,
+              id: enrichedMsg.senderId || 'user-sender',
+              name: enrichedMsg.senderName || 'Talentio User',
+              handle: `@user_${(enrichedMsg.senderId || 'user').slice(-4)}`,
               avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
               role: 'freelancer',
               verified: true,
               online: true,
               lastSeen: 'Online'
             },
-            participantIds: [user?.id || 'me', msg.senderId || 'user-sender'],
+            participantIds: [user?.id || 'me', enrichedMsg.senderId || 'user-sender'],
             lastMessage: {
-              text: msg.text || msg.message || 'New message',
+              text: displaySummary,
               timestamp: msg.timestamp || 'Just now',
               senderId: msg.senderId,
               status: isCurrentActive ? 'read' : 'delivered',
@@ -521,6 +575,11 @@ export const ChatPage: React.FC = () => {
     const isoTimestamp = new Date().toISOString();
     const timeDisplay = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    const recipientLang = activeConversation.participant.preferredLanguage || 'en';
+    const senderLang = user?.preferredLanguage || 'en';
+    const detectedSource = detectLanguageFromText(text, senderLang);
+    const shouldAutoTranslate = activeConversation.participant.autoTranslateMessages !== false;
+
     const newMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       conversationId: activeConversationId,
@@ -533,6 +592,10 @@ export const ChatPage: React.FC = () => {
       senderName: user ? user.name : 'You',
       text,
       message: text,
+      originalText: text,
+      sourceLanguage: detectedSource,
+      targetLanguage: recipientLang,
+      translationStatus: (recipientLang === detectedSource) ? 'original_same_language' : 'pending',
       timestamp: timeDisplay,
       isoDate: isoTimestamp,
       createdAt: isoTimestamp,
@@ -718,6 +781,42 @@ export const ChatPage: React.FC = () => {
     }
 
     // Broadcast via live socket and persist to Firestore database for human recipient
+    // Perform background translation if target language differs
+    if (shouldAutoTranslate && recipientLang && recipientLang !== detectedSource) {
+      try {
+        const transRes = await fetch('/api/chat/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            targetLanguage: recipientLang,
+            sourceLanguage: detectedSource
+          })
+        });
+        if (transRes.ok) {
+          const transData = await transRes.json();
+          if (transData && transData.translatedText) {
+            newMessage.translatedText = transData.translatedText;
+            newMessage.sourceLanguage = transData.sourceLanguage || detectedSource;
+            newMessage.targetLanguage = transData.targetLanguage || recipientLang;
+            newMessage.translationStatus = transData.translationStatus || 'translated';
+
+            // Update in local messagesMap so sender also has translation data
+            setMessagesMap(prev => {
+              const list = prev[activeConversationId];
+              if (!list) return prev;
+              return {
+                ...prev,
+                [activeConversationId]: list.map(m => m.id === newMessage.id ? { ...m, ...newMessage } : m)
+              };
+            });
+          }
+        }
+      } catch {
+        // Silent non-blocking fallback
+      }
+    }
+
     realtimeService.sendMessage(activeConversationId, newMessage);
     try {
       await sendChatMessageDocument(activeConversationId, newMessage);

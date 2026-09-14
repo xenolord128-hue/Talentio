@@ -240,6 +240,7 @@ export interface OrderRequestDetails {
 
 export interface ChatMessage {
   id: string;
+  messageId?: string;
   conversationId?: string;
   conversation_id?: string;
   sender: 'client' | 'freelancer' | 'system' | 'me' | 'other';
@@ -251,10 +252,16 @@ export interface ChatMessage {
   senderAvatar?: string;
   text: string;
   message?: string;
+  originalText?: string;
+  translatedText?: string;
+  sourceLanguage?: string;
+  targetLanguage?: string;
+  translationStatus?: 'pending' | 'translated' | 'not_required' | 'failed' | 'original_same_language';
   timestamp: string;
   isoDate?: string;
   createdAt?: string;
   created_at?: string;
+  updatedAt?: string;
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'seen';
   read_status?: 'sent' | 'delivered' | 'read' | 'seen';
   isEdited?: boolean;
@@ -300,7 +307,11 @@ export interface ConversationParticipant {
   avatar: string;
   role: 'freelancer' | 'client' | 'agency' | 'admin' | 'bot' | 'assistant';
   title?: string;
+  country?: string;
+  countryCode?: string;
   countryFlag?: string;
+  preferredLanguage?: string;
+  autoTranslateMessages?: boolean;
   verified: boolean;
   online: boolean;
   lastSeen: string;
@@ -337,7 +348,8 @@ export interface Conversation {
 // USER, AUTH & ONBOARDING TYPES
 // ==========================================
 
-export type UserRole = 'client' | 'freelancer' | 'agency' | 'team' | 'company';
+export type AccountRole = 'CLIENT' | 'FREELANCER' | 'ADMIN';
+export type UserRole = 'client' | 'freelancer' | 'agency' | 'team' | 'company' | 'admin';
 
 export type ProviderType = 'individual' | 'agency' | 'team' | 'company' | 'studio';
 
@@ -357,25 +369,36 @@ export interface UserProposal {
 
 export interface UserProfile {
   id: string;
+  userId?: string;
   name: string;
+  displayName?: string;
   fullName?: string;
   handle: string;
   email?: string;
   phone?: string;
   avatar: string;
   coverImage?: string;
-  authMethod: 'email' | 'phone' | 'github' | 'google' | 'demo';
-  passwordStatus?: 'Encrypted (PBKDF2/Argon2)' | 'OAuth Managed' | 'Phone OTP Verified' | 'Set & Verified';
+  authMethod: 'email' | 'github' | 'google' | 'demo';
+  passwordStatus?: 'Encrypted (PBKDF2/Argon2)' | 'OAuth Managed' | 'Set & Verified';
   passwordHashPlaceholder?: string;
   lastLoginAt?: string;
   userType: UserRole | null;
   providerType?: ProviderType;
-  role?: 'user' | 'admin' | 'moderator';
+  role?: AccountRole | 'client' | 'freelancer' | 'admin' | 'user' | 'moderator';
   accountStatus: AccountStatus;
+  subscriptionStatus?: 'active' | 'trial' | 'expired' | 'canceled';
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  subscriptionPlan?: string;
+  platformFeePercent?: number;
+  trialPeriodDays?: number;
   isApprovedSeller?: boolean;
   rejectionReason?: string;
   statusReason?: string;
+  country?: string;
   countryCode?: string;
+  preferredLanguage?: string;
+  autoTranslateMessages?: boolean;
   preferredCurrency?: string;
   title?: string;
   companyName?: string;
@@ -649,4 +672,57 @@ export interface GlossaryTerm {
   definitionBn?: string;
   context: string;
   importance: 'essential' | 'intermediate' | 'advanced' | string;
+}
+
+// ==========================================
+// AD MANAGEMENT & MONETIZATION TYPES
+// ==========================================
+
+export type AdPlacementLocation = 
+  | 'top_banner'           // Top Banner (e.g., below navbar)
+  | 'below_hero'           // Below Hero Section
+  | 'between_content'      // Between Content Sections
+  | 'feed_marketplace'     // Feed / Marketplace Listings
+  | 'sidebar'              // Desktop Sidebar
+  | 'before_footer'        // Before Global Footer
+  | 'footer'               // Inside / Right after Footer
+  | 'mobile_banner'        // Mobile Specific Sticky/Inline Banner
+  | 'custom';              // Custom / Background Script Placement
+
+export type AdDeviceTarget = 'all' | 'desktop' | 'tablet' | 'mobile';
+
+export type AdFormat = 
+  | 'banner_468x60' 
+  | 'banner_728x90' 
+  | 'sidebar_160x300' 
+  | 'mobile_320x50' 
+  | 'container' 
+  | 'script' 
+  | 'custom';
+
+export type AdSpacing = 'none' | 'compact' | 'standard' | 'relaxed';
+
+export interface Advertisement {
+  id: string;
+  name: string;
+  network: string; // e.g., 'Adsterra', 'Google AdSense', 'Custom'
+  code: string;    // Raw HTML/JavaScript snippet entered by admin
+  format: AdFormat;
+  width?: number;
+  height?: number;
+  placement: AdPlacementLocation;
+  devices: AdDeviceTarget;
+  enabled: boolean;
+  priority: number; // 1 = Highest priority
+  spacing: AdSpacing;
+  targetPages: string[]; // e.g., ['home', 'services', 'freelancers', 'search', 'gig-details']
+  allowOnPrivatePages?: boolean; // strictly false by default
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdSettings {
+  globalAdsEnabled: boolean;
+  updatedAt: string;
+  updatedBy?: string;
 }

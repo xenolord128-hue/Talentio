@@ -6,23 +6,32 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "userId": { "type": "string" },
         "name": { "type": "string" },
+        "displayName": { "type": "string" },
         "handle": { "type": "string" },
         "email": { "type": "string" },
         "phone": { "type": "string" },
         "avatar": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "admin"] },
-        "userType": { "type": "string", "enum": ["client", "freelancer", "agency"] },
-        "accountStatus": { "type": "string", "enum": ["approved", "pending", "suspended"] },
+        "role": { "type": "string", "enum": ["CLIENT", "FREELANCER", "ADMIN", "user", "admin"] },
+        "userType": { "type": "string", "enum": ["client", "freelancer", "agency", "admin"] },
+        "accountStatus": { "type": "string", "enum": ["active", "approved", "pending", "suspended", "banned"] },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "trial", "expired", "canceled"] },
+        "subscriptionStartDate": { "type": "string" },
+        "subscriptionEndDate": { "type": "string" },
+        "platformFeePercent": { "type": "number" },
+        "trialPeriodDays": { "type": "number" },
         "isApprovedSeller": { "type": "boolean" },
         "onboardingCompleted": { "type": "boolean" },
         "title": { "type": "string" },
         "category": { "type": "string" },
         "skills": { "type": "array" },
         "balanceAvailable": { "type": "number" },
-        "balanceInEscrow": { "type": "number" }
+        "balanceInEscrow": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
-      "required": ["id", "email", "userType"]
+      "required": ["id", "email", "role"]
     },
     "Gig": {
       "title": "Gig",
@@ -241,6 +250,12 @@
     "/notices/{noticeId}": {
       "schema": "Notice",
       "description": "Administrative announcements and user notices"
+    },
+    "/admin/{docId}": {
+      "description": "Restricted administrative metadata and control center configuration"
+    },
+    "/admins/{adminId}": {
+      "description": "Authorized administrator user credentials and records"
     }
   }
 }

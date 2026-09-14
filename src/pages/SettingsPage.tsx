@@ -19,9 +19,11 @@ import {
   AlertCircle,
   HelpCircle,
   Vibrate,
-  Layers
+  Layers,
+  Languages
 } from 'lucide-react';
 import { triggerDeviceNotification, updateAppBadge, subscribeUserToPush } from '../utils/serviceWorkerRegistration';
+import { SUPPORTED_LANGUAGES } from '../data/languagesData';
 
 export const SettingsPage: React.FC = () => {
   const { 
@@ -30,7 +32,8 @@ export const SettingsPage: React.FC = () => {
     language, 
     setLanguage, 
     showToast,
-    user 
+    user,
+    updateUserProfile
   } = useGuide();
 
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -156,13 +159,48 @@ export const SettingsPage: React.FC = () => {
                 Language / Interface
               </label>
               <select
-                value={language}
-                onChange={e => setLanguage(e.target.value as any)}
+                value={user?.preferredLanguage || language}
+                onChange={e => {
+                  const newLang = e.target.value;
+                  setLanguage(newLang as any);
+                  updateUserProfile({ preferredLanguage: newLang });
+                  showToast(`Interface & translation language updated to ${SUPPORTED_LANGUAGES.find(l => l.code === newLang)?.name || newLang}`, 'success');
+                }}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:border-[#3D2FD1]"
               >
-                <option value="en">English (US - Global)</option>
-                <option value="bn">বাংলা (Bengali)</option>
+                {SUPPORTED_LANGUAGES.map(l => (
+                  <option key={l.code} value={l.code}>
+                    {l.flag} {l.name} ({l.nativeName})
+                  </option>
+                ))}
               </select>
+            </div>
+          </div>
+
+          {/* Automatic Chat Message Translation Preferences */}
+          <div className="pt-4 border-t border-slate-100">
+            <div className="flex items-start justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 gap-4">
+              <div className="space-y-1 max-w-lg">
+                <div className="flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-[#3D2FD1]" />
+                  <span className="font-bold text-xs sm:text-sm text-slate-800">Automatic Chat Translation</span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Automatically translate international messages in 1-on-1 chats into your preferred language ({SUPPORTED_LANGUAGES.find(l => l.code === (user?.preferredLanguage || language))?.name || 'English'}). Original messages are always preserved and can be viewed anytime with a single click.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={user?.autoTranslateMessages !== false}
+                onChange={e => {
+                  updateUserProfile({ autoTranslateMessages: e.target.checked });
+                  showToast(e.target.checked ? 'Automatic chat translation enabled' : 'Automatic chat translation disabled', 'info');
+                }}
+                className="w-5 h-5 text-[#3D2FD1] rounded-sm focus:ring-[#3D2FD1] cursor-pointer mt-1 shrink-0"
+              />
             </div>
           </div>
         </div>

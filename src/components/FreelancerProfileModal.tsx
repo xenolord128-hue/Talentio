@@ -39,6 +39,19 @@ export const FreelancerProfileModal: React.FC = () => {
 
   const isSaved = savedFreelancerIds.includes(selectedFreelancer.id);
 
+  const handleCloseModal = () => {
+    setIsHireModalOpen(false);
+    try {
+      if (typeof window !== 'undefined' && window.location.search.includes('freelancer=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('freelancer');
+        const newSearch = url.searchParams.toString();
+        const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '');
+        window.history.replaceState({ page: 'freelancers' }, '', newUrl);
+      }
+    } catch (e) {}
+  };
+
   const formatCurrency = (amt: number) => {
     if (currency === 'EUR') return `€${Math.round(amt * 0.92)}`;
     if (currency === 'GBP') return `£${Math.round(amt * 0.79)}`;
@@ -62,7 +75,7 @@ export const FreelancerProfileModal: React.FC = () => {
       {/* Backdrop */}
       <div 
         className="fixed inset-0" 
-        onClick={() => setIsHireModalOpen(false)} 
+        onClick={handleCloseModal} 
       />
 
       {/* Modal Container */}
@@ -116,7 +129,7 @@ export const FreelancerProfileModal: React.FC = () => {
               <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
             </button>
             <button
-              onClick={() => setIsHireModalOpen(false)}
+              onClick={handleCloseModal}
               className="p-3 min-w-[48px] min-h-[48px] rounded-2xl bg-white/10 text-slate-300 hover:text-white border border-[#A38BFF]/30 transition-colors cursor-pointer flex items-center justify-center"
             >
               <X className="w-5 h-5" />

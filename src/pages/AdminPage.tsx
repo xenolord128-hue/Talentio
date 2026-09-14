@@ -5,6 +5,8 @@ import { TalentioLogo } from '../components/TalentioLogo';
 import { CURRENCIES_DATA } from '../data/currenciesData';
 import { COUNTRIES_DATA } from '../data/countriesData';
 import { formatPrice } from '../utils/currency';
+import { AccessDeniedPage } from './AccessDeniedPage';
+import { isAuthorizedAdminEmail } from '../lib/firebaseAuth';
 import { 
   LayoutDashboard, 
   Users, 
@@ -45,8 +47,10 @@ import {
   Building2,
   Briefcase,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  Tv
 } from 'lucide-react';
+import { AdManagementView } from '../components/admin/AdManagementView';
 
 type AdminTab = 
   | 'overview' 
@@ -56,7 +60,8 @@ type AdminTab =
   | 'finance' 
   | 'reports' 
   | 'system' 
-  | 'security';
+  | 'security'
+  | 'ads';
 
 export const AdminPage: React.FC = () => {
   const { 
@@ -76,6 +81,22 @@ export const AdminPage: React.FC = () => {
     currency,
     showToast
   } = useGuide();
+
+  // Strict RBAC Access Check
+  const isAdmin = Boolean(
+    user && 
+    isAuthorizedAdminEmail(user.email) && 
+    (user.role === 'ADMIN' || user.role === 'admin')
+  );
+  if (!isAdmin) {
+    return (
+      <AccessDeniedPage 
+        title="Admin Control Center Restricted"
+        message="Only verified platform administrators can access the Talentio Admin Console."
+        requiredRole="ADMIN"
+      />
+    );
+  }
 
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -327,6 +348,30 @@ export const AdminPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          <div>
+            <div className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">
+              Monetization
+            </div>
+            <div className="space-y-1">
+              <button
+                onClick={() => { setActiveTab('ads'); setSidebarOpen(false); }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === 'ads'
+                    ? 'bg-[#3D2FD1] text-white shadow-md'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Tv className="w-4 h-4 text-emerald-400" />
+                  <span>Ad Management</span>
+                </div>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-extrabold">
+                  Adsterra
+                </span>
+              </button>
+            </div>
+          </div>
         </nav>
 
         {/* Current Admin Badge */}
@@ -365,6 +410,7 @@ export const AdminPage: React.FC = () => {
                 {activeTab === 'reports' && 'Security Scanner & User Abuse Reports'}
                 {activeTab === 'system' && 'Global Country & Currency Dataset Configuration'}
                 {activeTab === 'security' && 'Immutable Audit Logs & Administrator Actions'}
+                {activeTab === 'ads' && 'Adsterra Monetization & Ad Placements Control'}
               </h1>
               <p className="text-xs text-slate-400 hidden sm:block">
                 Talentio Admin Core • Complete Platform Governance
@@ -958,6 +1004,13 @@ export const AdminPage: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ==================== TAB 9: AD MANAGEMENT & MONETIZATION ==================== */}
+          {activeTab === 'ads' && (
+            <div className="animate-in fade-in duration-150">
+              <AdManagementView />
             </div>
           )}
 

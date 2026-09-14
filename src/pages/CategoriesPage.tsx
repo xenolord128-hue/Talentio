@@ -106,10 +106,16 @@ export const CategoriesPage: React.FC = () => {
         {CATEGORY_DETAILS.map(cat => {
           const Icon = cat.icon;
           return (
-            <div
+            <a
               key={cat.id}
-              onClick={() => openCategoryMarketplace(cat.id)}
-              className="group p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 hover:border-[#3D2FD1]/60 shadow-sm hover:shadow-xl hover:shadow-[#3D2FD1]/10 transition-all duration-300 flex flex-col justify-between cursor-pointer space-y-6 select-none"
+              href={`/services?category=${encodeURIComponent(cat.id)}`}
+              onClick={(e) => {
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                  e.preventDefault();
+                  openCategoryMarketplace(cat.id);
+                }
+              }}
+              className="group p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 hover:border-[#3D2FD1]/60 shadow-sm hover:shadow-xl hover:shadow-[#3D2FD1]/10 transition-all duration-300 flex flex-col justify-between cursor-pointer space-y-6 select-none block no-underline"
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -150,7 +156,7 @@ export const CategoriesPage: React.FC = () => {
                   <ArrowRight className="w-4 h-4" />
                 </div>
               </div>
-            </div>
+            </a>
           );
         })}
       </div>

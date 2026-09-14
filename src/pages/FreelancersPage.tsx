@@ -3,6 +3,7 @@ import { useGuide } from '../context/GuideContext';
 import { TALENTIO_CATEGORIES } from '../data/talentioData';
 import { PROFESSIONAL_CATEGORIES } from '../data/categoriesData';
 import { FreelancerCard } from '../components/FreelancerCard';
+import { AdPlacement } from '../components/ads/AdPlacement';
 import { 
   Search, 
   Filter, 
@@ -245,27 +246,45 @@ export const FreelancersPage: React.FC = () => {
 
       </div>
 
+      {/* Monetization: Between Content Placement */}
+      <AdPlacement placement="between_content" className="my-2" />
+
       {/* ========================================================================= */}
       {/* TALENT VIEW */}
       {/* ========================================================================= */}
       {viewMode === 'talent' && (
         filteredFreelancers.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredFreelancers.map(freelancer => (
-              <FreelancerCard
-                key={freelancer.id}
-                freelancer={freelancer}
-                onSelectProfile={f => {
-                  setSelectedFreelancer(f);
-                  setIsHireModalOpen(true);
-                }}
-                onHireDirect={f => {
-                  setSelectedFreelancer(f);
-                  setIsHireModalOpen(true);
-                }}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredFreelancers.map(freelancer => (
+                <FreelancerCard
+                  key={freelancer.id}
+                  freelancer={freelancer}
+                  onSelectProfile={f => {
+                    setSelectedFreelancer(f);
+                    setIsHireModalOpen(true);
+                    try {
+                      if (typeof window !== 'undefined') {
+                        window.history.pushState({ page: 'freelancers', freelancerId: f.id }, '', `/freelancers?freelancer=${encodeURIComponent(f.id)}`);
+                      }
+                    } catch (e) {}
+                  }}
+                  onHireDirect={f => {
+                    setSelectedFreelancer(f);
+                    setIsHireModalOpen(true);
+                    try {
+                      if (typeof window !== 'undefined') {
+                        window.history.pushState({ page: 'freelancers', freelancerId: f.id }, '', `/freelancers?freelancer=${encodeURIComponent(f.id)}`);
+                      }
+                    } catch (e) {}
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Monetization: Marketplace Feed Ad Placement */}
+            <AdPlacement placement="feed_marketplace" className="my-6" />
+          </>
         ) : (
           <div className="py-16 text-center rounded-3xl bg-white border border-slate-200 space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-[#F2F0FF] text-[#3D2FD1] flex items-center justify-center mx-auto">
