@@ -1,12 +1,12 @@
 {
-  "projectId": "commanding-pager-v07pf",
-  "appId": "1:858297187398:web:915fe8542550a83515de47",
-  "apiKey": "AIzaSyBTw0NAA5HsHLiXamGphvi6tpi2OV990HI",
-  "authDomain": "commanding-pager-v07pf.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-talentio-0fdb82fb-3b90-4a4d-ae62-1fe52535facd",
-  "storageBucket": "commanding-pager-v07pf.firebasestorage.app",
-  "messagingSenderId": "858297187398",
-  "measurementId": "",
-  "oAuthClientId": "858297187398-6f0hk0r4epd716ff30jffufvnl8a9si7.apps.googleusercontent.com",
+  "projectId": "talentio-92919",
+  "appId": "1:339445212638:web:cc41238de4c9bd0aad694f",
+  "apiKey": "AIzaSyD1QJQxh7J6jGFZ7DRSh_aqeW42SOtXYaw",
+  "authDomain": "talentio-92919.firebaseapp.com",
+  "firestoreDatabaseId": "",
+  "storageBucket": "talentio-92919.firebasestorage.app",
+  "messagingSenderId": "339445212638",
+  "measurementId": "G-170Z5KR86J",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

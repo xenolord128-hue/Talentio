@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useGuide } from './GuideContext';
 import { queryLocalKnowledgeBase, PAGE_PROMPT_SUGGESTIONS } from '../data/talentioKnowledgeBase';
+import { microphoneManager } from '../utils/microphoneManager';
 
 export interface AIMessage {
   id: string;
@@ -96,7 +97,7 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
-  const [isVoiceActive, setIsVoiceActive] = useState<boolean>(true); // Wake-name detection
+  const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false); // Opt-in wake-name detection (disabled by default for mobile stability)
   const [isListening, setIsListening] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -411,11 +412,20 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       silenceTimeoutRef.current = null;
     }
     if (voiceRecognitionRef.current) {
-      try { voiceRecognitionRef.current.abort(); } catch (_) {}
+      const rec = voiceRecognitionRef.current;
       voiceRecognitionRef.current = null;
+      try {
+        rec.onstart = null;
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        rec.abort();
+      } catch (_) {}
+      microphoneManager.abortRecognition(rec);
     }
     stopSpeaking();
     setVoiceState('idle');
+    setVoiceTranscript('');
     setIsVoicePopupOpen(false);
   }, [stopSpeaking]);
 
@@ -590,8 +600,12 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
+    // Release any competing microphone resources
+    microphoneManager.releaseAll();
+
     if (voiceRecognitionRef.current) {
       try { voiceRecognitionRef.current.abort(); } catch (_) {}
+      voiceRecognitionRef.current = null;
     }
 
     try {
@@ -599,6 +613,7 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = language === 'bn' ? 'bn-BD' : 'en-US';
+      microphoneManager.registerRecognition(recognition);
 
       // Auto-inactivity silence timer (12s)
       if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
@@ -629,18 +644,20 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       };
 
-      recognition.onerror = () => {
-        // Keep listening or allow inactivity timer
+      recognition.onerror = (err: any) => {
+        if (err?.error === 'not-allowed' || err?.error === 'service-not-allowed') {
+          endVoiceSession();
+        }
       };
 
       recognition.onend = () => {
-        // If still in listening state and no speech processed yet, wait for silence timeout
+        // Handled cleanly by silence timer or query processing
       };
 
       voiceRecognitionRef.current = recognition;
       recognition.start();
     } catch (_e) {
-      //
+      endVoiceSession();
     }
   }, [language, endVoiceSession]);
 
@@ -689,13 +706,18 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   // Background Wake-Word Detection ("Talentio" / "Hey Talentio" / "ট্যালেন্টিও")
+  // Disabled on mobile/touch devices to prevent media resource locking and battery drain
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const isMobile = window.innerWidth < 1024 || ('ontouchstart' in window);
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition || !isVoiceActive) {
+    
+    // Only allow wake-word on desktop if explicitly enabled
+    if (isMobile || !SpeechRecognition || !isVoiceActive) {
       if (wakeRecognitionRef.current) {
         try { wakeRecognitionRef.current.abort(); } catch (_) {}
+        wakeRecognitionRef.current = null;
       }
       return;
     }
@@ -743,22 +765,27 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
         };
 
-        wakeRecognizer.onerror = () => {
-          if (!isDestroyed && isVoiceActiveRef.current) {
-            setTimeout(initWakeListener, 2000);
+        wakeRecognizer.onerror = (errEvent: any) => {
+          // If permission denied or aborted, shut down wake listener cleanly
+          if (errEvent?.error === 'not-allowed' || errEvent?.error === 'service-not-allowed') {
+            setIsVoiceActive(false);
+            return;
+          }
+          if (!isDestroyed && isVoiceActiveRef.current && document.visibilityState === 'visible') {
+            setTimeout(initWakeListener, 4000);
           }
         };
 
         wakeRecognizer.onend = () => {
-          if (!isDestroyed && isVoiceActiveRef.current) {
-            setTimeout(initWakeListener, 1000);
+          if (!isDestroyed && isVoiceActiveRef.current && document.visibilityState === 'visible') {
+            setTimeout(initWakeListener, 1500);
           }
         };
 
         wakeRecognitionRef.current = wakeRecognizer;
         wakeRecognizer.start();
       } catch (err) {
-        setTimeout(initWakeListener, 3000);
+        // Stop cleanly on failure
       }
     }
 
@@ -768,9 +795,37 @@ export const TalentioAIProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       isDestroyed = true;
       if (wakeRecognitionRef.current) {
         try { wakeRecognitionRef.current.abort(); } catch (_) {}
+        wakeRecognitionRef.current = null;
       }
     };
   }, [isVoiceActive, startVoiceSession]);
+
+  // Clean up any active voice sessions on page route change or when tab is hidden
+  useEffect(() => {
+    endVoiceSession();
+  }, [activePage, endVoiceSession]);
+
+  useEffect(() => {
+    const handleNavigationOrHide = () => {
+      endVoiceSession();
+    };
+
+    window.addEventListener('popstate', handleNavigationOrHide);
+    window.addEventListener('pagehide', handleNavigationOrHide);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        endVoiceSession();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('popstate', handleNavigationOrHide);
+      window.removeEventListener('pagehide', handleNavigationOrHide);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [endVoiceSession]);
 
   const clearConversation = useCallback(() => {
     stopSpeaking();

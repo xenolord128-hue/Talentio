@@ -15,6 +15,7 @@ import {
   getMicrophoneErrorMessage,
   getVoiceNoteExpirationDate
 } from '../../utils/audioRecorder';
+import { microphoneManager } from '../../utils/microphoneManager';
 import { 
   Smile, 
   Paperclip, 
@@ -259,25 +260,45 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
 
     if (audioContextRef.current) {
-      try {
-        if (audioContextRef.current.state !== 'closed') {
-          audioContextRef.current.close().catch(() => {});
-        }
-      } catch {
-        // Ignored
-      }
+      microphoneManager.closeAudioContext(audioContextRef.current);
       audioContextRef.current = null;
     }
 
     if (mediaStreamRef.current) {
-      stopMediaStream(mediaStreamRef.current);
+      microphoneManager.stopStream(mediaStreamRef.current);
       mediaStreamRef.current = null;
     }
 
-    mediaRecorderRef.current = null;
+    if (mediaRecorderRef.current) {
+      microphoneManager.stopRecorder(mediaRecorderRef.current);
+      mediaRecorderRef.current = null;
+    }
   }, []);
 
-  // Cleanup on component unmount
+  // Cancel voice recording & discard recorded audio data
+  const cancelRecording = useCallback(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[VoiceRecorder] Cancelling voice recording...');
+    }
+
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        // Detach onstop so cancel does not trigger message sending
+        recorder.onstop = null;
+        recorder.stop();
+      } catch {
+        // Ignored
+      }
+    }
+
+    cleanupAudioPipeline();
+    audioChunksRef.current = [];
+    setStatus('idle');
+    setRecordDuration(0);
+  }, [cleanupAudioPipeline]);
+
+  // Cleanup on component unmount and page visibility/navigation
   useEffect(() => {
     return () => {
       // If unmounting while recording, gracefully stop tracks and clean up
@@ -291,6 +312,32 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       cleanupAudioPipeline();
     };
   }, [cleanupAudioPipeline]);
+
+  useEffect(() => {
+    const handleRelease = () => {
+      if (recordingStatusRef.current !== 'idle') {
+        cancelRecording();
+      }
+      if (isDictating) {
+        stopDictation();
+      }
+    };
+
+    window.addEventListener('popstate', handleRelease);
+    window.addEventListener('pagehide', handleRelease);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        handleRelease();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('popstate', handleRelease);
+      window.removeEventListener('pagehide', handleRelease);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [cancelRecording, isDictating, stopDictation]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
@@ -366,6 +413,14 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     setStatus('requesting');
     setRecordDuration(0);
 
+    // Stop dictation if currently active
+    if (isDictating) {
+      stopDictation();
+    }
+
+    // Release any lingering hardware locks
+    microphoneManager.releaseAll();
+
     try {
       if (process.env.NODE_ENV !== 'production') {
         console.log('[VoiceRecorder] Requesting microphone stream...');
@@ -382,6 +437,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         if (AudioContextClass) {
           const ctx = new AudioContextClass();
           audioContextRef.current = ctx;
+          microphoneManager.registerAudioContext(ctx);
 
           // Resume audio context if in suspended state
           if (ctx.state === 'suspended') {
@@ -443,6 +499,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
       activeMimeTypeRef.current = recorder.mimeType || supportedFormat.mimeType || 'audio/webm';
       mediaRecorderRef.current = recorder;
+      microphoneManager.registerRecorder(recorder);
 
       // 4. Bind MediaRecorder events
       recorder.ondataavailable = (event: BlobEvent) => {
@@ -492,29 +549,6 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       const { message, type } = getMicrophoneErrorMessage(err);
       showToast(message, type);
     }
-  };
-
-  // Cancel voice recording & discard recorded audio data
-  const cancelRecording = () => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[VoiceRecorder] Cancelling voice recording...');
-    }
-
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== 'inactive') {
-      try {
-        // Detach onstop so cancel does not trigger message sending
-        recorder.onstop = null;
-        recorder.stop();
-      } catch {
-        // Ignored
-      }
-    }
-
-    cleanupAudioPipeline();
-    audioChunksRef.current = [];
-    setStatus('idle');
-    setRecordDuration(0);
   };
 
   // Finish & send real voice note

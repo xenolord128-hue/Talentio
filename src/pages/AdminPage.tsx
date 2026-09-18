@@ -978,6 +978,37 @@ export const AdminPage: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Firestore Project Connection Status & Sync Controls */}
+              <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>Firebase Database Project: talentio-92919</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Connected to Firestore project <code className="text-emerald-300 bg-black/40 px-1.5 py-0.5 rounded font-mono">talentio-92919</code>. All users, gigs, jobs, and escrow orders sync in real-time.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const { seedInitialTalentioDatabase } = await import('../lib/firestore');
+                        await seedInitialTalentioDatabase(true);
+                        showToast('Database synchronized and seeded into talentio-92919!', 'success');
+                      } catch (err: any) {
+                        showToast(`Sync notice: ${err?.message || 'Check connection'}`, 'info');
+                      }
+                    }}
+                    className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-2 cursor-pointer transition-all self-start sm:self-auto"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Sync & Populate Database</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

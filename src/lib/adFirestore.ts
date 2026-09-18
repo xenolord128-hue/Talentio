@@ -26,11 +26,16 @@ export function sanitizeAndFilterAds(ads: Advertisement[]): Advertisement[] {
   return ads.filter(ad => {
     if (!ad) return false;
     if (ad.id === 'ad-1-adsterra-script') return false;
-    if (ad.format === 'script') return false;
+    if (ad.id === 'ad-2-adsterra-container') return false;
+    if (ad.format === 'script' || ad.format === 'container') return false;
     if (ad.width === 1 && ad.height === 1) return false;
+    if (ad.placement === 'top_banner') return false;
     if (ad.code && (
       ad.code.includes('1822920cd10687d189b60424e04ba451') ||
-      ad.code.includes('profitableratecpmnetwork.com/18/22/92')
+      ad.code.includes('profitableratecpmnetwork.com') ||
+      ad.code.includes('70e37b03ade96f3849b83b7f9832bfc2') ||
+      ad.code.toLowerCase().includes('popunder') ||
+      ad.code.toLowerCase().includes('socialbar')
     )) {
       return false;
     }

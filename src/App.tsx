@@ -49,13 +49,37 @@ import { SettingsPage } from './pages/SettingsPage';
 import { HelpSupportPage } from './pages/HelpSupportPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
+import { Loader2 } from 'lucide-react';
+import { TalentioLogo } from './components/TalentioLogo';
 
 const AppContent: React.FC = () => {
-  const { activePage, isAuthenticated, user, authLoading } = useGuide();
+  const { activePage, isAuthenticated, user, authLoading, setActivePage } = useGuide();
   const { theme } = useTheme();
 
   // Initialize Global Key Listener Hook for Fast Navigation (⌘K, ESC, ⌘J, Alt+1-7, ?, Alt+T)
   useGlobalKeyShortcuts();
+
+  // Seamless transition to marketplace home when user authenticates from a dedicated auth page
+  React.useEffect(() => {
+    if (isAuthenticated && user && (activePage === 'login' || activePage === 'register' || activePage === 'forgot-password')) {
+      setActivePage('home');
+    }
+  }, [isAuthenticated, user, activePage, setActivePage]);
+
+  // Loading state while checking Firebase authentication session on initial load or refresh
+  if (authLoading) {
+    return (
+      <div className="min-h-screen w-full bg-[#1A1633] flex items-center justify-center text-[#F2F0FF]">
+        <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
+          <TalentioLogo size="lg" />
+          <div className="flex items-center gap-2 text-[#A38BFF] text-sm font-medium">
+            <Loader2 className="w-4 h-4 animate-spin text-[#6E5BFF]" />
+            <span>Connecting to Talentio...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Strict Global Authentication Gate — Unauthenticated visitors must sign in before accessing the marketplace
   if (!isAuthenticated || !user) {
@@ -151,30 +175,26 @@ const AppContent: React.FC = () => {
   };
 
   const isChatPage = activePage === 'chat' || activePage === 'messages';
+  const isDedicatedAuthPage = activePage === 'login' || activePage === 'register' || activePage === 'forgot-password';
 
   return (
     <div className={`min-h-screen max-w-full overflow-x-hidden w-full flex flex-col font-sans transition-colors duration-200 selection:bg-[#3D2FD1] selection:text-white ${
-      isChatPage ? 'h-screen overflow-hidden pb-0' : 'pb-24 sm:pb-28'
+      isChatPage ? 'h-screen overflow-hidden pb-0' : isDedicatedAuthPage ? 'pb-0' : 'pb-24 sm:pb-28'
     } ${
-      theme === 'high-contrast' 
-        ? 'bg-black text-white' 
-        : theme === 'dark' 
-          ? 'bg-[#0F0B1E] text-slate-100' 
-          : 'bg-slate-50 text-[#1A1633]'
+      isDedicatedAuthPage
+        ? 'bg-[#1A1633] text-[#F2F0FF]'
+        : theme === 'high-contrast' 
+          ? 'bg-black text-white' 
+          : theme === 'dark' 
+            ? 'bg-[#0F0B1E] text-slate-100' 
+            : 'bg-slate-50 text-[#1A1633]'
     }`}>
       
-      {/* Sticky Compact Global Navigation (Hidden on dedicated Message page as per Requirement 1) */}
+      {/* Sticky Compact Global Navigation (Hidden on dedicated Message and Auth pages) */}
       <SEOHead />
       <OfflineNoticeBanner />
 
-      {!isChatPage && <Navbar />}
-
-      {/* Top Banner Placement (Public Pages) */}
-      {!isChatPage && activePage !== 'admin' && (
-        <div className="w-full flex justify-center bg-transparent">
-          <AdPlacement placement="top_banner" />
-        </div>
-      )}
+      {!isChatPage && !isDedicatedAuthPage && <Navbar />}
 
       {/* Main Dynamic Page Content */}
       <main className={`flex-1 w-full max-w-full ${isChatPage ? 'h-full overflow-hidden' : 'overflow-x-hidden'}`}>
@@ -182,24 +202,24 @@ const AppContent: React.FC = () => {
       </main>
 
       {/* Before Footer Placement (Public Pages) */}
-      {!isChatPage && activePage !== 'admin' && (
+      {!isChatPage && !isDedicatedAuthPage && activePage !== 'admin' && (
         <div className="w-full flex justify-center py-4 bg-transparent border-t border-slate-100 dark:border-white/5">
           <AdPlacement placement="before_footer" />
         </div>
       )}
 
-      {/* Global Talentio Marketplace Footer (hidden in full-screen Messenger mode or Admin desk) */}
-      {!isChatPage && activePage !== 'admin' && <Footer />}
+      {/* Global Talentio Marketplace Footer (hidden in full-screen Messenger mode, Admin desk, or dedicated Auth page) */}
+      {!isChatPage && !isDedicatedAuthPage && activePage !== 'admin' && <Footer />}
 
       {/* Mobile Banner Placement */}
-      {!isChatPage && activePage !== 'admin' && (
+      {!isChatPage && !isDedicatedAuthPage && activePage !== 'admin' && (
         <div className="sm:hidden w-full flex justify-center pb-16">
           <AdPlacement placement="mobile_banner" />
         </div>
       )}
 
-      {/* Mobile Bottom Quick Navigation Bar (Hidden on dedicated Message page) */}
-      {!isChatPage && <MobileBottomNav />}
+      {/* Mobile Bottom Quick Navigation Bar (Hidden on dedicated Message and Auth pages) */}
+      {!isChatPage && !isDedicatedAuthPage && <MobileBottomNav />}
 
       {/* Global Instant Search Modal Triggered by ⌘K / Ctrl+K */}
       <SearchModal />
@@ -213,8 +233,8 @@ const AppContent: React.FC = () => {
       {/* Service Scoping & 3-Tier Escrow Checkout Modal */}
       <ServiceDetailModal />
 
-      {/* Authentication Modal (Email, Phone OTP, GitHub OAuth) */}
-      <AuthModal />
+      {/* Authentication Modal (Hidden when on dedicated Auth pages) */}
+      {!isDedicatedAuthPage && <AuthModal />}
 
       {/* Mandatory 6-Step Profile Onboarding Wizard */}
       <OnboardingModal />

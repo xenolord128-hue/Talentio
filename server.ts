@@ -1130,9 +1130,13 @@ app.post("/api/ai/assistant", async (req: Request, res: Response) => {
 // ============================================================================
 
 const ADMIN_EMAILS = [
+  "xenolord128@gmail.com",
   "lord79915@gmail.com",
   (process.env.ADMIN_EMAIL || "").trim().toLowerCase()
 ].filter(Boolean);
+
+// In-memory active administrator sessions cache
+const activeAdminSessions = new Map<string, { email: string; uid: string; createdAt: number }>();
 
 function isServerAdminEmail(email?: string | null): boolean {
   if (!email) return false;
@@ -1140,10 +1144,11 @@ function isServerAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(normalized);
 }
 
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBTw0NAA5HsHLiXamGphvi6tpi2OV990HI";
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyD1QJQxh7J6jGFZ7DRSh_aqeW42SOtXYaw";
 
 /**
  * Server-side Firebase Auth ID token verification using Google Identity Toolkit
+ * With support for direct administrative session tokens
  */
 async function verifyFirebaseIdToken(idToken: string): Promise<{ 
   email?: string; 
@@ -1153,6 +1158,24 @@ async function verifyFirebaseIdToken(idToken: string): Promise<{
   isAdmin?: boolean;
 }> {
   if (!idToken) return { valid: false };
+
+  // Check active admin session tokens first
+  if (activeAdminSessions.has(idToken)) {
+    const session = activeAdminSessions.get(idToken)!;
+    // 24 hour expiry
+    if (Date.now() - session.createdAt < 24 * 60 * 60 * 1000) {
+      return {
+        email: session.email,
+        uid: session.uid,
+        valid: true,
+        isAdmin: true,
+        customClaims: { admin: true, role: 'ADMIN' }
+      };
+    } else {
+      activeAdminSessions.delete(idToken);
+    }
+  }
+
   try {
     const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
       method: "POST",
@@ -1234,6 +1257,95 @@ async function requireAdminAuth(req: Request, res: Response, next: express.NextF
     code: "UNAUTHORIZED_ADMIN"
   });
 }
+
+// Designated Admin Passwords
+const ADMIN_PASSWORDS: Record<string, string[]> = {
+  "xenolord128@gmail.com": ["Lam_estiz"],
+  "lord79915@gmail.com": ["Lam_estiz", "Admin@123", "TalentioAdmin2026!"]
+};
+
+// Admin: Direct Secure Login Endpoint
+app.post("/api/admin/login-direct", async (req: Request, res: Response) => {
+  const email = (req.body?.email || "").toString().trim().toLowerCase();
+  const password = (req.body?.password || "").toString();
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required." });
+  }
+
+  const validPasswords = ADMIN_PASSWORDS[email];
+  const isMatch = validPasswords && validPasswords.includes(password);
+
+  if (!isMatch) {
+    return res.status(401).json({ error: "Invalid administrator email or password." });
+  }
+
+  // Generate secure session token
+  const uid = `admin_${email.replace(/[^a-z0-9]/g, '_')}`;
+  const token = `adm_sess_${Buffer.from(email + ':' + Date.now() + ':' + Math.random().toString(36)).toString('base64')}`;
+
+  activeAdminSessions.set(token, {
+    email,
+    uid,
+    createdAt: Date.now()
+  });
+
+  const now = new Date();
+  const thirtyDaysLater = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+  const adminProfile = {
+    id: uid,
+    userId: uid,
+    name: email === 'xenolord128@gmail.com' ? 'Xenolord Administrator' : 'Talentio Super Admin',
+    displayName: email === 'xenolord128@gmail.com' ? 'Xenolord Administrator' : 'Talentio Super Admin',
+    fullName: email === 'xenolord128@gmail.com' ? 'Xenolord Administrator' : 'Talentio Super Admin',
+    handle: `@${email.split('@')[0]}`,
+    email,
+    phone: '+880 1700-000000',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+    authMethod: 'email',
+    role: 'ADMIN',
+    userType: 'admin',
+    providerType: 'individual',
+    accountStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionStartDate: now.toISOString(),
+    subscriptionEndDate: thirtyDaysLater.toISOString(),
+    subscriptionPlan: 'admin_unlimited',
+    platformFeePercent: 0,
+    trialPeriodDays: 365,
+    isApprovedSeller: true,
+    title: 'Platform Administrator',
+    category: 'executive',
+    skills: ['Platform Management', 'Escrow Arbitration', 'System Auditing'],
+    location: 'Dhaka, Bangladesh',
+    countryFlag: '🇧🇩',
+    countryCode: 'BD',
+    bio: 'Official designated Talentio System Administrator.',
+    languages: ['English (Fluent)', 'Bengali (Native)'],
+    hourlyRate: 100,
+    startingPrice: 300,
+    verifiedBadge: true,
+    escrowTier: 3,
+    onboardingCompleted: true,
+    onboardingStep: 6,
+    profileCompletionScore: 100,
+    balanceAvailable: 50000,
+    balanceInEscrow: 0,
+    portfolio: [],
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString()
+  };
+
+  return res.json({
+    success: true,
+    authorized: true,
+    isAdmin: true,
+    role: "ADMIN",
+    token,
+    user: adminProfile
+  });
+});
 
 // Admin: Verify Access Endpoint
 app.post("/api/admin/verify-access", async (req: Request, res: Response) => {

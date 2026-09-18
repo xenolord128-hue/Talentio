@@ -1,2 +1,5 @@
+# Firebase Auth reverse proxy for talentio
+/__/auth/*  https://talentio-92919.firebaseapp.com/__/auth/:splat  200!
+
 # Netlify SPA fallback routing
 /*    /index.html   200

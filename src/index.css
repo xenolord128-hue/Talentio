@@ -695,3 +695,83 @@ html.dark .ios-glass {
     filter: hue-rotate(0deg);
   }
 }
+
+/* Talentio Dedicated Login & Auth Page Animations */
+@keyframes talentioFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -24px, 0) scale(1.06);
+  }
+}
+
+@keyframes talentioPulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes talentioReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.talentio-auth-bg {
+  background: 
+    radial-gradient(circle at 12% 18%, rgba(110,91,255,0.22), transparent 30%),
+    radial-gradient(circle at 88% 78%, rgba(163,139,255,0.16), transparent 28%),
+    linear-gradient(135deg, #0e0b1d 0%, #1A1633 48%, #120e29 100%);
+}
+
+.talentio-auth-grid {
+  background-image: 
+    linear-gradient(rgba(242,240,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242,240,255,0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
+}
+
+.talentio-orb-1 {
+  animation: talentioFloat 9s ease-in-out infinite;
+}
+
+.talentio-orb-2 {
+  animation: talentioFloat 9s ease-in-out infinite -4.5s;
+}
+
+.talentio-reveal-1 {
+  animation: talentioReveal 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.talentio-reveal-2 {
+  animation: talentioReveal 0.75s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.talentio-reveal-3 {
+  animation: talentioReveal 0.75s 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talentio-orb-1,
+  .talentio-orb-2,
+  .talentio-reveal-1,
+  .talentio-reveal-2,
+  .talentio-reveal-3 {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}

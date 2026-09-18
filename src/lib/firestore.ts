@@ -830,3 +830,85 @@ export async function getAdminConfig(key: string): Promise<any> {
   }
 }
 
+// ============================================================================
+// AUTOMATED DATABASE SEEDING & SYNC TO TALENTIO PROJECT
+// ============================================================================
+
+export async function seedInitialTalentioDatabase(force: boolean = false): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const SEED_STORAGE_KEY = 'talentio_db_seeded_v1';
+  if (!force && localStorage.getItem(SEED_STORAGE_KEY) === 'true') {
+    return;
+  }
+
+  try {
+    const { TALENTIO_SERVICES, TALENTIO_OPEN_PROJECTS, TALENTIO_FREELANCERS } = await import('../data/talentioData');
+    
+    // Check if gigs already exist in Firestore
+    const existingGigs = await getDocs(collection(db, 'gigs'));
+    if (!existingGigs.empty && !force) {
+      localStorage.setItem(SEED_STORAGE_KEY, 'true');
+      return;
+    }
+
+    const batch = writeBatch(db);
+
+    // 1. Seed Initial Marketplace Services (Gigs)
+    TALENTIO_SERVICES.forEach((gig) => {
+      const gigRef = doc(db, 'gigs', gig.id);
+      batch.set(gigRef, {
+        ...gig,
+        status: 'approved',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    });
+
+    // 2. Seed Initial Client Projects (Jobs)
+    TALENTIO_OPEN_PROJECTS.forEach((job) => {
+      const jobRef = doc(db, 'jobs', job.id);
+      batch.set(jobRef, {
+        ...job,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    });
+
+    // 3. Seed Featured Freelancer Profiles into Users Collection
+    TALENTIO_FREELANCERS.slice(0, 6).forEach((freelancer) => {
+      const userRef = doc(db, 'users', freelancer.id);
+      batch.set(userRef, {
+        id: freelancer.id,
+        name: freelancer.name,
+        handle: freelancer.handle,
+        email: `${freelancer.handle.replace('@', '')}@talentio.pro`,
+        avatar: freelancer.avatar,
+        authMethod: 'email',
+        userType: 'freelancer',
+        providerType: 'individual',
+        accountStatus: 'approved',
+        isApprovedSeller: true,
+        role: 'user',
+        title: freelancer.title,
+        category: freelancer.category,
+        hourlyRate: freelancer.hourlyRate,
+        startingPrice: freelancer.startingPrice,
+        skills: freelancer.skills || [],
+        bio: freelancer.bio,
+        location: freelancer.country,
+        countryFlag: freelancer.countryFlag,
+        verifiedBadge: freelancer.verifiedBadge,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    });
+
+    await batch.commit();
+    localStorage.setItem(SEED_STORAGE_KEY, 'true');
+    console.info('Successfully seeded initial Talentio collections (gigs, jobs, talent) to Firestore!');
+  } catch (seedErr) {
+    console.warn('Initial Firestore seed attempt noticed:', seedErr);
+  }
+}
+

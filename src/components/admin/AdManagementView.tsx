@@ -125,7 +125,7 @@ export const AdManagementView: React.FC = () => {
       case 'banner_468x60':
         width = 468;
         height = 60;
-        defaultPlacement = 'top_banner';
+        defaultPlacement = 'between_content';
         defaultDevices = 'all';
         break;
       case 'banner_728x90':
@@ -397,7 +397,7 @@ export const AdManagementView: React.FC = () => {
             type="button"
             onClick={() => setResetConfirmOpen(true)}
             className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-1.5 transition-colors"
-            title="Reset to the default 6 Adsterra placements"
+            title="Reset to the default 5 safe Adsterra placements"
           >
             <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden sm:inline">Restore Adsterra Codes</span>
@@ -1101,7 +1101,7 @@ export const AdManagementView: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              This will reset the ad catalog to the 6 official Adsterra codes (468×60, 728×90, 160×300, 320×50, Container, and Smart Tag Script) with their recommended default placements.
+              This will reset the ad catalog to the 5 safe banner &amp; container Adsterra placements (468×60, 728×90, 160×300, 320×50, and Container). Intrusive popup scripts are strictly excluded.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { sendPasswordReset } from '../lib/firebaseAuth';
+import { sendPasswordReset, formatAuthError } from '../lib/firebaseAuth';
 import { TalentioLogo } from '../components/TalentioLogo';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 
@@ -26,13 +26,7 @@ export const ForgotPasswordPage: React.FC = () => {
       showToast('Password reset instructions sent to your email.', 'success');
     } catch (err: any) {
       console.error('Password reset error:', err);
-      if (err.code === 'auth/user-not-found') {
-        setErrorMessage('No account found with this email address.');
-      } else if (err.code === 'auth/invalid-email') {
-        setErrorMessage('Please enter a valid email address.');
-      } else {
-        setErrorMessage(err.message || 'Failed to send reset email. Please try again.');
-      }
+      setErrorMessage(formatAuthError(err));
     } finally {
       setLoading(false);
     }

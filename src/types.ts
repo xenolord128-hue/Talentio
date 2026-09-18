@@ -378,7 +378,7 @@ export interface UserProfile {
   phone?: string;
   avatar: string;
   coverImage?: string;
-  authMethod: 'email' | 'github' | 'google' | 'demo';
+  authMethod: 'email' | 'github' | 'google' | 'phone' | 'demo';
   passwordStatus?: 'Encrypted (PBKDF2/Argon2)' | 'OAuth Managed' | 'Set & Verified';
   passwordHashPlaceholder?: string;
   lastLoginAt?: string;

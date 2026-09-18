@@ -37,7 +37,10 @@ import {
   syncUserProfileDocument,
   formatUserProfile,
   isAuthorizedAdminEmail,
-  sendPasswordReset
+  sendPasswordReset,
+  sendPhoneVerificationCode,
+  confirmPhoneVerificationCode,
+  setupPhoneRecaptcha
 } from '../lib/firebaseAuth';
 import {
   subscribeToUsers,
@@ -60,7 +63,8 @@ import {
   createNoticeDocument,
   subscribeToNotices,
   markNoticeAsRead,
-  subscribeToUserNotifications
+  subscribeToUserNotifications,
+  seedInitialTalentioDatabase
 } from '../lib/firestore';
 import { PlatformNotice, NoticeCategory } from '../types';
 import { realtimeService } from '../lib/realtimeService';
@@ -313,6 +317,8 @@ interface GuideContextType {
   loginWithEmail: (email: string, pass: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   loginWithGithub: () => Promise<boolean>;
+  sendPhoneCode: (phoneNumber: string, containerId: string) => Promise<any>;
+  verifyPhoneCode: (confirmationResult: any, code: string, extraData?: Partial<UserProfile>) => Promise<boolean>;
   sendPasswordResetEmailLink: (email: string) => Promise<boolean>;
   registerAccount: (method: 'email' | 'github', identifier: string, name?: string, password?: string) => Promise<void>;
   registerFullAccount: (data: Partial<UserProfile>) => Promise<void>;
@@ -882,6 +888,22 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Firebase Auth Observer
   useEffect(() => {
+    // 1. Handle redirect result for mobile OAuth logins
+    import('firebase/auth').then(({ getRedirectResult }) => {
+      getRedirectResult(auth)
+        .then(async (result) => {
+          if (result && result.user) {
+            const synced = await syncUserProfileDocument(result.user);
+            setUser(synced);
+            localStorage.setItem('talentio_user_profile', JSON.stringify(synced));
+          }
+        })
+        .catch((err) => {
+          console.warn('OAuth redirect result check notice:', err);
+        });
+    }).catch(() => {});
+
+    // 2. Auth State Listener
     const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
       setFirebaseUser(fUser);
       if (fUser) {
@@ -893,6 +915,22 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           console.warn('Firebase user sync note:', err);
         }
       } else {
+        // If an active admin session token is present, preserve the administrator session
+        const adminToken = localStorage.getItem('talentio_admin_token');
+        if (adminToken) {
+          try {
+            const cached = localStorage.getItem('talentio_user_profile');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed && (parsed.email === 'xenolord128@gmail.com' || parsed.email === 'lord79915@gmail.com')) {
+                setUser(parsed);
+                setAuthLoading(false);
+                return;
+              }
+            }
+          } catch {}
+        }
+
         setUser(null);
         localStorage.removeItem('talentio_user_profile');
       }
@@ -943,6 +981,12 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (cleanErr) {
       console.warn('Voice message 15-day purge routine notice:', cleanErr);
     }
+
+    // Auto-seed initial talentio marketplace records (services, jobs, top talent) if empty in Firestore
+    seedInitialTalentioDatabase().catch(err => {
+      console.warn('Talentio database auto-seed notice:', err);
+    });
+
     const unsubUsers = subscribeToUsers((firestoreUsers) => {
       if (firestoreUsers && firestoreUsers.length > 0) {
         setAllUsers(firestoreUsers);
@@ -1147,7 +1191,7 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn('Firebase login notice:', err?.message || err);
       const friendlyMsg = err?.message || 'Login failed. Please check your credentials.';
       showToast(friendlyMsg, 'error');
-      return false;
+      throw err;
     }
   };
 
@@ -1162,7 +1206,7 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn('Google popup notice:', err?.message || err);
       const msg = err?.message || 'Google sign in failed.';
       showToast(msg, 'error');
-      return false;
+      throw err;
     }
   };
 
@@ -1177,7 +1221,40 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.warn('GitHub popup notice:', err?.message || err);
       const msg = err?.message || 'GitHub sign in failed.';
       showToast(msg, 'error');
-      return false;
+      throw err;
+    }
+  };
+
+  const sendPhoneCode = async (phoneNumber: string, containerId: string): Promise<any> => {
+    try {
+      const verifier = setupPhoneRecaptcha(containerId);
+      const confirmationResult = await sendPhoneVerificationCode(phoneNumber, verifier);
+      showToast('SMS verification code sent successfully to your phone!', 'success');
+      return confirmationResult;
+    } catch (err: any) {
+      console.warn('Send phone code notice:', err);
+      const msg = err?.message || 'Failed to send SMS code. Please check your phone number.';
+      showToast(msg, 'error');
+      throw err;
+    }
+  };
+
+  const verifyPhoneCode = async (
+    confirmationResult: any, 
+    code: string, 
+    extraData?: Partial<UserProfile>
+  ): Promise<boolean> => {
+    try {
+      const profile = await confirmPhoneVerificationCode(confirmationResult, code, extraData);
+      setUser(profile);
+      setIsAuthModalOpen(false);
+      showToast(`Phone verification successful! Welcome ${profile.name}.`, 'success');
+      return true;
+    } catch (err: any) {
+      console.warn('Verify phone code notice:', err);
+      const msg = err?.message || 'Invalid SMS verification code.';
+      showToast(msg, 'error');
+      throw err;
     }
   };
 
@@ -1195,36 +1272,19 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsAuthModalOpen(false);
         setIsOnboardingModalOpen(true);
         showToast('Account created successfully! Please complete your profile.', 'success');
-        return;
+        return newUser;
       } catch (err: any) {
         console.warn('Firebase register notice:', err?.message || err);
         showToast(err.message || 'Registration failed.', 'error');
-        return;
+        throw err;
       }
     }
 
-    const localUser: UserProfile = {
-      id: `user-${Date.now()}`,
-      name: name || 'New Member',
-      handle: `@${(name || 'member').toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-      email: identifier,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-      authMethod: method,
-      userType: null,
-      role: 'CLIENT',
-      accountStatus: 'pending',
-      isApprovedSeller: false,
-      skills: [],
-      verifiedBadge: false,
-      escrowTier: 1,
-      onboardingCompleted: false,
-      onboardingStep: 1,
-      profileCompletionScore: 15
-    };
-    setUser(localUser);
-    setIsAuthModalOpen(false);
-    setIsOnboardingModalOpen(true);
-    showToast('Account created! Let’s complete your setup.', 'success');
+    if (method === 'github') {
+      return await loginWithGithub();
+    }
+
+    throw new Error('Registration requires a valid email and password with Firebase Authentication.');
   };
 
   const sendPasswordResetEmailLink = async (targetEmail: string): Promise<boolean> => {
@@ -1788,6 +1848,11 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     setChatMessages(prev => [...prev, newMsg]);
+    // Also save to active conversation document in Firestore
+    const activeConversationId = `conv-${currentUserId}-support`;
+    sendChatMessageDocument(activeConversationId, newMsg).catch(err => {
+      console.warn('Chat message Firestore document sync notice:', err);
+    });
   };
 
   const acceptOffer = (msgId: string) => {
@@ -1852,6 +1917,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         loginWithEmail,
         loginWithGoogle,
         loginWithGithub,
+        sendPhoneCode,
+        verifyPhoneCode,
         sendPasswordResetEmailLink,
         registerAccount,
         registerFullAccount,

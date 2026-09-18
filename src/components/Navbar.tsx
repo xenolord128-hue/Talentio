@@ -24,6 +24,7 @@ import {
   Lock,
   ArrowRight,
   LogOut,
+  LogIn,
   Sliders,
   User,
   Zap,
@@ -105,7 +106,7 @@ export const Navbar: React.FC = () => {
     if (isAuthenticated && user) {
       setDropdownOpen(!dropdownOpen);
     } else {
-      setIsAuthModalOpen(true);
+      setActivePage('login');
     }
   };
 
@@ -184,14 +185,24 @@ export const Navbar: React.FC = () => {
                   <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
                 </button>
               ) : (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
-                  title="Sign In or Register"
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Sign In</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setActivePage('login')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95 border border-[#A38BFF]/40"
+                    title="Sign In to your Talentio Account"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                  <button
+                    onClick={() => setActivePage('register')}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer active:scale-95"
+                    title="Create a new account"
+                  >
+                    <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                    <span>Register</span>
+                  </button>
+                </div>
               )}
 
               {/* Profile Dropdown Menu */}
@@ -464,7 +475,7 @@ export const Navbar: React.FC = () => {
                       <div className="text-xs text-[#E0DBFF] mb-3">Sign in to access milestone escrow, live chat, and seller workstations.</div>
                       <button
                         onClick={() => {
-                          setIsAuthModalOpen(true);
+                          setActivePage('login');
                           setDesktopMenuOpen(false);
                         }}
                         className="w-full py-2 rounded-xl bg-white text-[#1A1633] font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors shadow cursor-pointer"
@@ -633,7 +644,7 @@ export const Navbar: React.FC = () => {
                           if (isAuthenticated && user) {
                             setActivePage('profile');
                           } else {
-                            setIsAuthModalOpen(true);
+                            setActivePage('login');
                           }
                           setDesktopMenuOpen(false);
                         }}
@@ -696,7 +707,7 @@ export const Navbar: React.FC = () => {
                           if (isAuthenticated) {
                             setIsPostJobModalOpen(true);
                           } else {
-                            setIsAuthModalOpen(true);
+                            setActivePage('login');
                           }
                           setDesktopMenuOpen(false);
                         }}
@@ -817,7 +828,7 @@ export const Navbar: React.FC = () => {
           ) : (
             <button
               onClick={() => {
-                setIsAuthModalOpen(true);
+                setActivePage('login');
                 setMobileMenuOpen(false);
               }}
               className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-left flex items-center justify-between gap-3 cursor-pointer shadow-md text-white"
@@ -945,7 +956,7 @@ export const Navbar: React.FC = () => {
                       setIsPostJobModalOpen(true);
                     }
                   } else {
-                    setIsAuthModalOpen(true);
+                    setActivePage('login');
                   }
                   setMobileMenuOpen(false);
                 }}

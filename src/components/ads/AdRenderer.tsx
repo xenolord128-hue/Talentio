@@ -39,7 +39,7 @@ export const AdRenderer: React.FC<AdRendererProps> = ({
   useEffect(() => {
     try {
       const rogueScripts = document.querySelectorAll(
-        'script[src*="profitableratecpmnetwork.com/18/22/92"], script[src*="1822920cd10687d189b60424e04ba451"], [id*="talentio-ad-script"]'
+        'script[src*="profitableratecpmnetwork.com"], script[src*="1822920cd10687d189b60424e04ba451"], [id*="talentio-ad-script"], [id*="container-70e37b03ade96f3849b83b7f9832bfc2"]'
       );
       rogueScripts.forEach(s => s.remove());
     } catch {
@@ -50,9 +50,13 @@ export const AdRenderer: React.FC<AdRendererProps> = ({
   // Reject and suppress any popup or script-only ad format that could trigger overlays
   if (
     ad.format === 'script' || 
+    ad.format === 'container' ||
     (ad.width === 1 && ad.height === 1) || 
+    ad.placement === 'top_banner' ||
+    ad.id === 'ad-1-adsterra-script' ||
+    ad.id === 'ad-2-adsterra-container' ||
     ad.code.includes('1822920cd10687d189b60424e04ba451') ||
-    ad.id === 'ad-1-adsterra-script'
+    ad.code.includes('profitableratecpmnetwork.com')
   ) {
     return null;
   }
@@ -157,7 +161,7 @@ export const AdRenderer: React.FC<AdRendererProps> = ({
             frameBorder="0"
             className="w-full h-full border-0 overflow-hidden bg-transparent"
             style={{ width: `${targetWidth}px`, height: `${targetHeight}px` }}
-            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+            sandbox="allow-scripts allow-same-origin allow-forms"
             onError={() => setIsBlockedOrError(true)}
           />
         </div>

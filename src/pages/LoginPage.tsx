@@ -1,242 +1,1178 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { TalentioLogo } from '../components/TalentioLogo';
+import { registerWithFirebase, isEmailPasswordDisabled, isGithubProviderDisabled, formatAuthError } from '../lib/firebaseAuth';
 import { 
   Lock, 
   Mail, 
   Eye, 
   EyeOff, 
   ArrowRight, 
-  Github,
-  AlertCircle
+  Github, 
+  User, 
+  Briefcase,
+  Phone,
+  Smartphone,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ShieldAlert,
+  ArrowLeft,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react';
 
-export const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  initialMode?: 'login' | 'register';
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) => {
   const { 
     loginWithEmail, 
     loginWithGoogle, 
     loginWithGithub, 
+    sendPhoneCode,
+    verifyPhoneCode,
+    activePage,
     setActivePage,
-    showToast 
+    showToast,
+    setUser,
+    user
   } = useGuide();
 
+  // Mode: 'login' or 'register'
+  const [mode, setMode] = useState<'login' | 'register'>(
+    activePage === 'register' ? 'register' : initialMode
+  );
+
+  // Auth Method Type: 'email' or 'phone'
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+
+  // Phone Auth States
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+880');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [phoneStep, setPhoneStep] = useState<'input' | 'verify'>('input');
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [phoneLoading, setPhoneLoading] = useState(false);
+
+  // Form Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState<'client' | 'freelancer'>('client');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // States
+  const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'github' | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [disabledProvider, setDisabledProvider] = useState<'email' | 'github' | null>(null);
+
+  // Keep internal mode in sync with activePage route
+  useEffect(() => {
+    if (activePage === 'register' && mode !== 'register') {
+      setMode('register');
+    } else if (activePage === 'login' && mode !== 'login') {
+      setMode('login');
+    }
+  }, [activePage, mode]);
+
+  // 3D Card Tilt Refs for Desktop
+  const cardWrapRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset states when mode changes
+  const switchMode = useCallback((newMode: 'login' | 'register') => {
+    setMode(newMode);
+    setActivePage(newMode);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setDisabledProvider(null);
+  }, [setActivePage]);
+
+  // Desktop subtle 3D card tilt
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (typeof window !== 'undefined' && window.innerWidth < 900) return;
+    const wrap = cardWrapRef.current;
+    const card = cardRef.current;
+    if (!wrap || !card) return;
+
+    const rect = wrap.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    card.style.transform = `perspective(1000px) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg)';
+  }, []);
+
+  // If already logged in, show return indicator
+  useEffect(() => {
+    if (user) {
+      setSuccessMessage(`You are currently signed in as ${user.name || user.email}.`);
+    }
+  }, [user]);
+
+  // Password strength calculation
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: '', color: '' };
+    let score = 0;
+    if (pass.length >= 8) score += 1;
+    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score += 1;
+    if (/\d/.test(pass)) score += 1;
+    if (/[^a-zA-Z0-9]/.test(pass)) score += 1;
+
+    if (score <= 1) return { score: 1, label: 'Weak', color: '#EF4444' };
+    if (score === 2) return { score: 2, label: 'Fair', color: '#F59E0B' };
+    if (score === 3) return { score: 3, label: 'Good', color: '#A38BFF' };
+    return { score: 4, label: 'Strong', color: '#10B981' };
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
+
+  // Form Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-    if (!email || !password) {
-      setErrorMessage('Please provide both email and password.');
-      showToast('Please provide both email and password.', 'error');
-      return;
+    setSuccessMessage(null);
+    setDisabledProvider(null);
+
+    const cleanEmail = email.trim();
+
+    // 1. Validation for Registration
+    if (mode === 'register') {
+      if (!name.trim()) {
+        setErrorMessage('Please enter your full name.');
+        return;
+      }
+      if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
+        setErrorMessage('Please enter a valid email address (e.g. name@example.com).');
+        return;
+      }
+      if (!password) {
+        setErrorMessage('Please enter a secure password.');
+        return;
+      }
+      if (password.length < 8) {
+        setErrorMessage('Password must be at least 8 characters in length.');
+        return;
+      }
+      if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+        setErrorMessage('Strong password required: include at least one letter and one number.');
+        return;
+      }
+      if (!confirmPassword) {
+        setErrorMessage('Please confirm your password.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMessage('Passwords do not match. Please re-enter matching passwords.');
+        return;
+      }
+    } else {
+      // 2. Validation for Login
+      if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
+        setErrorMessage('Please enter a valid email address.');
+        return;
+      }
+      if (!password) {
+        setErrorMessage('Please enter your password.');
+        return;
+      }
     }
+
     setLoading(true);
+
     try {
-      const ok = await loginWithEmail(email.trim(), password);
-      if (ok) {
+      if (mode === 'login') {
+        await loginWithEmail(cleanEmail, password);
+        showToast('Signed in successfully! Welcome back to Talentio.', 'success');
         setActivePage('dashboard');
       } else {
-        setErrorMessage('Authentication failed. Please check your email and password.');
+        // Register flow using createUserWithEmailAndPassword() and Firestore sync
+        const newUser = await registerWithFirebase(cleanEmail, password, {
+          name: name.trim(),
+          userType: role,
+          role: role === 'client' ? 'CLIENT' : 'FREELANCER',
+          authMethod: 'email'
+        });
+        if (newUser) {
+          setUser(newUser);
+          showToast('Account created successfully! Welcome to Talentio.', 'success');
+          setActivePage('dashboard');
+        }
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Login failed. Please verify your credentials.');
+      console.error('Authentication error:', err);
+      if (isEmailPasswordDisabled(err)) {
+        setDisabledProvider('email');
+        setErrorMessage('Email/Password provider is not enabled in your Firebase Console project (talentio-92919).');
+      } else {
+        setErrorMessage(formatAuthError(err));
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Google OAuth
   const handleGoogleLogin = async () => {
     setErrorMessage(null);
-    setLoading(true);
+    setDisabledProvider(null);
+    setSocialLoading('google');
     try {
       const ok = await loginWithGoogle();
       if (ok) {
+        showToast('Signed in with Google successfully!', 'success');
         setActivePage('dashboard');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Google authentication failed.');
+      console.error('Google auth error:', err);
+      setErrorMessage(formatAuthError(err));
     } finally {
-      setLoading(false);
+      setSocialLoading(null);
     }
   };
 
+  // GitHub OAuth
   const handleGithubLogin = async () => {
     setErrorMessage(null);
-    setLoading(true);
+    setDisabledProvider(null);
+    setSocialLoading('github');
     try {
       const ok = await loginWithGithub();
       if (ok) {
+        showToast('Signed in with GitHub successfully!', 'success');
         setActivePage('dashboard');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'GitHub authentication failed.');
+      console.error('GitHub auth error:', err);
+      if (isGithubProviderDisabled(err)) {
+        setDisabledProvider('github');
+        setErrorMessage('GitHub provider is not enabled or missing OAuth credentials in Firebase Console.');
+      } else {
+        setErrorMessage(formatAuthError(err));
+      }
     } finally {
-      setLoading(false);
+      setSocialLoading(null);
+    }
+  };
+
+  // Phone Auth: Send SMS Verification Code
+  const handleSendPhoneCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const cleanNumber = phoneNumber.trim().replace(/^0+/, '');
+    if (!cleanNumber) {
+      setErrorMessage('Please enter your mobile phone number.');
+      return;
+    }
+
+    const fullPhone = `${phoneCountryCode}${cleanNumber}`;
+    setPhoneLoading(true);
+
+    try {
+      const result = await sendPhoneCode(fullPhone, 'recaptcha-phone-container');
+      setConfirmationResult(result);
+      setPhoneStep('verify');
+      setSuccessMessage(`SMS verification code sent to ${fullPhone}. Please enter the 6-digit code.`);
+    } catch (err: any) {
+      console.error('Send phone OTP error:', err);
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  // Phone Auth: Verify OTP Code
+  const handleVerifyPhoneCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const cleanCode = verificationCode.trim();
+    if (!cleanCode || cleanCode.length < 6) {
+      setErrorMessage('Please enter the full 6-digit SMS verification code.');
+      return;
+    }
+
+    if (!confirmationResult) {
+      setErrorMessage('Session expired. Please request a new verification code.');
+      setPhoneStep('input');
+      return;
+    }
+
+    setPhoneLoading(true);
+    try {
+      const ok = await verifyPhoneCode(confirmationResult, cleanCode, {
+        name: name.trim() || undefined,
+        userType: role,
+        role: role === 'client' ? 'CLIENT' : 'FREELANCER',
+        phone: `${phoneCountryCode}${phoneNumber.trim().replace(/^0+/, '')}`
+      });
+      if (ok) {
+        showToast('Phone authentication successful! Welcome to Talentio.', 'success');
+        setActivePage('dashboard');
+      }
+    } catch (err: any) {
+      console.error('Verify phone OTP error:', err);
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setPhoneLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
-      <div className="w-full max-w-md space-y-6">
+    <div className="relative min-h-screen w-full talentio-auth-bg text-[#F2F0FF] overflow-x-hidden flex flex-col justify-between selection:bg-[#3D2FD1] selection:text-white">
+      {/* Background Dot Grid Layer */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-25 talentio-auth-grid z-0" 
+        aria-hidden="true" 
+      />
+
+      {/* Floating Animated Ambient Orbs */}
+      <div 
+        className="fixed -left-20 top-[18%] w-60 h-60 rounded-full blur-[2px] pointer-events-none z-0 talentio-orb-1"
+        style={{
+          background: 'radial-gradient(circle, rgba(110,91,255,0.22) 0%, transparent 68%)'
+        }}
+        aria-hidden="true" 
+      />
+      <div 
+        className="fixed -right-24 bottom-[10%] w-72 h-72 rounded-full blur-[2px] pointer-events-none z-0 talentio-orb-2"
+        style={{
+          background: 'radial-gradient(circle, rgba(163,139,255,0.18) 0%, transparent 68%)'
+        }}
+        aria-hidden="true" 
+      />
+
+      {/* Main Page Container */}
+      <div className="relative z-10 w-full max-w-[1180px] mx-auto min-h-screen px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col justify-between">
         
-        {/* Header Branding & Welcome */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex justify-center mb-1">
-            <TalentioLogo size="md" variant="black" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#1A1633] tracking-tight font-display">
-            Welcome Back to Talentio
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal">
-            Sign in to access your escrow contracts, messages, and gigs
-          </p>
-        </div>
-
-        {/* Clean Login Form */}
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
-          
-          {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-center gap-2.5 text-xs text-rose-700">
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#3D2FD1] focus:bg-white transition-colors"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setActivePage('forgot-password')}
-                  className="text-[11px] font-bold text-[#3D2FD1] hover:underline cursor-pointer"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#3D2FD1] focus:bg-white transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="remember-me"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-[#3D2FD1] rounded border-slate-300 focus:ring-[#3D2FD1]"
-              />
-              <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 select-none cursor-pointer">
-                Remember my session on this device
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-extrabold text-xs sm:text-sm shadow-md shadow-[#3D2FD1]/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-            >
-              {loading ? (
-                <span>Authenticating...</span>
-              ) : (
-                <>
-                  <span>Log In</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Social Auth Options (Google & GitHub only) */}
-          <div className="pt-2">
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-slate-100"></div>
-              <span className="flex-shrink mx-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Or continue with</span>
-              <div className="flex-grow border-t border-slate-100"></div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGithubLogin}
-                disabled={loading}
-                className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <Github className="w-4 h-4 text-slate-800" />
-                <span>Continue with GitHub</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Link to Register */}
-        <div className="text-center text-xs text-slate-600">
-          <span>Don't have a Talentio account yet? </span>
-          <button
-            onClick={() => setActivePage('register')}
-            className="font-bold text-[#3D2FD1] hover:underline cursor-pointer"
+        {/* Top Navigation */}
+        <header className="w-full flex items-center justify-between pb-6 talentio-reveal-1">
+          <button 
+            type="button"
+            onClick={() => setActivePage('home')}
+            className="flex items-center gap-3 text-xl sm:text-2xl font-extrabold tracking-tight group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-xl p-1 -m-1"
+            title="Return to Talentio Home"
           >
-            Create Account
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-black border border-white/10 p-1 flex items-center justify-center shadow-lg shadow-[#1A1633] group-hover:scale-105 transition-transform duration-200">
+              <TalentioLogo size="md" variant="transparent" />
+            </div>
+            <span className="bg-gradient-to-r from-[#F2F0FF] to-[#A38BFF] bg-clip-text text-transparent">
+              Talentio
+            </span>
           </button>
-        </div>
+
+          <div className="flex items-center gap-4">
+            <span className="hidden md:inline-block text-xs sm:text-sm text-[#b9b3d5] font-medium">
+              Find talent. Get work done. <b className="text-[#A38BFF] font-semibold">Grow together.</b>
+            </span>
+            <button
+              type="button"
+              onClick={() => setActivePage('home')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#F2F0FF]/15 hover:border-[#A38BFF]/40 bg-[#F2F0FF]/5 hover:bg-[#6E5BFF]/10 text-xs font-semibold text-[#F2F0FF] transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-[#A38BFF]" />
+              <span>Marketplace</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content Grid: Hero on Left, Login Card on Right */}
+        <main className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[1fr_460px] xl:grid-cols-[1.1fr_490px] gap-8 lg:gap-14 items-center py-6 sm:py-10">
+          
+          {/* Left Hero Section */}
+          <section className="talentio-reveal-2 max-w-2xl lg:max-w-none text-center lg:text-left mx-auto lg:mx-0">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#F2F0FF]/15 bg-[#6E5BFF]/10 text-[#A38BFF] text-[11px] font-bold tracking-wider uppercase mb-5">
+              <span className="w-2 h-2 rounded-full bg-[#A38BFF] shadow-[0_0_12px_#A38BFF] talentio-orb-1" />
+              <span>Welcome to Talentio</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] text-[#F2F0FF]">
+              Find the{' '}
+              <span className="bg-gradient-to-r from-[#F2F0FF] via-[#A38BFF] to-[#6E5BFF] bg-clip-text text-transparent">
+                right talent
+              </span>{' '}
+              for your project.
+            </h1>
+
+            {/* Subtitle */}
+            <p className="mt-5 text-sm sm:text-base text-[#b9b3d5] leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
+              Connect with skilled freelancers, discover opportunities, create gigs, 
+              post jobs and get your work done — all in one modern marketplace.
+            </p>
+
+            {/* Features Row */}
+            <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-3.5">
+              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 transition-all duration-200 text-left">
+                <strong className="block text-xs sm:text-sm font-bold text-[#F2F0FF] mb-1">
+                  Hire Talent
+                </strong>
+                <span className="block text-[11px] text-[#b9b3d5] leading-tight">
+                  Find skilled professionals
+                </span>
+              </div>
+
+              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 transition-all duration-200 text-left">
+                <strong className="block text-xs sm:text-sm font-bold text-[#F2F0FF] mb-1">
+                  Find Gigs
+                </strong>
+                <span className="block text-[11px] text-[#b9b3d5] leading-tight">
+                  Discover useful services
+                </span>
+              </div>
+
+              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 transition-all duration-200 text-left">
+                <strong className="block text-xs sm:text-sm font-bold text-[#F2F0FF] mb-1">
+                  Build Together
+                </strong>
+                <span className="block text-[11px] text-[#b9b3d5] leading-tight">
+                  Grow through collaboration
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Right Column: Dedicated Login/Register Card */}
+          <section 
+            ref={cardWrapRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className="talentio-reveal-3 w-full max-w-[480px] mx-auto lg:max-w-none"
+            style={{ perspective: '1200px' }}
+          >
+            <div 
+              ref={cardRef}
+              id="loginCard"
+              className="relative rounded-[28px] p-6 sm:p-8 border border-[#A38BFF]/25 bg-gradient-to-br from-[#3D2FD1]/15 to-[#1A1633]/90 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.48),inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden transition-transform duration-150 ease-out"
+            >
+              {/* Subtle Atmospheric Card Glows */}
+              <div 
+                className="absolute -right-20 -top-20 w-48 h-48 rounded-full pointer-events-none blur-3xl opacity-35"
+                style={{ background: 'rgba(110,91,255,0.45)' }}
+                aria-hidden="true"
+              />
+              <div 
+                className="absolute left-1/4 -bottom-24 w-56 h-40 rounded-full pointer-events-none blur-3xl opacity-25"
+                style={{ background: 'rgba(163,139,255,0.35)' }}
+                aria-hidden="true"
+              />
+
+              {/* Card Header with Official Talentio Logo */}
+              <div className="relative z-10 mb-6 text-left">
+                <div className="w-14 h-14 rounded-2xl bg-black border border-[#A38BFF]/30 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(110,91,255,0.25)] mb-4">
+                  <TalentioLogo size="md" variant="transparent" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#F2F0FF]">
+                  {mode === 'login' ? 'Welcome back' : 'Create your account'}
+                </h2>
+                <p className="mt-1.5 text-xs sm:text-sm text-[#b9b3d5] font-normal">
+                  {mode === 'login' 
+                    ? 'Sign in to continue to your Talentio account.' 
+                    : 'Join Talentio and start building your future.'}
+                </p>
+              </div>
+
+              {/* Tabs: Login vs Register */}
+              <div 
+                className="relative z-10 grid grid-cols-2 border-b border-[#F2F0FF]/15 mb-6 text-center"
+                role="tablist"
+                aria-label="Authentication modes"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-login"
+                  aria-selected={mode === 'login'}
+                  aria-controls="panel-login"
+                  onClick={() => switchMode('login')}
+                  className={`py-3 text-xs sm:text-sm font-bold tracking-wide transition-colors relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-t-lg ${
+                    mode === 'login' ? 'text-[#F2F0FF]' : 'text-[#b9b3d5]/60 hover:text-[#F2F0FF]'
+                  }`}
+                >
+                  Login
+                  {mode === 'login' && (
+                    <span 
+                      className="absolute left-[15%] right-[15%] -bottom-[1px] h-[2.5px] rounded-full bg-gradient-to-r from-[#3D2FD1] to-[#A38BFF] shadow-[0_0_14px_rgba(110,91,255,0.8)]" 
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-register"
+                  aria-selected={mode === 'register'}
+                  aria-controls="panel-register"
+                  onClick={() => switchMode('register')}
+                  className={`py-3 text-xs sm:text-sm font-bold tracking-wide transition-colors relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-t-lg ${
+                    mode === 'register' ? 'text-[#F2F0FF]' : 'text-[#b9b3d5]/60 hover:text-[#F2F0FF]'
+                  }`}
+                >
+                  Register
+                  {mode === 'register' && (
+                    <span 
+                      className="absolute left-[15%] right-[15%] -bottom-[1px] h-[2.5px] rounded-full bg-gradient-to-r from-[#3D2FD1] to-[#A38BFF] shadow-[0_0_14px_rgba(110,91,255,0.8)]" 
+                      aria-hidden="true"
+                    />
+                  )}
+                </button>
+              </div>
+
+              {/* Specialized Banner for Disabled Firebase Email/Password Provider */}
+              {disabledProvider === 'email' && (
+                <div 
+                  role="alert"
+                  className="relative z-10 mb-4 p-4 rounded-2xl bg-amber-950/50 border border-amber-500/50 text-amber-200 space-y-2.5 text-xs animate-in fade-in duration-200"
+                >
+                  <div className="flex items-center gap-2 font-bold text-amber-300">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Firebase Email/Password Provider Required</span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                    Email and Password sign-in is currently disabled in your Firebase Console project (<strong>talentio-92919</strong>).
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-black/40 border border-amber-500/20 text-[11px] space-y-1 text-amber-100">
+                    <p className="font-semibold text-white">To enable in Firebase Console:</p>
+                    <ol className="list-decimal list-inside space-y-0.5 text-amber-200/80">
+                      <li>Open Firebase Console &rarr; <strong>Authentication</strong></li>
+                      <li>Go to <strong>Sign-in method</strong> tab</li>
+                      <li>Click <strong>Email/Password</strong></li>
+                      <li>Toggle <strong>Enable</strong> and click <strong>Save</strong></li>
+                    </ol>
+                  </div>
+                  <p className="text-[10px] text-amber-300/80 italic">
+                    💡 You can also use <strong>Google Sign-In</strong> or <strong>GitHub Sign-In</strong> below immediately.
+                  </p>
+                </div>
+              )}
+
+              {/* Specialized Banner for Disabled or Unconfigured GitHub Provider */}
+              {disabledProvider === 'github' && (
+                <div 
+                  role="alert"
+                  className="relative z-10 mb-4 p-4 rounded-2xl bg-indigo-950/50 border border-[#6E5BFF]/50 text-[#F2F0FF] space-y-2.5 text-xs animate-in fade-in duration-200"
+                >
+                  <div className="flex items-center gap-2 font-bold text-[#A38BFF]">
+                    <Github className="w-4 h-4 text-white shrink-0" />
+                    <span>GitHub OAuth Provider Configuration Required</span>
+                  </div>
+                  <p className="text-[11px] text-slate-200 leading-relaxed">
+                    GitHub OAuth is not yet enabled or requires OAuth App credentials in Firebase Console project (<strong>talentio-92919</strong>).
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-black/50 border border-white/10 text-[11px] space-y-1.5 text-slate-200">
+                    <p className="font-semibold text-white">Steps to enable GitHub login:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                      <li>In GitHub: <strong>Settings &rarr; Developer settings &rarr; OAuth Apps &rarr; New OAuth App</strong></li>
+                      <li>
+                        Set Authorization callback URL to:<br />
+                        <code className="text-[#A38BFF] bg-black/70 px-1.5 py-0.5 rounded text-[10px] select-all inline-block mt-0.5">
+                          https://talentio-92919.firebaseapp.com/__/auth/handler
+                        </code>
+                      </li>
+                      <li>In Firebase Console: <strong>Authentication &rarr; Sign-in method &rarr; GitHub</strong></li>
+                      <li>Toggle <strong>Enable</strong>, enter your GitHub <strong>Client ID</strong> and <strong>Client Secret</strong>, then click <strong>Save</strong>.</li>
+                    </ol>
+                  </div>
+                  <p className="text-[10px] text-indigo-300/80 italic">
+                    💡 You can also continue with <strong>Google Sign-In</strong> or <strong>Email/Password</strong> directly.
+                  </p>
+                </div>
+              )}
+
+              {/* Status & Error Feedback */}
+              {errorMessage && !disabledProvider && (
+                <div 
+                  role="alert"
+                  className="relative z-10 mb-4 p-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-rose-200 flex items-start gap-2.5 text-xs animate-in fade-in duration-200"
+                >
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{errorMessage}</span>
+                </div>
+              )}
+
+              {successMessage && !errorMessage && (
+                <div 
+                  role="status"
+                  className="relative z-10 mb-4 p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 flex items-start gap-2.5 text-xs animate-in fade-in duration-200"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{successMessage}</span>
+                </div>
+              )}
+
+              {/* Method Selector: Email & Password vs Phone Number */}
+              <div className="relative z-10 grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/30 border border-[#F2F0FF]/15 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMethod('email');
+                    setErrorMessage(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    authMethod === 'email'
+                      ? 'bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md'
+                      : 'text-[#b9b3d5]/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email & Password</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMethod('phone');
+                    setErrorMessage(null);
+                    setSuccessMessage(null);
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    authMethod === 'phone'
+                      ? 'bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md'
+                      : 'text-[#b9b3d5]/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Phone Number</span>
+                </button>
+              </div>
+
+              {/* Invisible reCAPTCHA container for Phone Auth */}
+              <div id="recaptcha-phone-container" className="my-1"></div>
+
+              {/* PHONE AUTHENTICATION VIEW */}
+              {authMethod === 'phone' ? (
+                <div className="relative z-10 space-y-4">
+                  {/* Full Name & Role for Register Mode */}
+                  {mode === 'register' && phoneStep === 'input' && (
+                    <div className="space-y-3.5 animate-in fade-in duration-150">
+                      <div className="space-y-1.5">
+                        <label htmlFor="phone-register-name" className="block text-xs font-semibold text-[#b9b3d5]">
+                          Full Name
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                          <input
+                            id="phone-register-name"
+                            type="text"
+                            required
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="Your full name"
+                            className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-1">
+                        <span className="block text-xs font-semibold text-[#b9b3d5]">
+                          I am joining as
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setRole('client')}
+                            className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              role === 'client'
+                                ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
+                                : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
+                            }`}
+                          >
+                            <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                            <span>Client (Hire)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRole('freelancer')}
+                            className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              role === 'freelancer'
+                                ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
+                                : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
+                            }`}
+                          >
+                            <Briefcase className="w-3.5 h-3.5 text-[#A38BFF]" />
+                            <span>Freelancer (Work)</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {phoneStep === 'input' ? (
+                    <form onSubmit={handleSendPhoneCode} className="space-y-3.5 text-left">
+                      <div className="space-y-1.5">
+                        <label htmlFor="phone-input" className="block text-xs font-semibold text-[#b9b3d5]">
+                          Mobile Phone Number
+                        </label>
+                        <div className="flex gap-2">
+                          <select
+                            value={phoneCountryCode}
+                            onChange={(e) => setPhoneCountryCode(e.target.value)}
+                            aria-label="Country calling code"
+                            className="h-11 px-2.5 rounded-2xl bg-black/30 border border-[#F2F0FF]/15 text-[#F2F0FF] text-xs font-mono font-bold focus:outline-none focus:border-[#6E5BFF] cursor-pointer shrink-0"
+                          >
+                            <option value="+880">🇧🇩 +880 (BD)</option>
+                            <option value="+1">🇺🇸 +1 (US/CA)</option>
+                            <option value="+44">🇬🇧 +44 (UK)</option>
+                            <option value="+91">🇮🇳 +91 (IN)</option>
+                            <option value="+971">🇦🇪 +971 (UAE)</option>
+                            <option value="+966">🇸🇦 +966 (KSA)</option>
+                            <option value="+61">🇦🇺 +61 (AU)</option>
+                            <option value="+49">🇩🇪 +49 (DE)</option>
+                          </select>
+                          <div className="relative flex-1">
+                            <Phone className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                            <input
+                              id="phone-input"
+                              type="tel"
+                              required
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                              placeholder="1711234567"
+                              className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all font-mono"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-[#b9b3d5]/70">
+                          We will send a 6-digit SMS verification code to your phone number.
+                        </p>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={phoneLoading || !phoneNumber.trim()}
+                        className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-emerald-600 via-teal-600 to-[#3D2FD1] hover:opacity-95 shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        {phoneLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Sending SMS Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Smartphone className="w-4 h-4" />
+                            <span>Send SMS Verification Code</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyPhoneCode} className="space-y-3.5 text-left">
+                      <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-200 text-xs flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-white">Code sent to {phoneCountryCode}{phoneNumber}</p>
+                          <p className="text-[11px] text-emerald-300/80">Enter the 6-digit code received via SMS</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhoneStep('input');
+                            setVerificationCode('');
+                          }}
+                          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold cursor-pointer"
+                        >
+                          Change
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="otp-input" className="block text-xs font-semibold text-[#b9b3d5]">
+                          6-Digit Verification Code
+                        </label>
+                        <input
+                          id="otp-input"
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={verificationCode}
+                          onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
+                          placeholder="123456"
+                          autoComplete="one-time-code"
+                          className="w-full h-12 text-center text-xl font-mono font-black tracking-widest rounded-2xl bg-black/30 border border-emerald-500/40 text-emerald-300 placeholder-[#b9b3d5]/30 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={phoneLoading || verificationCode.length < 6}
+                        className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-emerald-500 to-[#3D2FD1] hover:opacity-95 shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      >
+                        {phoneLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Verifying Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                            <span>Verify & {mode === 'login' ? 'Sign In' : 'Create Account'}</span>
+                          </>
+                        )}
+                      </button>
+
+                      <div className="text-center pt-1">
+                        <button
+                          type="button"
+                          onClick={handleSendPhoneCode}
+                          disabled={phoneLoading}
+                          className="text-xs text-[#A38BFF] hover:underline cursor-pointer"
+                        >
+                          Didn't receive code? Resend SMS
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              ) : (
+                /* EMAIL & PASSWORD AUTHENTICATION FORM */
+                <form 
+                  id={mode === 'login' ? 'loginForm' : 'signupForm'}
+                  onSubmit={handleSubmit} 
+                  className="relative z-10 space-y-3.5 text-left"
+                  noValidate
+                >
+                {/* Full Name field (Register only) */}
+                {mode === 'register' && (
+                  <div className="space-y-1.5 animate-in fade-in duration-150">
+                    <label 
+                      htmlFor="register-name" 
+                      className="block text-xs font-semibold text-[#b9b3d5]"
+                    >
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                      <input
+                        id="register-name"
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Your full name"
+                        autoComplete="name"
+                        className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Email Address */}
+                <div className="space-y-1.5">
+                  <label 
+                    htmlFor={mode === 'login' ? 'login-email' : 'register-email'}
+                    className="block text-xs font-semibold text-[#b9b3d5]"
+                  >
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      id={mode === 'login' ? 'login-email' : 'register-email'}
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label 
+                      htmlFor={mode === 'login' ? 'login-password' : 'register-password'}
+                      className="block text-xs font-semibold text-[#b9b3d5]"
+                    >
+                      Password
+                    </label>
+                    {mode === 'register' && password && (
+                      <span 
+                        className="text-[10px] font-bold"
+                        style={{ color: passwordStrength.color }}
+                      >
+                        {passwordStrength.label}
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      id={mode === 'login' ? 'login-password' : 'register-password'}
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={mode === 'login' ? 'Enter your password' : 'Create a strong password (min. 8 chars)'}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      className="w-full h-11 pl-10 pr-11 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-3.5 top-3.5 text-[#b9b3d5]/70 hover:text-[#F2F0FF] transition-colors p-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-lg"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Visual Password Strength Bar (Register mode) */}
+                  {mode === 'register' && password && (
+                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div
+                          key={step}
+                          className="h-1 rounded-full transition-all duration-300"
+                          style={{
+                            backgroundColor: step <= passwordStrength.score ? passwordStrength.color : 'rgba(242, 240, 255, 0.1)'
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Confirm Password (Register mode only) */}
+                {mode === 'register' && (
+                  <div className="space-y-1.5 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between">
+                      <label 
+                        htmlFor="register-confirm-password" 
+                        className="block text-xs font-semibold text-[#b9b3d5]"
+                      >
+                        Confirm Password
+                      </label>
+                      {confirmPassword && (
+                        <span className={`text-[10px] font-bold ${passwordsMatch ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                      <input
+                        id="register-confirm-password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Re-enter your password"
+                        autoComplete="new-password"
+                        className={`w-full h-11 pl-10 pr-11 rounded-2xl bg-black/20 border text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:ring-4 focus:bg-black/30 transition-all ${
+                          confirmPassword && !passwordsMatch 
+                            ? 'border-rose-500/60 focus:border-rose-500 focus:ring-rose-500/15' 
+                            : 'border-[#F2F0FF]/15 focus:border-[#6E5BFF] focus:ring-[#6E5BFF]/15'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                        className="absolute right-3.5 top-3.5 text-[#b9b3d5]/70 hover:text-[#F2F0FF] transition-colors p-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-lg"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Role selection (Register mode only) */}
+                {mode === 'register' && (
+                  <div className="space-y-1.5 pt-1 animate-in fade-in duration-150">
+                    <span className="block text-xs font-semibold text-[#b9b3d5]">
+                      I am joining as
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRole('client')}
+                        className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          role === 'client'
+                            ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
+                            : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
+                        }`}
+                      >
+                        <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                        <span>Client (Hire)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setRole('freelancer')}
+                        className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          role === 'freelancer'
+                            ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
+                            : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
+                        }`}
+                      >
+                        <Briefcase className="w-3.5 h-3.5 text-[#A38BFF]" />
+                        <span>Freelancer (Work)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Remember Me & Forgot Password (Login mode) */}
+                {mode === 'login' && (
+                  <div className="flex items-center justify-between pt-1 pb-1 text-xs">
+                    <label className="flex items-center gap-2 text-[#b9b3d5] cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-4 h-4 rounded border-[#F2F0FF]/20 bg-black/30 text-[#6E5BFF] focus:ring-[#6E5BFF] focus:ring-offset-0 cursor-pointer accent-[#6E5BFF]"
+                      />
+                      <span>Remember me</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => setActivePage('forgot-password')}
+                      className="text-[#A38BFF] hover:text-[#F2F0FF] font-semibold hover:underline transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#A38BFF] rounded"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || socialLoading !== null}
+                  className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] hover:from-[#4736E6] hover:to-[#7B69FF] active:scale-[0.99] shadow-[0_12px_30px_rgba(61,47,209,0.35)] hover:shadow-[0_16px_36px_rgba(110,91,255,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[#6E5BFF]/30 mt-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>{mode === 'login' ? 'Logging in...' : 'Creating account...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{mode === 'login' ? 'Login with Email' : 'Create Account with Email'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+              )}
+
+              {/* Universal Divider */}
+              <div className="relative flex items-center py-2 text-center my-1 z-10">
+                <div className="flex-grow border-t border-[#F2F0FF]/15" />
+                <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-[#b9b3d5]/70">
+                  or continue with
+                </span>
+                <div className="flex-grow border-t border-[#F2F0FF]/15" />
+              </div>
+
+              {/* Social Logins: Strictly Google & GitHub Only */}
+              <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || phoneLoading || socialLoading !== null}
+                  className="h-11 px-4 rounded-xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 text-[#F2F0FF] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF]"
+                >
+                  {socialLoading === 'google' ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#A38BFF]" />
+                  ) : (
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                  )}
+                  <span>Continue with Google</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGithubLogin}
+                  disabled={loading || phoneLoading || socialLoading !== null}
+                  className="h-11 px-4 rounded-xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 text-[#F2F0FF] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF]"
+                >
+                  {socialLoading === 'github' ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#A38BFF]" />
+                  ) : (
+                    <Github className="w-4 h-4 shrink-0 text-[#A38BFF]" />
+                  )}
+                  <span>Continue with GitHub</span>
+                </button>
+              </div>
+
+              {/* Bottom Switcher */}
+              <div className="relative z-10 mt-5 pt-3.5 border-t border-[#F2F0FF]/10 text-center text-xs text-[#b9b3d5]">
+                <span>
+                  {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
+                  className="font-extrabold text-[#A38BFF] hover:text-[#F2F0FF] hover:underline cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#A38BFF] rounded"
+                >
+                  {mode === 'login' ? 'Register' : 'Login'}
+                </button>
+              </div>
+
+            </div>
+          </section>
+
+        </main>
+
+        {/* Footer */}
+        <footer className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-[#F2F0FF]/10 text-xs text-[#b9b3d5]/70">
+          <span>© 2026 Talentio. All rights reserved.</span>
+          <div className="flex items-center gap-5">
+            <button 
+              type="button" 
+              onClick={() => setActivePage('playbook')}
+              className="hover:text-[#A38BFF] transition-colors cursor-pointer"
+            >
+              Terms
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActivePage('playbook')}
+              className="hover:text-[#A38BFF] transition-colors cursor-pointer"
+            >
+              Privacy
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActivePage('support')}
+              className="hover:text-[#A38BFF] transition-colors cursor-pointer"
+            >
+              Support
+            </button>
+          </div>
+        </footer>
 
       </div>
     </div>
   );
 };
+

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { soundEffects } from '../utils/audioEffects';
+import { microphoneManager } from '../utils/microphoneManager';
 
 export interface SpeechLanguage {
   code: string;
@@ -98,15 +99,22 @@ export const useSpeechRecognition = (
     }
   }, [isListening]);
 
-  // Stop listening
+  // Stop listening and immediately release audio hardware
   const stopListening = useCallback(() => {
     isManuallyStoppedRef.current = true;
     if (recognitionRef.current) {
+      const rec = recognitionRef.current;
+      recognitionRef.current = null;
       try {
-        recognitionRef.current.stop();
+        rec.onstart = null;
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        rec.abort();
       } catch {
         // Ignored
       }
+      microphoneManager.abortRecognition(rec);
     }
     setIsListening(false);
     setInterimTranscript('');
@@ -140,21 +148,26 @@ export const useSpeechRecognition = (
       // Reset chunks for a clean session
       finalChunksRef.current.clear();
 
+      // Release any other microphone locks before starting dictation
+      microphoneManager.releaseAll();
+
       // Clean up previous instance
       if (recognitionRef.current) {
         try {
           recognitionRef.current.onend = null;
           recognitionRef.current.onerror = null;
           recognitionRef.current.onresult = null;
-          recognitionRef.current.stop();
+          recognitionRef.current.abort();
         } catch {
           // Ignored
         }
+        recognitionRef.current = null;
       }
 
       try {
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
+        microphoneManager.registerRecognition(recognition);
 
         recognition.continuous = continuous;
         recognition.interimResults = interimResults;
@@ -201,14 +214,16 @@ export const useSpeechRecognition = (
 
           if (errType === 'not-allowed' || errType === 'service-not-allowed') {
             userMessage = 'Microphone permission denied. Please allow microphone access in your browser settings to use dictation.';
+            isManuallyStoppedRef.current = true;
             setIsListening(false);
           } else if (errType === 'no-speech') {
-            // Natural silence pause - keep listening in continuous mode
+            // Natural silence pause - keep listening if continuous
             return;
           } else if (errType === 'network') {
             userMessage = 'Network error during speech recognition. Please check your internet connection.';
           } else if (errType === 'audio-capture') {
             userMessage = 'No microphone was detected. Please ensure your audio input device is connected.';
+            isManuallyStoppedRef.current = true;
             setIsListening(false);
           } else if (errType === 'aborted') {
             return;
@@ -219,8 +234,9 @@ export const useSpeechRecognition = (
         };
 
         recognition.onend = () => {
-          // If not manually stopped and continuous is true, restart cleanly
-          if (!isManuallyStoppedRef.current && continuous) {
+          // Only restart if not manually stopped, continuous is true, and page is visible
+          const isDocVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
+          if (!isManuallyStoppedRef.current && continuous && isDocVisible) {
             try {
               recognition.start();
               return;
@@ -254,22 +270,29 @@ export const useSpeechRecognition = (
     }
   }, [isListening, startListening, stopListening]);
 
-  // Clean up on unmount
+  // Clean up on unmount, page hide, or browser navigation
   useEffect(() => {
-    return () => {
-      isManuallyStoppedRef.current = true;
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.onend = null;
-          recognitionRef.current.onerror = null;
-          recognitionRef.current.onresult = null;
-          recognitionRef.current.stop();
-        } catch {
-          // Ignored
-        }
+    const handleRelease = () => {
+      stopListening();
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        stopListening();
       }
     };
-  }, []);
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handleRelease);
+    window.addEventListener('popstate', handleRelease);
+
+    return () => {
+      stopListening();
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handleRelease);
+      window.removeEventListener('popstate', handleRelease);
+    };
+  }, [stopListening]);
 
   const combinedTranscript = interimTranscript
     ? finalTranscript

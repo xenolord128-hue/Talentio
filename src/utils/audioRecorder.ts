@@ -1,4 +1,5 @@
 // Professional Voice Recording & Audio Utilities for Talentio Marketplace
+import { microphoneManager } from './microphoneManager';
 
 export interface SupportedAudioFormat {
   mimeType: string;
@@ -122,6 +123,7 @@ export async function requestAuthoritativeMicrophoneStream(): Promise<MediaStrea
     }
 
     const stream = await navigator.mediaDevices.getUserMedia(getStandardAudioConstraints());
+    microphoneManager.registerStream(stream);
     
     if (process.env.NODE_ENV !== 'production') {
       console.log('[VoiceRecorder] getUserMedia success, active tracks:', stream.getAudioTracks().length);
@@ -139,6 +141,7 @@ export async function requestAuthoritativeMicrophoneStream(): Promise<MediaStrea
           console.log('[VoiceRecorder] Retrying with generic { audio: true } constraint...');
         }
         const fallbackStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        microphoneManager.registerStream(fallbackStream);
         return fallbackStream;
       } catch (fallbackErr: any) {
         throw fallbackErr;
@@ -155,20 +158,14 @@ export async function requestAuthoritativeMicrophoneStream(): Promise<MediaStrea
  */
 export function stopMediaStream(stream: MediaStream | null) {
   if (!stream) return;
-  try {
-    stream.getTracks().forEach((track) => {
-      try {
-        track.stop();
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[VoiceRecorder] Track stopped:', track.id, track.label);
-        }
-      } catch {
-        // Ignored
-      }
-    });
-  } catch {
-    // Ignored
-  }
+  microphoneManager.stopStream(stream);
+}
+
+/**
+ * Releases all media resources across the entire app.
+ */
+export function releaseAllMicrophoneHardware() {
+  microphoneManager.releaseAll();
 }
 
 /**
