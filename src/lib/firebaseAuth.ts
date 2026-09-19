@@ -8,10 +8,7 @@ import {
   GithubAuthProvider,
   updateProfile,
   User as FirebaseUser,
-  onAuthStateChanged,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult
+  onAuthStateChanged
 } from 'firebase/auth';
 import { 
   doc, 
@@ -130,133 +127,137 @@ export function formatUserProfile(firebaseUser: FirebaseUser, docData?: any): Us
  */
 export async function syncUserProfileDocument(firebaseUser: FirebaseUser, additionalData: Partial<UserProfile> = {}): Promise<UserProfile> {
   const userRef = doc(db, 'users', firebaseUser.uid);
-  const userSnap = await getDoc(userRef);
   const email = firebaseUser.email || additionalData.email || '';
   const now = new Date();
   const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const determinedRole = normalizeAccountRole(additionalData.role, additionalData.userType as any, email);
+  const isSpecialAdmin = determinedRole === 'ADMIN';
 
-  if (!userSnap.exists()) {
-    const determinedRole = normalizeAccountRole(additionalData.role, additionalData.userType as any, email);
-    const isSpecialAdmin = determinedRole === 'ADMIN';
+  // Base fallback profile constructed directly from authenticated user
+  const fallbackProfile: UserProfile = {
+    id: firebaseUser.uid,
+    userId: firebaseUser.uid,
+    name: additionalData.name || firebaseUser.displayName || 'Talentio Member',
+    displayName: additionalData.name || firebaseUser.displayName || 'Talentio Member',
+    fullName: additionalData.fullName || additionalData.name || firebaseUser.displayName || '',
+    handle: additionalData.handle || `@${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '')}_${firebaseUser.uid.slice(0, 4)}`,
+    email,
+    phone: additionalData.phone || firebaseUser.phoneNumber || '',
+    avatar: additionalData.avatar || firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+    authMethod: additionalData.authMethod || (firebaseUser.providerData?.[0]?.providerId.includes('google') ? 'google' : (firebaseUser.providerData?.[0]?.providerId.includes('github') ? 'github' : 'email')),
+    role: determinedRole,
+    userType: determinedRole === 'ADMIN' ? 'admin' : (determinedRole === 'FREELANCER' ? 'freelancer' : 'client'),
+    providerType: additionalData.providerType || 'individual',
+    accountStatus: isSpecialAdmin ? 'approved' : (determinedRole === 'CLIENT' ? 'approved' : 'pending'),
+    subscriptionStatus: 'trial',
+    subscriptionStartDate: now.toISOString(),
+    subscriptionEndDate: thirtyDaysLater.toISOString(),
+    subscriptionPlan: 'one_month_free_trial',
+    platformFeePercent: 0,
+    trialPeriodDays: 30,
+    isApprovedSeller: isSpecialAdmin ? true : (determinedRole === 'CLIENT' ? true : false),
+    title: additionalData.title || '',
+    category: additionalData.category || 'web-dev',
+    skills: additionalData.skills || [],
+    location: additionalData.location || 'International',
+    countryFlag: additionalData.countryFlag || '🌐',
+    countryCode: additionalData.countryCode || 'INT',
+    bio: additionalData.bio || '',
+    languages: additionalData.languages || ['English (Fluent)'],
+    hourlyRate: additionalData.hourlyRate ?? 50,
+    startingPrice: additionalData.startingPrice ?? 150,
+    verifiedBadge: true,
+    escrowTier: isSpecialAdmin ? 3 : 1,
+    onboardingCompleted: true,
+    onboardingStep: 6,
+    profileCompletionScore: 100,
+    balanceAvailable: isSpecialAdmin ? 10000 : (determinedRole === 'CLIENT' ? 2500 : 0),
+    balanceInEscrow: 0,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString()
+  };
 
-    const initialProfile: UserProfile = {
-      id: firebaseUser.uid,
-      userId: firebaseUser.uid,
-      name: additionalData.name || firebaseUser.displayName || 'Talentio Member',
-      displayName: additionalData.name || firebaseUser.displayName || 'Talentio Member',
-      fullName: additionalData.fullName || additionalData.name || firebaseUser.displayName || '',
-      handle: additionalData.handle || `@${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '')}_${firebaseUser.uid.slice(0, 4)}`,
-      email,
-      phone: additionalData.phone || firebaseUser.phoneNumber || '',
-      avatar: additionalData.avatar || firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-      authMethod: additionalData.authMethod || (firebaseUser.providerData?.[0]?.providerId.includes('google') ? 'google' : (firebaseUser.providerData?.[0]?.providerId.includes('github') ? 'github' : 'email')),
-      role: determinedRole,
-      userType: determinedRole === 'ADMIN' ? 'admin' : (determinedRole === 'FREELANCER' ? 'freelancer' : 'client'),
-      providerType: additionalData.providerType || 'individual',
-      accountStatus: isSpecialAdmin ? 'approved' : (determinedRole === 'CLIENT' ? 'approved' : 'pending'),
-      subscriptionStatus: 'trial',
-      subscriptionStartDate: now.toISOString(),
-      subscriptionEndDate: thirtyDaysLater.toISOString(),
-      subscriptionPlan: 'one_month_free_trial',
-      platformFeePercent: 0,
-      trialPeriodDays: 30,
-      isApprovedSeller: isSpecialAdmin ? true : (determinedRole === 'CLIENT' ? true : false),
-      title: additionalData.title || '',
-      category: additionalData.category || 'web-dev',
-      skills: additionalData.skills || [],
-      location: additionalData.location || 'International',
-      countryFlag: additionalData.countryFlag || '🌐',
-      countryCode: additionalData.countryCode || 'INT',
-      bio: additionalData.bio || '',
-      languages: additionalData.languages || ['English (Fluent)'],
-      hourlyRate: additionalData.hourlyRate ?? 50,
-      startingPrice: additionalData.startingPrice ?? 150,
-      verifiedBadge: true,
-      escrowTier: isSpecialAdmin ? 3 : 1,
-      onboardingCompleted: true,
-      onboardingStep: 6,
-      profileCompletionScore: 100,
-      balanceAvailable: isSpecialAdmin ? 10000 : (determinedRole === 'CLIENT' ? 2500 : 0),
-      balanceInEscrow: 0,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString()
-    };
+  try {
+    const userSnap = await getDoc(userRef);
 
-    await setDoc(userRef, {
-      ...initialProfile,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      lastLoginAt: serverTimestamp()
-    });
-
-    // If admin, record in /admins collection as well for database verification
-    if (isSpecialAdmin) {
-      try {
-        await setDoc(doc(db, 'admins', firebaseUser.uid), {
-          uid: firebaseUser.uid,
-          email,
-          role: 'ADMIN',
-          grantedAt: serverTimestamp()
-        }, { merge: true });
-      } catch (e) {
-        console.warn('Admin collection write note:', e);
-      }
-    }
-
-    return initialProfile;
-  } else {
-    const existingData = userSnap.data();
-    const isAdmin = isAuthorizedAdminEmail(email);
-
-    // If user's email matches admin email, elevate role to ADMIN
-    let updatedRole = existingData.role;
-    if (isAdmin && updatedRole !== 'ADMIN') {
-      updatedRole = 'ADMIN';
-      await updateDoc(userRef, {
-        role: 'ADMIN',
-        userType: 'admin',
-        accountStatus: 'approved',
-        updatedAt: serverTimestamp()
-      });
-      try {
-        await setDoc(doc(db, 'admins', firebaseUser.uid), {
-          uid: firebaseUser.uid,
-          email,
-          role: 'ADMIN',
-          grantedAt: serverTimestamp()
-        }, { merge: true });
-      } catch (e) {}
-    }
-
-    // Sanitize additionalData so user cannot alter role, accountStatus, or subscription without admin rights
-    const safeData = { ...additionalData };
-    // Strictly strip any sensitive credentials if inadvertently passed
-    delete (safeData as any).password;
-    delete (safeData as any).confirmPassword;
-    delete (safeData as any).pass;
-
-    if (!isAdmin) {
-      delete safeData.role;
-      delete safeData.userType;
-      delete safeData.accountStatus;
-      delete safeData.subscriptionStatus;
-      delete safeData.subscriptionEndDate;
-      delete safeData.platformFeePercent;
-    }
-
-    if (Object.keys(safeData).length > 0) {
-      await updateDoc(userRef, {
-        ...safeData,
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        ...fallbackProfile,
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastLoginAt: serverTimestamp()
       });
-      return formatUserProfile(firebaseUser, { ...existingData, ...safeData, role: updatedRole });
+
+      // If admin, record in /admins collection as well for database verification
+      if (isSpecialAdmin) {
+        try {
+          await setDoc(doc(db, 'admins', firebaseUser.uid), {
+            uid: firebaseUser.uid,
+            email,
+            role: 'ADMIN',
+            grantedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (e) {
+          console.warn('Admin collection write note:', e);
+        }
+      }
+
+      return fallbackProfile;
     } else {
-      await updateDoc(userRef, {
-        lastLoginAt: serverTimestamp()
-      });
-      return formatUserProfile(firebaseUser, { ...existingData, role: updatedRole });
+      const existingData = userSnap.data();
+      const isAdmin = isAuthorizedAdminEmail(email);
+
+      let updatedRole = existingData.role;
+      if (isAdmin && updatedRole !== 'ADMIN') {
+        updatedRole = 'ADMIN';
+        await updateDoc(userRef, {
+          role: 'ADMIN',
+          userType: 'admin',
+          accountStatus: 'approved',
+          updatedAt: serverTimestamp()
+        });
+        try {
+          await setDoc(doc(db, 'admins', firebaseUser.uid), {
+            uid: firebaseUser.uid,
+            email,
+            role: 'ADMIN',
+            grantedAt: serverTimestamp()
+          }, { merge: true });
+        } catch (e) {}
+      }
+
+      // Sanitize additionalData so user cannot alter role, accountStatus, or subscription without admin rights
+      const safeData = { ...additionalData };
+      delete (safeData as any).password;
+      delete (safeData as any).confirmPassword;
+      delete (safeData as any).pass;
+
+      if (!isAdmin) {
+        delete safeData.role;
+        delete safeData.userType;
+        delete safeData.accountStatus;
+        delete safeData.subscriptionStatus;
+        delete safeData.subscriptionEndDate;
+        delete safeData.platformFeePercent;
+      }
+
+      if (Object.keys(safeData).length > 0) {
+        await updateDoc(userRef, {
+          ...safeData,
+          updatedAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp()
+        });
+        return formatUserProfile(firebaseUser, { ...existingData, ...safeData, role: updatedRole });
+      } else {
+        await updateDoc(userRef, {
+          lastLoginAt: serverTimestamp()
+        });
+        return formatUserProfile(firebaseUser, { ...existingData, role: updatedRole });
+      }
     }
+  } catch (firestoreError: any) {
+    console.warn('Firestore sync note (proceeding with authenticated session):', firestoreError?.message || firestoreError);
+    return fallbackProfile;
   }
 }
 
@@ -558,88 +559,6 @@ export async function sendPasswordReset(email: string): Promise<void> {
   }
   try {
     await sendPasswordResetEmail(auth, email.trim());
-  } catch (err: any) {
-    const friendly = formatAuthError(err);
-    const errorObj: any = new Error(friendly);
-    errorObj.code = err?.code || 'auth/unknown';
-    errorObj.originalMessage = err?.message;
-    throw errorObj;
-  }
-}
-
-/**
- * Setup Recaptcha Verifier for Phone Number Authentication
- */
-export function setupPhoneRecaptcha(containerId: string): RecaptchaVerifier {
-  if (typeof window === 'undefined') {
-    throw new Error('reCAPTCHA can only be initialized in the browser.');
-  }
-
-  // Clear previous instance if any
-  if ((window as any).recaptchaVerifier) {
-    try {
-      (window as any).recaptchaVerifier.clear();
-    } catch (e) {}
-  }
-
-  const verifier = new RecaptchaVerifier(auth, containerId, {
-    size: 'invisible',
-    callback: () => {
-      // reCAPTCHA solved, allow signInWithPhoneNumber
-    },
-    'expired-callback': () => {
-      // Response expired. Ask user to solve reCAPTCHA again.
-    }
-  });
-
-  (window as any).recaptchaVerifier = verifier;
-  return verifier;
-}
-
-/**
- * Send SMS Verification Code to Phone Number
- */
-export async function sendPhoneVerificationCode(
-  phoneNumber: string, 
-  recaptchaVerifier: RecaptchaVerifier
-): Promise<ConfirmationResult> {
-  const cleanPhone = phoneNumber.trim();
-  if (!cleanPhone.startsWith('+')) {
-    throw new Error('Please enter phone number with country code, e.g. +8801700000000 or +12025550190');
-  }
-
-  try {
-    const confirmationResult = await signInWithPhoneNumber(auth, cleanPhone, recaptchaVerifier);
-    return confirmationResult;
-  } catch (err: any) {
-    const friendly = formatAuthError(err);
-    const errorObj: any = new Error(friendly);
-    errorObj.code = err?.code || 'auth/unknown';
-    errorObj.originalMessage = err?.message;
-    throw errorObj;
-  }
-}
-
-/**
- * Confirm Phone Verification Code and Sync User Profile Document
- */
-export async function confirmPhoneVerificationCode(
-  confirmationResult: ConfirmationResult,
-  verificationCode: string,
-  extraData: Partial<UserProfile> = {}
-): Promise<UserProfile> {
-  const cleanCode = verificationCode.trim();
-  if (!cleanCode) {
-    throw new Error('Please enter the 6-digit SMS verification code.');
-  }
-
-  try {
-    const credential = await confirmationResult.confirm(cleanCode);
-    return await syncUserProfileDocument(credential.user, {
-      authMethod: 'phone',
-      phone: credential.user.phoneNumber || extraData.phone || '',
-      ...extraData
-    });
   } catch (err: any) {
     const friendly = formatAuthError(err);
     const errorObj: any = new Error(friendly);

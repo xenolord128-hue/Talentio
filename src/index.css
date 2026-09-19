@@ -775,3 +775,70 @@ html.dark .ios-glass {
     transform: none !important;
   }
 }
+
+/* ==================================================
+   OFFICIAL TALENTIO BRAND LOGO STYLES
+   ================================================== */
+.talentio-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.talentio-logo--header {
+  width: 150px;
+}
+
+.talentio-logo--sidebar {
+  width: 140px;
+}
+
+.talentio-logo--mobile {
+  width: 110px;
+}
+
+.talentio-logo--auth {
+  width: 145px;
+}
+
+.talentio-logo--footer {
+  width: 130px;
+}
+
+.talentio-logo--small {
+  width: 90px;
+}
+
+/* Hide floating Google reCAPTCHA Enterprise badge & error overlay at bottom-right */
+.grecaptcha-badge,
+iframe[src*="recaptcha"],
+div[style*="z-index: 2000000000"] {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .talentio-logo--header {
+    width: 120px;
+  }
+
+  .talentio-logo--sidebar {
+    width: 115px;
+  }
+
+  .talentio-logo--mobile {
+    width: 100px;
+  }
+
+  .talentio-logo--auth {
+    width: 130px;
+  }
+}
+

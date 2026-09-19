@@ -231,6 +231,10 @@ export const Footer: React.FC = () => {
             </span>
             <span className="text-slate-500">|</span>
             <span className="text-slate-400 font-mono">SOC2 Type II Certified</span>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-500 text-[10px]">
+              Protected by reCAPTCHA (<a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-slate-300">Privacy</a> / <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-slate-300">Terms</a>)
+            </span>
           </div>
         </div>
       </div>

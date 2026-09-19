@@ -37,10 +37,7 @@ import {
   syncUserProfileDocument,
   formatUserProfile,
   isAuthorizedAdminEmail,
-  sendPasswordReset,
-  sendPhoneVerificationCode,
-  confirmPhoneVerificationCode,
-  setupPhoneRecaptcha
+  sendPasswordReset
 } from '../lib/firebaseAuth';
 import {
   subscribeToUsers,
@@ -317,8 +314,6 @@ interface GuideContextType {
   loginWithEmail: (email: string, pass: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   loginWithGithub: () => Promise<boolean>;
-  sendPhoneCode: (phoneNumber: string, containerId: string) => Promise<any>;
-  verifyPhoneCode: (confirmationResult: any, code: string, extraData?: Partial<UserProfile>) => Promise<boolean>;
   sendPasswordResetEmailLink: (email: string) => Promise<boolean>;
   registerAccount: (method: 'email' | 'github', identifier: string, name?: string, password?: string) => Promise<void>;
   registerFullAccount: (data: Partial<UserProfile>) => Promise<void>;
@@ -1225,39 +1220,6 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const sendPhoneCode = async (phoneNumber: string, containerId: string): Promise<any> => {
-    try {
-      const verifier = setupPhoneRecaptcha(containerId);
-      const confirmationResult = await sendPhoneVerificationCode(phoneNumber, verifier);
-      showToast('SMS verification code sent successfully to your phone!', 'success');
-      return confirmationResult;
-    } catch (err: any) {
-      console.warn('Send phone code notice:', err);
-      const msg = err?.message || 'Failed to send SMS code. Please check your phone number.';
-      showToast(msg, 'error');
-      throw err;
-    }
-  };
-
-  const verifyPhoneCode = async (
-    confirmationResult: any, 
-    code: string, 
-    extraData?: Partial<UserProfile>
-  ): Promise<boolean> => {
-    try {
-      const profile = await confirmPhoneVerificationCode(confirmationResult, code, extraData);
-      setUser(profile);
-      setIsAuthModalOpen(false);
-      showToast(`Phone verification successful! Welcome ${profile.name}.`, 'success');
-      return true;
-    } catch (err: any) {
-      console.warn('Verify phone code notice:', err);
-      const msg = err?.message || 'Invalid SMS verification code.';
-      showToast(msg, 'error');
-      throw err;
-    }
-  };
-
   const registerAccount = async (method: 'email' | 'github', identifier: string, name?: string, password?: string) => {
     if (method === 'email' && password) {
       try {
@@ -1917,8 +1879,6 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         loginWithEmail,
         loginWithGoogle,
         loginWithGithub,
-        sendPhoneCode,
-        verifyPhoneCode,
         sendPasswordResetEmailLink,
         registerAccount,
         registerFullAccount,

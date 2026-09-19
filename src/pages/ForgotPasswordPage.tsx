@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { sendPasswordReset, formatAuthError } from '../lib/firebaseAuth';
 import { TalentioLogo } from '../components/TalentioLogo';
-import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
+import { executeRecaptcha, verifyRecaptchaToken } from '../lib/recaptchaEnterprise';
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound, ShieldCheck } from 'lucide-react';
 
 export const ForgotPasswordPage: React.FC = () => {
   const { setActivePage, showToast } = useGuide();
@@ -21,6 +22,16 @@ export const ForgotPasswordPage: React.FC = () => {
 
     setLoading(true);
     try {
+      // Execute reCAPTCHA Enterprise verification
+      const recaptchaToken = await executeRecaptcha('RESET_PASSWORD');
+      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'RESET_PASSWORD');
+
+      if (!recaptchaResult.valid) {
+        setErrorMessage('Security verification failed. Please refresh and try again.');
+        setLoading(false);
+        return;
+      }
+
       await sendPasswordReset(email.trim());
       setSubmitted(true);
       showToast('Password reset instructions sent to your email.', 'success');
@@ -110,7 +121,11 @@ export const ForgotPasswordPage: React.FC = () => {
                 )}
               </button>
 
-              <div className="pt-2 text-center">
+              <div className="pt-2 text-center space-y-3">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Protected by Google reCAPTCHA Enterprise</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setActivePage('login')}

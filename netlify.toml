@@ -1,6 +1,14 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
+
+# Netlify functions redirect for /api/verify-recaptcha
+[[redirects]]
+  from = "/api/verify-recaptcha"
+  to = "/.netlify/functions/verify-recaptcha"
+  status = 200
+  force = true
 
 # Firebase Auth reverse proxy (handles /__/auth/* without 3rd party cookie blocking)
 [[redirects]]

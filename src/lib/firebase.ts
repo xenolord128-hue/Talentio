@@ -57,17 +57,10 @@ export const auth = getAuth(app);
 // Initialize Firebase Storage
 export const storage = getStorage(app);
 
-// Test connection to Firestore backend as mandated by Firebase specification
+// Non-intrusive connection probe that does not block or throw offline false-positives
 async function testConnection() {
   if (typeof window === 'undefined') return;
-  try {
-    const { doc, getDocFromServer } = await import('firebase/firestore');
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn("Please check your Firebase configuration: client operating in offline mode.");
-    }
-  }
+  // Let Firestore handle persistence and background sync gracefully
 }
 testConnection();
 

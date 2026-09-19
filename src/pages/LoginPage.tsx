@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { TalentioLogo } from '../components/TalentioLogo';
 import { registerWithFirebase, isEmailPasswordDisabled, isGithubProviderDisabled, formatAuthError } from '../lib/firebaseAuth';
+import { executeRecaptcha, verifyRecaptchaToken } from '../lib/recaptchaEnterprise';
 import { 
   Lock, 
   Mail, 
@@ -11,8 +12,6 @@ import {
   Github, 
   User, 
   Briefcase,
-  Phone,
-  Smartphone,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -33,8 +32,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     loginWithEmail, 
     loginWithGoogle, 
     loginWithGithub, 
-    sendPhoneCode,
-    verifyPhoneCode,
     activePage,
     setActivePage,
     showToast,
@@ -46,17 +43,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   const [mode, setMode] = useState<'login' | 'register'>(
     activePage === 'register' ? 'register' : initialMode
   );
-
-  // Auth Method Type: 'email' or 'phone'
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
-
-  // Phone Auth States
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneCountryCode, setPhoneCountryCode] = useState('+880');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'input' | 'verify'>('input');
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const [phoneLoading, setPhoneLoading] = useState(false);
 
   // Form Fields
   const [email, setEmail] = useState('');
@@ -195,6 +181,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     setLoading(true);
 
     try {
+      // reCAPTCHA Enterprise protection
+      const actionName = mode === 'login' ? 'LOGIN' : 'SIGNUP';
+      const recaptchaToken = await executeRecaptcha(actionName);
+      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, actionName);
+      if (!recaptchaResult.valid) {
+        setErrorMessage('Security verification failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       if (mode === 'login') {
         await loginWithEmail(cleanEmail, password);
         showToast('Signed in successfully! Welcome back to Talentio.', 'success');
@@ -232,6 +228,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     setDisabledProvider(null);
     setSocialLoading('google');
     try {
+      // reCAPTCHA Enterprise protection
+      const recaptchaToken = await executeRecaptcha('LOGIN');
+      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'LOGIN');
+      if (!recaptchaResult.valid) {
+        setErrorMessage('Security verification failed. Please try again.');
+        setSocialLoading(null);
+        return;
+      }
+
       const ok = await loginWithGoogle();
       if (ok) {
         showToast('Signed in with Google successfully!', 'success');
@@ -251,6 +256,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     setDisabledProvider(null);
     setSocialLoading('github');
     try {
+      // reCAPTCHA Enterprise protection
+      const recaptchaToken = await executeRecaptcha('LOGIN');
+      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'LOGIN');
+      if (!recaptchaResult.valid) {
+        setErrorMessage('Security verification failed. Please try again.');
+        setSocialLoading(null);
+        return;
+      }
+
       const ok = await loginWithGithub();
       if (ok) {
         showToast('Signed in with GitHub successfully!', 'success');
@@ -266,72 +280,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
       }
     } finally {
       setSocialLoading(null);
-    }
-  };
-
-  // Phone Auth: Send SMS Verification Code
-  const handleSendPhoneCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const cleanNumber = phoneNumber.trim().replace(/^0+/, '');
-    if (!cleanNumber) {
-      setErrorMessage('Please enter your mobile phone number.');
-      return;
-    }
-
-    const fullPhone = `${phoneCountryCode}${cleanNumber}`;
-    setPhoneLoading(true);
-
-    try {
-      const result = await sendPhoneCode(fullPhone, 'recaptcha-phone-container');
-      setConfirmationResult(result);
-      setPhoneStep('verify');
-      setSuccessMessage(`SMS verification code sent to ${fullPhone}. Please enter the 6-digit code.`);
-    } catch (err: any) {
-      console.error('Send phone OTP error:', err);
-      setErrorMessage(formatAuthError(err));
-    } finally {
-      setPhoneLoading(false);
-    }
-  };
-
-  // Phone Auth: Verify OTP Code
-  const handleVerifyPhoneCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const cleanCode = verificationCode.trim();
-    if (!cleanCode || cleanCode.length < 6) {
-      setErrorMessage('Please enter the full 6-digit SMS verification code.');
-      return;
-    }
-
-    if (!confirmationResult) {
-      setErrorMessage('Session expired. Please request a new verification code.');
-      setPhoneStep('input');
-      return;
-    }
-
-    setPhoneLoading(true);
-    try {
-      const ok = await verifyPhoneCode(confirmationResult, cleanCode, {
-        name: name.trim() || undefined,
-        userType: role,
-        role: role === 'client' ? 'CLIENT' : 'FREELANCER',
-        phone: `${phoneCountryCode}${phoneNumber.trim().replace(/^0+/, '')}`
-      });
-      if (ok) {
-        showToast('Phone authentication successful! Welcome to Talentio.', 'success');
-        setActivePage('dashboard');
-      }
-    } catch (err: any) {
-      console.error('Verify phone OTP error:', err);
-      setErrorMessage(formatAuthError(err));
-    } finally {
-      setPhoneLoading(false);
     }
   };
 
@@ -619,262 +567,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 </div>
               )}
 
-              {/* Method Selector: Email & Password vs Phone Number */}
-              <div className="relative z-10 grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/30 border border-[#F2F0FF]/15 mb-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod('email');
-                    setErrorMessage(null);
-                    setSuccessMessage(null);
-                  }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    authMethod === 'email'
-                      ? 'bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md'
-                      : 'text-[#b9b3d5]/70 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Email & Password</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod('phone');
-                    setErrorMessage(null);
-                    setSuccessMessage(null);
-                  }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    authMethod === 'phone'
-                      ? 'bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md'
-                      : 'text-[#b9b3d5]/70 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Phone Number</span>
-                </button>
-              </div>
-
-              {/* Invisible reCAPTCHA container for Phone Auth */}
-              <div id="recaptcha-phone-container" className="my-1"></div>
-
-              {/* PHONE AUTHENTICATION VIEW */}
-              {authMethod === 'phone' ? (
-                <div className="relative z-10 space-y-4">
-                  {/* Full Name & Role for Register Mode */}
-                  {mode === 'register' && phoneStep === 'input' && (
-                    <div className="space-y-3.5 animate-in fade-in duration-150">
-                      <div className="space-y-1.5">
-                        <label htmlFor="phone-register-name" className="block text-xs font-semibold text-[#b9b3d5]">
-                          Full Name
-                        </label>
-                        <div className="relative">
-                          <User className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
-                          <input
-                            id="phone-register-name"
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Your full name"
-                            className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 pt-1">
-                        <span className="block text-xs font-semibold text-[#b9b3d5]">
-                          I am joining as
-                        </span>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setRole('client')}
-                            className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                              role === 'client'
-                                ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
-                                : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
-                            }`}
-                          >
-                            <User className="w-3.5 h-3.5 text-[#A38BFF]" />
-                            <span>Client (Hire)</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setRole('freelancer')}
-                            className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                              role === 'freelancer'
-                                ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
-                                : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
-                            }`}
-                          >
-                            <Briefcase className="w-3.5 h-3.5 text-[#A38BFF]" />
-                            <span>Freelancer (Work)</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {phoneStep === 'input' ? (
-                    <form onSubmit={handleSendPhoneCode} className="space-y-3.5 text-left">
-                      <div className="space-y-1.5">
-                        <label htmlFor="phone-input" className="block text-xs font-semibold text-[#b9b3d5]">
-                          Mobile Phone Number
-                        </label>
-                        <div className="flex gap-2">
-                          <select
-                            value={phoneCountryCode}
-                            onChange={(e) => setPhoneCountryCode(e.target.value)}
-                            aria-label="Country calling code"
-                            className="h-11 px-2.5 rounded-2xl bg-black/30 border border-[#F2F0FF]/15 text-[#F2F0FF] text-xs font-mono font-bold focus:outline-none focus:border-[#6E5BFF] cursor-pointer shrink-0"
-                          >
-                            <option value="+880">🇧🇩 +880 (BD)</option>
-                            <option value="+1">🇺🇸 +1 (US/CA)</option>
-                            <option value="+44">🇬🇧 +44 (UK)</option>
-                            <option value="+91">🇮🇳 +91 (IN)</option>
-                            <option value="+971">🇦🇪 +971 (UAE)</option>
-                            <option value="+966">🇸🇦 +966 (KSA)</option>
-                            <option value="+61">🇦🇺 +61 (AU)</option>
-                            <option value="+49">🇩🇪 +49 (DE)</option>
-                          </select>
-                          <div className="relative flex-1">
-                            <Phone className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
-                            <input
-                              id="phone-input"
-                              type="tel"
-                              required
-                              value={phoneNumber}
-                              onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                              placeholder="1711234567"
-                              className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all font-mono"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-[#b9b3d5]/70">
-                          We will send a 6-digit SMS verification code to your phone number.
-                        </p>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={phoneLoading || !phoneNumber.trim()}
-                        className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-emerald-600 via-teal-600 to-[#3D2FD1] hover:opacity-95 shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {phoneLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-white" />
-                            <span>Sending SMS Code...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Smartphone className="w-4 h-4" />
-                            <span>Send SMS Verification Code</span>
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleVerifyPhoneCode} className="space-y-3.5 text-left">
-                      <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-200 text-xs flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-white">Code sent to {phoneCountryCode}{phoneNumber}</p>
-                          <p className="text-[11px] text-emerald-300/80">Enter the 6-digit code received via SMS</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPhoneStep('input');
-                            setVerificationCode('');
-                          }}
-                          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold cursor-pointer"
-                        >
-                          Change
-                        </button>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label htmlFor="otp-input" className="block text-xs font-semibold text-[#b9b3d5]">
-                          6-Digit Verification Code
-                        </label>
-                        <input
-                          id="otp-input"
-                          type="text"
-                          required
-                          maxLength={6}
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
-                          placeholder="123456"
-                          autoComplete="one-time-code"
-                          className="w-full h-12 text-center text-xl font-mono font-black tracking-widest rounded-2xl bg-black/30 border border-emerald-500/40 text-emerald-300 placeholder-[#b9b3d5]/30 focus:outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={phoneLoading || verificationCode.length < 6}
-                        className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-emerald-500 to-[#3D2FD1] hover:opacity-95 shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {phoneLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-white" />
-                            <span>Verifying Code...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                            <span>Verify & {mode === 'login' ? 'Sign In' : 'Create Account'}</span>
-                          </>
-                        )}
-                      </button>
-
-                      <div className="text-center pt-1">
-                        <button
-                          type="button"
-                          onClick={handleSendPhoneCode}
-                          disabled={phoneLoading}
-                          className="text-xs text-[#A38BFF] hover:underline cursor-pointer"
-                        >
-                          Didn't receive code? Resend SMS
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              ) : (
-                /* EMAIL & PASSWORD AUTHENTICATION FORM */
-                <form 
-                  id={mode === 'login' ? 'loginForm' : 'signupForm'}
-                  onSubmit={handleSubmit} 
-                  className="relative z-10 space-y-3.5 text-left"
-                  noValidate
-                >
-                {/* Full Name field (Register only) */}
-                {mode === 'register' && (
-                  <div className="space-y-1.5 animate-in fade-in duration-150">
-                    <label 
-                      htmlFor="register-name" 
-                      className="block text-xs font-semibold text-[#b9b3d5]"
-                    >
-                      Full Name
-                    </label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
-                      <input
-                        id="register-name"
-                        type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Your full name"
-                        autoComplete="name"
-                        className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
-                      />
-                    </div>
+              {/* EMAIL & PASSWORD AUTHENTICATION FORM */}
+              <form 
+                id={mode === 'login' ? 'loginForm' : 'signupForm'}
+                onSubmit={handleSubmit} 
+                className="relative z-10 space-y-3.5 text-left"
+                noValidate
+              >
+              {/* Full Name field (Register only) */}
+              {mode === 'register' && (
+                <div className="space-y-1.5 animate-in fade-in duration-150">
+                  <label 
+                    htmlFor="register-name" 
+                    className="block text-xs font-semibold text-[#b9b3d5]"
+                  >
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                    <input
+                      id="register-name"
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your full name"
+                      autoComplete="name"
+                      className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                    />
                   </div>
-                )}
+                </div>
+              )}
 
                 {/* Email Address */}
                 <div className="space-y-1.5">
@@ -1077,7 +800,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   )}
                 </button>
               </form>
-              )}
 
               {/* Universal Divider */}
               <div className="relative flex items-center py-2 text-center my-1 z-10">
@@ -1093,7 +815,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  disabled={loading || phoneLoading || socialLoading !== null}
+                  disabled={loading || socialLoading !== null}
                   className="h-11 px-4 rounded-xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 text-[#F2F0FF] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF]"
                 >
                   {socialLoading === 'google' ? (
@@ -1112,7 +834,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 <button
                   type="button"
                   onClick={handleGithubLogin}
-                  disabled={loading || phoneLoading || socialLoading !== null}
+                  disabled={loading || socialLoading !== null}
                   className="h-11 px-4 rounded-xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 text-[#F2F0FF] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF]"
                 >
                   {socialLoading === 'github' ? (
@@ -1136,6 +858,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 >
                   {mode === 'login' ? 'Register' : 'Login'}
                 </button>
+              </div>
+
+              {/* Protected by Google reCAPTCHA Enterprise badge */}
+              <div className="relative z-10 mt-4 pt-3 border-t border-[#F2F0FF]/10 flex items-center justify-center gap-1.5 text-[11px] text-[#b9b3d5]/70">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Protected by Google reCAPTCHA Enterprise</span>
               </div>
 
             </div>
