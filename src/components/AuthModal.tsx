@@ -463,11 +463,9 @@ export const AuthModal: React.FC = () => {
         isOpen={isHumanModalOpen}
         actionTitle={verificationActionTitle}
         errorMessage={verificationError}
-        onVerifySuccess={(token: string) => {
+        onVerifySuccess={async (token: string) => {
           if (pendingAuthAction) {
-            const action = pendingAuthAction;
-            setPendingAuthAction(null);
-            action(token);
+            await pendingAuthAction(token);
           }
         }}
         onCancel={() => {

@@ -20,6 +20,13 @@ export const HumanVerificationModal: React.FC<HumanVerificationModalProps> = ({
   const [internalError, setInternalError] = useState<string | null>(null);
   const [resetCount, setResetCount] = useState<number>(0);
 
+  // Automatically reset the reCAPTCHA checkbox whenever an error occurs so the checkmark does not get stuck
+  React.useEffect(() => {
+    if (errorMessage) {
+      setResetCount(prev => prev + 1);
+    }
+  }, [errorMessage]);
+
   if (!isOpen) return null;
 
   const handleVerify = (token: string) => {
@@ -29,10 +36,12 @@ export const HumanVerificationModal: React.FC<HumanVerificationModalProps> = ({
 
   const handleExpired = () => {
     setInternalError('Verification expired. Please check the "I\'m not a robot" box again.');
+    setResetCount(prev => prev + 1);
   };
 
   const handleError = () => {
     setInternalError('reCAPTCHA encountered a problem. Please try again.');
+    setResetCount(prev => prev + 1);
   };
 
   const displayError = errorMessage || internalError;

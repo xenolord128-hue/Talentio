@@ -25,6 +25,17 @@ export const RecaptchaCheckbox: React.FC<RecaptchaCheckboxProps> = ({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRendered, setIsRendered] = useState(false);
 
+  // Keep latest callback references fresh to prevent stale closure issues in grecaptcha iframe callbacks
+  const onVerifyRef = useRef(onVerify);
+  const onExpiredRef = useRef(onExpired);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onVerifyRef.current = onVerify;
+    onExpiredRef.current = onExpired;
+    onErrorRef.current = onError;
+  });
+
   // Load the Google reCAPTCHA v2 script
   useEffect(() => {
     let mounted = true;
@@ -39,27 +50,28 @@ export const RecaptchaCheckbox: React.FC<RecaptchaCheckboxProps> = ({
         if (mounted) {
           console.warn('Failed to load Google reCAPTCHA script:', err);
           setLoadError('Failed to load verification service. Please check your internet connection.');
-          onError?.(err);
+          onErrorRef.current?.(err);
         }
       });
 
     return () => {
       mounted = false;
     };
-  }, [onError]);
+  }, []);
 
   // Render the widget once script is ready and container exists
   useEffect(() => {
     if (!isScriptReady || !containerRef.current || isRendered) return;
 
+    let timeoutId: any = null;
+
     const renderWidget = () => {
       if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') {
-        setTimeout(renderWidget, 150);
+        timeoutId = setTimeout(renderWidget, 150);
         return;
       }
 
       try {
-        // Clear any previous child elements in container
         if (containerRef.current) {
           containerRef.current.innerHTML = '';
         }
@@ -69,25 +81,29 @@ export const RecaptchaCheckbox: React.FC<RecaptchaCheckboxProps> = ({
           theme: theme,
           size: 'normal',
           callback: (token: string) => {
-            onVerify(token);
+            onVerifyRef.current?.(token);
           },
           'expired-callback': () => {
-            onExpired?.();
+            onExpiredRef.current?.();
           },
           'error-callback': (err: any) => {
-            onError?.(err);
+            onErrorRef.current?.(err);
           }
         });
 
         widgetIdRef.current = id;
         setIsRendered(true);
       } catch (err: any) {
-        console.warn('Google reCAPTCHA render warning:', err);
+        console.warn('Google reCAPTCHA render notice:', err);
       }
     };
 
     renderWidget();
-  }, [isScriptReady, theme, onVerify, onExpired, onError, isRendered]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isScriptReady, theme, isRendered]);
 
   // Handle manual reset trigger
   useEffect(() => {
