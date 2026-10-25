@@ -27,7 +27,11 @@ import {
   ChevronRight,
   Camera,
   Flame,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle,
+  AlertCircle,
+  RefreshCw,
+  FileText
 } from 'lucide-react';
 
 export const UserProfilePage: React.FC = () => {
@@ -183,11 +187,35 @@ export const UserProfilePage: React.FC = () => {
                     {displayName}
                   </h1>
                   
-                  {/* Verified Shield Badge */}
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-sm">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Verified</span>
-                  </span>
+                  {/* Verified Shield Badge & KYC CTA */}
+                  {user?.kycStatus === 'verified' || user?.verifiedBadge ? (
+                    <span 
+                      onClick={() => setActivePage('kyc')}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-sm cursor-pointer hover:bg-emerald-500/30 transition-colors"
+                      title="Identity Officially Verified. Click to view KYC record."
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>KYC Verified</span>
+                    </span>
+                  ) : user?.kycStatus === 'pending' ? (
+                    <span 
+                      onClick={() => setActivePage('kyc')}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center gap-1 shadow-sm cursor-pointer hover:bg-blue-500/30 transition-colors"
+                      title="KYC Verification in Progress"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 animate-pulse" />
+                      <span>KYC In Review</span>
+                    </span>
+                  ) : (
+                    <button 
+                      onClick={() => setActivePage('kyc')}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 flex items-center gap-1 shadow-sm cursor-pointer transition-colors"
+                      title="Complete Identity Verification to get verified seller/buyer badge"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Complete KYC</span>
+                    </button>
+                  )}
 
                   {/* Role Badge */}
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-[#3D2FD1] text-white border border-[#A38BFF]/30 shadow-sm">
@@ -353,6 +381,151 @@ export const UserProfilePage: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* 2.5 KYC & IDENTITY VERIFICATION STATUS PANEL */}
+      <div className={`p-5 sm:p-6 rounded-3xl border shadow-xl relative overflow-hidden transition-all ${
+        user?.kycStatus === 'verified' || user?.verifiedBadge
+          ? 'bg-gradient-to-r from-emerald-950/40 via-[#191432] to-[#191432] border-emerald-500/30'
+          : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review'
+          ? 'bg-gradient-to-r from-blue-950/40 via-[#191432] to-[#191432] border-blue-500/30'
+          : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required'
+          ? 'bg-gradient-to-r from-amber-950/40 via-[#191432] to-[#191432] border-amber-500/30'
+          : user?.kycStatus === 'rejected'
+          ? 'bg-gradient-to-r from-rose-950/40 via-[#191432] to-[#191432] border-rose-500/30'
+          : user?.kycStatus === 'in_progress'
+          ? 'bg-gradient-to-r from-purple-950/40 via-[#191432] to-[#191432] border-purple-500/30'
+          : 'bg-gradient-to-r from-[#3D2FD1]/20 via-[#191432] to-[#191432] border-[#6E5BFF]/30'
+      }`}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
+          
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-md ${
+              user?.kycStatus === 'verified' || user?.verifiedBadge
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review'
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : user?.kycStatus === 'rejected'
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                : user?.kycStatus === 'in_progress'
+                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                : 'bg-[#3D2FD1]/30 text-[#A38BFF] border-[#6E5BFF]/40'
+            }`}>
+              {user?.kycStatus === 'verified' || user?.verifiedBadge ? (
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
+              ) : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review' ? (
+                <Clock className="w-6 h-6 text-blue-400 animate-spin" />
+              ) : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required' ? (
+                <AlertTriangle className="w-6 h-6 text-amber-400" />
+              ) : user?.kycStatus === 'rejected' ? (
+                <AlertCircle className="w-6 h-6 text-rose-400" />
+              ) : (
+                <ShieldCheck className="w-6 h-6 text-[#A38BFF]" />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  {user?.kycStatus === 'verified' || user?.verifiedBadge
+                    ? 'KYC Verified — Verified Seller Privilege Active'
+                    : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review'
+                    ? 'KYC Under Review — Verification in Progress'
+                    : user?.kycStatus === 'in_progress'
+                    ? 'KYC Verification In Progress'
+                    : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required'
+                    ? 'Action Required — Document Resubmission Needed'
+                    : user?.kycStatus === 'rejected'
+                    ? 'KYC Verification Declined'
+                    : 'Mandatory KYC & Identity Verification'}
+                </h3>
+
+                {/* Status Badge */}
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border ${
+                  user?.kycStatus === 'verified' || user?.verifiedBadge
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review'
+                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                    : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : user?.kycStatus === 'rejected'
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    : user?.kycStatus === 'in_progress'
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                }`}>
+                  {user?.kycStatus === 'verified' || user?.verifiedBadge
+                    ? 'Verified'
+                    : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review'
+                    ? 'Under Review'
+                    : user?.kycStatus === 'in_progress'
+                    ? 'In Progress'
+                    : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required'
+                    ? 'Action Required'
+                    : user?.kycStatus === 'rejected'
+                    ? 'Rejected'
+                    : 'Not Started'}
+                </span>
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                {user?.kycStatus === 'verified' || user?.verifiedBadge
+                  ? 'Your identity documents (NID/Passport) and biometric face match have been verified. You hold full permissions to publish gigs, submit proposals, and withdraw escrow funds.'
+                  : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review'
+                  ? 'Your identity submission, document scans, signature, and biometric liveness scan have been securely received. Our compliance team and automated inspection are reviewing your file.'
+                  : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required'
+                  ? (user?.kycRejectionReason ? `Reason: ${user.kycRejectionReason}. Please provide a clearer document image or signature.` : 'One or more of your documents or signature need to be re-captured. Please resubmit clear photos to complete verification.')
+                  : user?.kycStatus === 'rejected'
+                  ? (user?.kycRejectionReason ? `Declined: ${user.kycRejectionReason}. You may re-apply with an officially valid government identity document.` : 'Your verification was declined. Please verify your legal details and submit a valid government document.')
+                  : user?.kycStatus === 'in_progress'
+                  ? 'You have an active verification draft. Complete all steps (personal details, document scan, signature, live selfie) to activate your freelancer account.'
+                  : 'Freelancers and talent on Talentio must complete biometric identity verification before publishing gigs, submitting project proposals, or activating seller services.'}
+              </p>
+            </div>
+
+          </div>
+
+          {/* Action CTA */}
+          <div className="shrink-0 flex items-center gap-3 w-full sm:w-auto">
+            {user?.kycStatus === 'verified' || user?.verifiedBadge ? (
+              <button
+                onClick={() => setActivePage('kyc')}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              >
+                <FileText className="w-4 h-4" />
+                <span>View KYC Record</span>
+              </button>
+            ) : user?.kycStatus === 'pending' || user?.kycStatus === 'submitted' || user?.kycStatus === 'under_review' ? (
+              <button
+                onClick={() => setActivePage('kyc')}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              >
+                <Clock className="w-4 h-4" />
+                <span>View Verification Status</span>
+              </button>
+            ) : user?.kycStatus === 'resubmission_required' || user?.kycStatus === 'action_required' ? (
+              <button
+                onClick={() => setActivePage('kyc')}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Resubmit Documents</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setActivePage('kyc')}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] hover:opacity-90 text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#3D2FD1]/30"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>{user?.kycStatus === 'in_progress' ? 'Continue Verification' : 'Start Verification'}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+        </div>
       </div>
 
       {/* 3. SOCIAL-MEDIA-STYLE TABBED CONTENT TABS */}

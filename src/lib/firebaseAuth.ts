@@ -575,6 +575,7 @@ export async function logoutFirebase(): Promise<void> {
   try {
     localStorage.removeItem('talentio_admin_token');
     localStorage.removeItem('talentio_admin_session');
+    localStorage.removeItem('talentio_user_profile');
   } catch {}
   await signOut(auth);
 }
@@ -582,10 +583,10 @@ export async function logoutFirebase(): Promise<void> {
 /**
  * Retrieve current user Firebase ID token or active admin session token
  */
-export async function getCurrentUserIdToken(): Promise<string | null> {
+export async function getCurrentUserIdToken(forceRefresh = false): Promise<string | null> {
   if (auth.currentUser) {
     try {
-      const token = await auth.currentUser.getIdToken(false);
+      const token = await auth.currentUser.getIdToken(forceRefresh);
       if (token) return token;
     } catch (e) {}
   }
@@ -599,8 +600,8 @@ export async function getCurrentUserIdToken(): Promise<string | null> {
 /**
  * Verify administrator authorization server-side
  */
-export async function verifyServerAdminAccess(): Promise<boolean> {
-  const token = await getCurrentUserIdToken();
+export async function verifyServerAdminAccess(forceRefresh = false): Promise<boolean> {
+  const token = await getCurrentUserIdToken(forceRefresh);
   if (!token) return false;
   try {
     const res = await fetch('/api/admin/verify-access', {
@@ -608,11 +609,12 @@ export async function verifyServerAdminAccess(): Promise<boolean> {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      }
+      },
+      body: JSON.stringify({ idToken: token })
     });
     if (!res.ok) return false;
     const data = await res.json();
-    return data.authorized === true;
+    return data.authorized === true && (data.isAdmin === true || data.role === 'ADMIN');
   } catch {
     return false;
   }

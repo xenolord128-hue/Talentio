@@ -58,7 +58,7 @@ export const PostJobModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A1633]/70 backdrop-blur-xl animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#23324A]/70 backdrop-blur-xl animate-in fade-in duration-150">
       
       {/* Backdrop */}
       <div 
@@ -67,12 +67,12 @@ export const PostJobModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-2xl rounded-[28px] ios-glass text-[#1A1633] shadow-[0_25px_80px_rgba(26,22,51,0.35)] border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-2xl rounded-[28px] ios-glass text-[#23324A] shadow-[0_25px_80px_rgba(26,22,51,0.35)] border border-white/80 overflow-hidden z-10 animate-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
         
         {/* Header */}
-        <div className="p-6 bg-[#1A1633] text-white border-b border-[#A38BFF]/30 flex items-center justify-between shrink-0">
+        <div className="p-6 bg-[#23324A] text-white border-b border-[#E3EDF9]/30 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <TalentioLogo size="sm" variant="gradient" />
+            <TalentioLogo size="sm" variant="transparent" />
             <div>
               <h3 className="text-base sm:text-lg font-bold">Post a Project with Escrow Protection</h3>
               <p className="text-xs text-slate-300">Receive vetted proposals from top 3% international freelancers</p>
@@ -81,7 +81,7 @@ export const PostJobModal: React.FC = () => {
 
           <button
             onClick={() => setIsPostJobModalOpen(false)}
-            className="p-3 min-w-[48px] min-h-[48px] rounded-2xl bg-white/10 hover:bg-white/20 border border-[#A38BFF]/30 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+            className="p-3 min-w-[48px] min-h-[48px] rounded-2xl bg-white/10 hover:bg-white/20 border border-[#E3EDF9]/30 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,8 +92,8 @@ export const PostJobModal: React.FC = () => {
           
           {/* Project Title */}
           <div className="space-y-1.5">
-            <label className="font-bold text-[#1A1633] block">
-              Project Title <span className="text-[#3D2FD1]">*</span>
+            <label className="font-bold text-[#23324A] block">
+              Project Title <span className="text-[#3A5A86]">*</span>
             </label>
             <input
               type="text"
@@ -101,7 +101,7 @@ export const PostJobModal: React.FC = () => {
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g., Senior Full-Stack Next.js 15 Engineer for SaaS Dashboard"
               required
-              className="w-full bg-white/90 backdrop-blur-xs text-[#1A1633] placeholder:text-slate-400 px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#A38BFF]/30 focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 focus:outline-none text-xs sm:text-sm font-medium"
+              className="w-full bg-white/90 backdrop-blur-xs text-[#23324A] placeholder:text-slate-400 px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#E3EDF9]/30 focus:border-[#3A5A86] focus:ring-2 focus:ring-[#3A5A86]/20 focus:outline-none text-xs sm:text-sm font-medium"
             />
           </div>
 
@@ -109,11 +109,11 @@ export const PostJobModal: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             <div className="space-y-1.5">
-              <label className="font-bold text-[#1A1633] block">Category Specialty</label>
+              <label className="font-bold text-[#23324A] block">Category Specialty</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                className="w-full bg-white/90 backdrop-blur-xs text-[#1A1633] px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#A38BFF]/30 focus:border-[#6E5BFF] focus:outline-none font-medium"
+                className="w-full bg-white/90 backdrop-blur-xs text-[#23324A] px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#E3EDF9]/30 focus:border-[#3A5A86] focus:outline-none font-medium"
               >
                 {TALENTIO_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -122,11 +122,11 @@ export const PostJobModal: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-[#1A1633] block">Estimated Timeline</label>
+              <label className="font-bold text-[#23324A] block">Estimated Timeline</label>
               <select
                 value={duration}
                 onChange={e => setDuration(e.target.value)}
-                className="w-full bg-white/90 backdrop-blur-xs text-[#1A1633] px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#A38BFF]/30 focus:border-[#6E5BFF] focus:outline-none font-medium"
+                className="w-full bg-white/90 backdrop-blur-xs text-[#23324A] px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#E3EDF9]/30 focus:border-[#3A5A86] focus:outline-none font-medium"
               >
                 <option value="< 1 week">Under 1 week (Fast Sprint)</option>
                 <option value="2-4 weeks">2 to 4 weeks (Standard Project)</option>
@@ -138,17 +138,17 @@ export const PostJobModal: React.FC = () => {
           </div>
 
           {/* Budget Setup */}
-          <div className="space-y-3 p-4 sm:p-5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#A38BFF]/30">
+          <div className="space-y-3 p-4 sm:p-5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#E3EDF9]/30">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="font-bold text-[#1A1633]">Escrow Budget Allocation</span>
+              <span className="font-bold text-[#23324A]">Escrow Budget Allocation</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setBudgetType('fixed')}
                   className={`px-4 py-2.5 min-h-[44px] rounded-xl font-bold transition-all ${
                     budgetType === 'fixed'
-                      ? 'bg-[#3D2FD1] text-white shadow-sm'
-                      : 'bg-white/80 border border-[#A38BFF]/20 text-slate-700'
+                      ? 'bg-[#3A5A86] text-white shadow-sm'
+                      : 'bg-white/80 border border-[#E3EDF9]/20 text-slate-700'
                   }`}
                 >
                   Fixed Milestone
@@ -158,8 +158,8 @@ export const PostJobModal: React.FC = () => {
                   onClick={() => setBudgetType('hourly')}
                   className={`px-4 py-2.5 min-h-[44px] rounded-xl font-bold transition-all ${
                     budgetType === 'hourly'
-                      ? 'bg-[#3D2FD1] text-white shadow-sm'
-                      : 'bg-white/80 border border-[#A38BFF]/20 text-slate-700'
+                      ? 'bg-[#3A5A86] text-white shadow-sm'
+                      : 'bg-white/80 border border-[#E3EDF9]/20 text-slate-700'
                   }`}
                 >
                   Hourly Rate
@@ -177,7 +177,7 @@ export const PostJobModal: React.FC = () => {
                   value={budget}
                   onChange={e => setBudget(e.target.value)}
                   placeholder="2500"
-                  className="w-full bg-white text-[#1A1633] pl-9 pr-4 py-3 min-h-[48px] rounded-xl border border-[#A38BFF]/30 focus:border-[#6E5BFF] focus:outline-none font-bold text-sm"
+                  className="w-full bg-white text-[#23324A] pl-9 pr-4 py-3 min-h-[48px] rounded-xl border border-[#E3EDF9]/30 focus:border-[#3A5A86] focus:outline-none font-bold text-sm"
                 />
               </div>
               <span className="text-xs text-slate-500 font-medium">
@@ -188,8 +188,8 @@ export const PostJobModal: React.FC = () => {
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="font-bold text-[#1A1633] block">
-              Scope of Work & Deliverables <span className="text-[#3D2FD1]">*</span>
+            <label className="font-bold text-[#23324A] block">
+              Scope of Work & Deliverables <span className="text-[#3A5A86]">*</span>
             </label>
             <textarea
               rows={4}
@@ -197,33 +197,33 @@ export const PostJobModal: React.FC = () => {
               onChange={e => setDescription(e.target.value)}
               placeholder="Describe your requirements, design system needs, technical architecture, and expected deliverables..."
               required
-              className="w-full bg-white/90 backdrop-blur-xs text-[#1A1633] placeholder:text-slate-400 p-4 rounded-2xl border border-[#A38BFF]/30 focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 focus:outline-none text-xs sm:text-sm leading-relaxed"
+              className="w-full bg-white/90 backdrop-blur-xs text-[#23324A] placeholder:text-slate-400 p-4 rounded-2xl border border-[#E3EDF9]/30 focus:border-[#3A5A86] focus:ring-2 focus:ring-[#3A5A86]/20 focus:outline-none text-xs sm:text-sm leading-relaxed"
             />
           </div>
 
           {/* Required Skills */}
           <div className="space-y-1.5">
-            <label className="font-bold text-[#1A1633] block">Required Skills (Comma separated)</label>
+            <label className="font-bold text-[#23324A] block">Required Skills (Comma separated)</label>
             <input
               type="text"
               value={skillsInput}
               onChange={e => setSkillsInput(e.target.value)}
               placeholder="React, Next.js, Figma, Tailwind, AWS"
-              className="w-full bg-white/90 text-[#1A1633] px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#A38BFF]/30 focus:border-[#6E5BFF] focus:outline-none"
+              className="w-full bg-white/90 text-[#23324A] px-4 py-3.5 min-h-[48px] rounded-2xl border border-[#E3EDF9]/30 focus:border-[#3A5A86] focus:outline-none"
             />
           </div>
 
           {/* Security & NDA Checkbox */}
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 backdrop-blur-md border border-[#A38BFF]/30">
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 backdrop-blur-md border border-[#E3EDF9]/30">
             <input
               type="checkbox"
               id="nda"
               checked={requireNda}
               onChange={e => setRequireNda(e.target.checked)}
-              className="w-5 h-5 rounded border-slate-300 text-[#3D2FD1] focus:ring-[#6E5BFF] cursor-pointer"
+              className="w-5 h-5 rounded border-slate-300 text-[#3A5A86] focus:ring-[#3A5A86] cursor-pointer"
             />
             <label htmlFor="nda" className="text-xs sm:text-sm text-slate-700 cursor-pointer flex items-center gap-1.5">
-              <Lock className="w-4 h-4 text-[#3D2FD1] shrink-0" />
+              <Lock className="w-4 h-4 text-[#3A5A86] shrink-0" />
               <span>Require standard automated Talentio IP & NDA Agreement upon contract acceptance</span>
             </label>
           </div>
@@ -239,9 +239,9 @@ export const PostJobModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-3.5 min-h-[48px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#3D2FD1]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 min-h-[48px] rounded-xl bg-[#3A5A86] hover:bg-[#3A5A86] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#3A5A86]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <ShieldCheck className="w-5 h-5 text-[#A38BFF]" />
+              <ShieldCheck className="w-5 h-5 text-[#E3EDF9]" />
               <span>Post Project with Escrow</span>
             </button>
           </div>

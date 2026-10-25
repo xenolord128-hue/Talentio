@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { TalentioLogo } from '../components/TalentioLogo';
 import { registerWithFirebase, isEmailPasswordDisabled, isGithubProviderDisabled, formatAuthError } from '../lib/firebaseAuth';
-import { executeRecaptcha, verifyRecaptchaToken } from '../lib/recaptchaEnterprise';
+import { verifyRecaptchaTokenOnServer } from '../lib/recaptcha';
+import { HumanVerificationModal } from '../components/HumanVerificationModal';
 import { 
   Lock, 
   Mail, 
@@ -60,6 +61,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [disabledProvider, setDisabledProvider] = useState<'email' | 'github' | null>(null);
+
+  // Interactive Human Verification Modal state (Google reCAPTCHA v2 Checkbox)
+  const [isHumanModalOpen, setIsHumanModalOpen] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [pendingAuthAction, setPendingAuthAction] = useState<((token: string) => Promise<void>) | null>(null);
+  const [verificationActionTitle, setVerificationActionTitle] = useState('Talentio Security Check');
 
   // Keep internal mode in sync with activePage route
   useEffect(() => {
@@ -120,7 +127,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
 
     if (score <= 1) return { score: 1, label: 'Weak', color: '#EF4444' };
     if (score === 2) return { score: 2, label: 'Fair', color: '#F59E0B' };
-    if (score === 3) return { score: 3, label: 'Good', color: '#A38BFF' };
+    if (score === 3) return { score: 3, label: 'Good', color: '#E3EDF9' };
     return { score: 4, label: 'Strong', color: '#10B981' };
   };
 
@@ -179,112 +186,139 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     }
 
     setLoading(true);
+    setVerificationError(null);
 
-    try {
-      // reCAPTCHA Enterprise protection
-      const actionName = mode === 'login' ? 'LOGIN' : 'SIGNUP';
-      const recaptchaToken = await executeRecaptcha(actionName);
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, actionName);
-      if (!recaptchaResult.valid) {
-        setErrorMessage('Security verification failed. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      if (mode === 'login') {
-        await loginWithEmail(cleanEmail, password);
-        showToast('Signed in successfully! Welcome back to Talentio.', 'success');
-        setActivePage('dashboard');
-      } else {
-        // Register flow using createUserWithEmailAndPassword() and Firestore sync
-        const newUser = await registerWithFirebase(cleanEmail, password, {
-          name: name.trim(),
-          userType: role,
-          role: role === 'client' ? 'CLIENT' : 'FREELANCER',
-          authMethod: 'email'
-        });
-        if (newUser) {
-          setUser(newUser);
-          showToast('Account created successfully! Welcome to Talentio.', 'success');
-          setActivePage('dashboard');
+    const executeAuthAction = async (token: string) => {
+      try {
+        // Authoritative Server-Side verification of reCAPTCHA v2 token
+        const recaptchaResult = await verifyRecaptchaTokenOnServer(token);
+        if (!recaptchaResult.valid) {
+          setVerificationError(recaptchaResult.message || 'Human verification failed. Please check the box again.');
+          setIsHumanModalOpen(true);
+          setLoading(false);
+          return;
         }
+
+        setIsHumanModalOpen(false);
+
+        if (mode === 'login') {
+          await loginWithEmail(cleanEmail, password);
+          showToast('Signed in successfully! Welcome back to Talentio.', 'success');
+          setActivePage('dashboard');
+        } else {
+          // Register flow using createUserWithEmailAndPassword() and Firestore sync
+          const newUser = await registerWithFirebase(cleanEmail, password, {
+            name: name.trim(),
+            userType: role,
+            role: role === 'client' ? 'CLIENT' : 'FREELANCER',
+            authMethod: 'email'
+          });
+          if (newUser) {
+            setUser(newUser);
+            showToast('Account created successfully! Welcome to Talentio.', 'success');
+            setActivePage('dashboard');
+          }
+        }
+      } catch (err: any) {
+        console.error('Authentication error:', err);
+        if (isEmailPasswordDisabled(err)) {
+          setDisabledProvider('email');
+          setErrorMessage('Email/Password provider is not enabled in your Firebase Console project (talentio-92919).');
+        } else {
+          setErrorMessage(formatAuthError(err));
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      console.error('Authentication error:', err);
-      if (isEmailPasswordDisabled(err)) {
-        setDisabledProvider('email');
-        setErrorMessage('Email/Password provider is not enabled in your Firebase Console project (talentio-92919).');
-      } else {
-        setErrorMessage(formatAuthError(err));
-      }
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    // Trigger visual human verification check
+    setVerificationActionTitle(mode === 'login' ? 'Talentio Login Verification' : 'Talentio Register Verification');
+    setPendingAuthAction(() => executeAuthAction);
+    setIsHumanModalOpen(true);
   };
 
   // Google OAuth
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setErrorMessage(null);
     setDisabledProvider(null);
+    setVerificationError(null);
     setSocialLoading('google');
-    try {
-      // reCAPTCHA Enterprise protection
-      const recaptchaToken = await executeRecaptcha('LOGIN');
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'LOGIN');
-      if (!recaptchaResult.valid) {
-        setErrorMessage('Security verification failed. Please try again.');
-        setSocialLoading(null);
-        return;
-      }
 
-      const ok = await loginWithGoogle();
-      if (ok) {
-        showToast('Signed in with Google successfully!', 'success');
-        setActivePage('dashboard');
+    const executeGoogle = async (token: string) => {
+      try {
+        // Authoritative Server-Side verification of reCAPTCHA v2 token
+        const recaptchaResult = await verifyRecaptchaTokenOnServer(token);
+        if (!recaptchaResult.valid) {
+          setVerificationError(recaptchaResult.message || 'Human verification failed. Please try again.');
+          setIsHumanModalOpen(true);
+          setSocialLoading(null);
+          return;
+        }
+
+        setIsHumanModalOpen(false);
+        const ok = await loginWithGoogle();
+        if (ok) {
+          showToast('Signed in with Google successfully!', 'success');
+          setActivePage('dashboard');
+        }
+      } catch (err: any) {
+        console.error('Google auth error:', err);
+        setErrorMessage(formatAuthError(err));
+      } finally {
+        setSocialLoading(null);
       }
-    } catch (err: any) {
-      console.error('Google auth error:', err);
-      setErrorMessage(formatAuthError(err));
-    } finally {
-      setSocialLoading(null);
-    }
+    };
+
+    setVerificationActionTitle('Google Sign-In Human Verification');
+    setPendingAuthAction(() => executeGoogle);
+    setIsHumanModalOpen(true);
   };
 
   // GitHub OAuth
-  const handleGithubLogin = async () => {
+  const handleGithubLogin = () => {
     setErrorMessage(null);
     setDisabledProvider(null);
+    setVerificationError(null);
     setSocialLoading('github');
-    try {
-      // reCAPTCHA Enterprise protection
-      const recaptchaToken = await executeRecaptcha('LOGIN');
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'LOGIN');
-      if (!recaptchaResult.valid) {
-        setErrorMessage('Security verification failed. Please try again.');
-        setSocialLoading(null);
-        return;
-      }
 
-      const ok = await loginWithGithub();
-      if (ok) {
-        showToast('Signed in with GitHub successfully!', 'success');
-        setActivePage('dashboard');
+    const executeGithub = async (token: string) => {
+      try {
+        // Authoritative Server-Side verification of reCAPTCHA v2 token
+        const recaptchaResult = await verifyRecaptchaTokenOnServer(token);
+        if (!recaptchaResult.valid) {
+          setVerificationError(recaptchaResult.message || 'Human verification failed. Please try again.');
+          setIsHumanModalOpen(true);
+          setSocialLoading(null);
+          return;
+        }
+
+        setIsHumanModalOpen(false);
+        const ok = await loginWithGithub();
+        if (ok) {
+          showToast('Signed in with GitHub successfully!', 'success');
+          setActivePage('dashboard');
+        }
+      } catch (err: any) {
+        console.error('GitHub auth error:', err);
+        if (isGithubProviderDisabled(err)) {
+          setDisabledProvider('github');
+          setErrorMessage('GitHub provider is not enabled or missing OAuth credentials in Firebase Console.');
+        } else {
+          setErrorMessage(formatAuthError(err));
+        }
+      } finally {
+        setSocialLoading(null);
       }
-    } catch (err: any) {
-      console.error('GitHub auth error:', err);
-      if (isGithubProviderDisabled(err)) {
-        setDisabledProvider('github');
-        setErrorMessage('GitHub provider is not enabled or missing OAuth credentials in Firebase Console.');
-      } else {
-        setErrorMessage(formatAuthError(err));
-      }
-    } finally {
-      setSocialLoading(null);
-    }
+    };
+
+    setVerificationActionTitle('GitHub Sign-In Human Verification');
+    setPendingAuthAction(() => executeGithub);
+    setIsHumanModalOpen(true);
   };
 
   return (
-    <div className="relative min-h-screen w-full talentio-auth-bg text-[#F2F0FF] overflow-x-hidden flex flex-col justify-between selection:bg-[#3D2FD1] selection:text-white">
+    <div className="relative min-h-screen w-full talentio-auth-bg text-[#E3EDF9] overflow-x-hidden flex flex-col justify-between selection:bg-[#3A5A86] selection:text-white">
       {/* Background Dot Grid Layer */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-25 talentio-auth-grid z-0" 
@@ -315,27 +349,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
           <button 
             type="button"
             onClick={() => setActivePage('home')}
-            className="flex items-center gap-3 text-xl sm:text-2xl font-extrabold tracking-tight group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-xl p-1 -m-1"
+            className="flex items-center gap-3 text-xl sm:text-2xl font-extrabold tracking-tight group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9] rounded-xl p-1 -m-1"
             title="Return to Talentio Home"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-black border border-white/10 p-1 flex items-center justify-center shadow-lg shadow-[#1A1633] group-hover:scale-105 transition-transform duration-200">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-black border border-white/10 p-1 flex items-center justify-center shadow-lg shadow-[#23324A] group-hover:scale-105 transition-transform duration-200">
               <TalentioLogo size="md" variant="transparent" />
             </div>
-            <span className="bg-gradient-to-r from-[#F2F0FF] to-[#A38BFF] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#E3EDF9] to-[#E3EDF9] bg-clip-text text-transparent">
               Talentio
             </span>
           </button>
 
           <div className="flex items-center gap-4">
-            <span className="hidden md:inline-block text-xs sm:text-sm text-[#b9b3d5] font-medium">
-              Find talent. Get work done. <b className="text-[#A38BFF] font-semibold">Grow together.</b>
+            <span className="hidden md:inline-block text-xs sm:text-sm text-[#9ab0cb] font-medium">
+              Find talent. Get work done. <b className="text-[#E3EDF9] font-semibold">Grow together.</b>
             </span>
             <button
               type="button"
               onClick={() => setActivePage('home')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#F2F0FF]/15 hover:border-[#A38BFF]/40 bg-[#F2F0FF]/5 hover:bg-[#6E5BFF]/10 text-xs font-semibold text-[#F2F0FF] transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E3EDF9]/15 hover:border-[#E3EDF9]/40 bg-[#E3EDF9]/5 hover:bg-[#3A5A86]/10 text-xs font-semibold text-[#E3EDF9] transition-all cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-[#A38BFF]" />
+              <ArrowLeft className="w-3.5 h-3.5 text-[#E3EDF9]" />
               <span>Marketplace</span>
             </button>
           </div>
@@ -347,51 +381,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
           {/* Left Hero Section */}
           <section className="talentio-reveal-2 max-w-2xl lg:max-w-none text-center lg:text-left mx-auto lg:mx-0">
             {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#F2F0FF]/15 bg-[#6E5BFF]/10 text-[#A38BFF] text-[11px] font-bold tracking-wider uppercase mb-5">
-              <span className="w-2 h-2 rounded-full bg-[#A38BFF] shadow-[0_0_12px_#A38BFF] talentio-orb-1" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E3EDF9]/15 bg-[#3A5A86]/10 text-[#E3EDF9] text-[11px] font-bold tracking-wider uppercase mb-5">
+              <span className="w-2 h-2 rounded-full bg-[#E3EDF9] shadow-[0_0_12px_#E3EDF9] talentio-orb-1" />
               <span>Welcome to Talentio</span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] text-[#F2F0FF]">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] text-[#E3EDF9]">
               Find the{' '}
-              <span className="bg-gradient-to-r from-[#F2F0FF] via-[#A38BFF] to-[#6E5BFF] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#E3EDF9] via-[#E3EDF9] to-[#3A5A86] bg-clip-text text-transparent">
                 right talent
               </span>{' '}
               for your project.
             </h1>
 
             {/* Subtitle */}
-            <p className="mt-5 text-sm sm:text-base text-[#b9b3d5] leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
+            <p className="mt-5 text-sm sm:text-base text-[#9ab0cb] leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal">
               Connect with skilled freelancers, discover opportunities, create gigs, 
               post jobs and get your work done — all in one modern marketplace.
             </p>
 
             {/* Features Row */}
             <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-3.5">
-              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 transition-all duration-200 text-left">
-                <strong className="block text-xs sm:text-sm font-bold text-[#F2F0FF] mb-1">
+              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#E3EDF9]/15 bg-[#E3EDF9]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#E3EDF9]/40 hover:bg-[#3A5A86]/10 transition-all duration-200 text-left">
+                <strong className="block text-xs sm:text-sm font-bold text-[#E3EDF9] mb-1">
                   Hire Talent
                 </strong>
-                <span className="block text-[11px] text-[#b9b3d5] leading-tight">
+                <span className="block text-[11px] text-[#9ab0cb] leading-tight">
                   Find skilled professionals
                 </span>
               </div>
 
-              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 transition-all duration-200 text-left">
-                <strong className="block text-xs sm:text-sm font-bold text-[#F2F0FF] mb-1">
+              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#E3EDF9]/15 bg-[#E3EDF9]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#E3EDF9]/40 hover:bg-[#3A5A86]/10 transition-all duration-200 text-left">
+                <strong className="block text-xs sm:text-sm font-bold text-[#E3EDF9] mb-1">
                   Find Gigs
                 </strong>
-                <span className="block text-[11px] text-[#b9b3d5] leading-tight">
+                <span className="block text-[11px] text-[#9ab0cb] leading-tight">
                   Discover useful services
                 </span>
               </div>
 
-              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 transition-all duration-200 text-left">
-                <strong className="block text-xs sm:text-sm font-bold text-[#F2F0FF] mb-1">
+              <div className="flex-1 min-w-[140px] max-w-[200px] p-3.5 sm:p-4 rounded-2xl border border-[#E3EDF9]/15 bg-[#E3EDF9]/[0.035] backdrop-blur-md hover:-translate-y-1 hover:border-[#E3EDF9]/40 hover:bg-[#3A5A86]/10 transition-all duration-200 text-left">
+                <strong className="block text-xs sm:text-sm font-bold text-[#E3EDF9] mb-1">
                   Build Together
                 </strong>
-                <span className="block text-[11px] text-[#b9b3d5] leading-tight">
+                <span className="block text-[11px] text-[#9ab0cb] leading-tight">
                   Grow through collaboration
                 </span>
               </div>
@@ -409,7 +443,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
             <div 
               ref={cardRef}
               id="loginCard"
-              className="relative rounded-[28px] p-6 sm:p-8 border border-[#A38BFF]/25 bg-gradient-to-br from-[#3D2FD1]/15 to-[#1A1633]/90 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.48),inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden transition-transform duration-150 ease-out"
+              className="relative rounded-[28px] p-6 sm:p-8 border border-[#E3EDF9]/25 bg-gradient-to-br from-[#3A5A86]/15 to-[#23324A]/90 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.48),inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden transition-transform duration-150 ease-out"
             >
               {/* Subtle Atmospheric Card Glows */}
               <div 
@@ -425,13 +459,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
 
               {/* Card Header with Official Talentio Logo */}
               <div className="relative z-10 mb-6 text-left">
-                <div className="w-14 h-14 rounded-2xl bg-black border border-[#A38BFF]/30 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(110,91,255,0.25)] mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-black border border-[#E3EDF9]/30 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(110,91,255,0.25)] mb-4">
                   <TalentioLogo size="md" variant="transparent" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#F2F0FF]">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#E3EDF9]">
                   {mode === 'login' ? 'Welcome back' : 'Create your account'}
                 </h2>
-                <p className="mt-1.5 text-xs sm:text-sm text-[#b9b3d5] font-normal">
+                <p className="mt-1.5 text-xs sm:text-sm text-[#9ab0cb] font-normal">
                   {mode === 'login' 
                     ? 'Sign in to continue to your Talentio account.' 
                     : 'Join Talentio and start building your future.'}
@@ -440,7 +474,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
 
               {/* Tabs: Login vs Register */}
               <div 
-                className="relative z-10 grid grid-cols-2 border-b border-[#F2F0FF]/15 mb-6 text-center"
+                className="relative z-10 grid grid-cols-2 border-b border-[#E3EDF9]/15 mb-6 text-center"
                 role="tablist"
                 aria-label="Authentication modes"
               >
@@ -451,14 +485,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   aria-selected={mode === 'login'}
                   aria-controls="panel-login"
                   onClick={() => switchMode('login')}
-                  className={`py-3 text-xs sm:text-sm font-bold tracking-wide transition-colors relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-t-lg ${
-                    mode === 'login' ? 'text-[#F2F0FF]' : 'text-[#b9b3d5]/60 hover:text-[#F2F0FF]'
+                  className={`py-3 text-xs sm:text-sm font-bold tracking-wide transition-colors relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9] rounded-t-lg ${
+                    mode === 'login' ? 'text-[#E3EDF9]' : 'text-[#9ab0cb]/60 hover:text-[#E3EDF9]'
                   }`}
                 >
                   Login
                   {mode === 'login' && (
                     <span 
-                      className="absolute left-[15%] right-[15%] -bottom-[1px] h-[2.5px] rounded-full bg-gradient-to-r from-[#3D2FD1] to-[#A38BFF] shadow-[0_0_14px_rgba(110,91,255,0.8)]" 
+                      className="absolute left-[15%] right-[15%] -bottom-[1px] h-[2.5px] rounded-full bg-gradient-to-r from-[#3A5A86] to-[#E3EDF9] shadow-[0_0_14px_rgba(110,91,255,0.8)]" 
                       aria-hidden="true"
                     />
                   )}
@@ -471,14 +505,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   aria-selected={mode === 'register'}
                   aria-controls="panel-register"
                   onClick={() => switchMode('register')}
-                  className={`py-3 text-xs sm:text-sm font-bold tracking-wide transition-colors relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-t-lg ${
-                    mode === 'register' ? 'text-[#F2F0FF]' : 'text-[#b9b3d5]/60 hover:text-[#F2F0FF]'
+                  className={`py-3 text-xs sm:text-sm font-bold tracking-wide transition-colors relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9] rounded-t-lg ${
+                    mode === 'register' ? 'text-[#E3EDF9]' : 'text-[#9ab0cb]/60 hover:text-[#E3EDF9]'
                   }`}
                 >
                   Register
                   {mode === 'register' && (
                     <span 
-                      className="absolute left-[15%] right-[15%] -bottom-[1px] h-[2.5px] rounded-full bg-gradient-to-r from-[#3D2FD1] to-[#A38BFF] shadow-[0_0_14px_rgba(110,91,255,0.8)]" 
+                      className="absolute left-[15%] right-[15%] -bottom-[1px] h-[2.5px] rounded-full bg-gradient-to-r from-[#3A5A86] to-[#E3EDF9] shadow-[0_0_14px_rgba(110,91,255,0.8)]" 
                       aria-hidden="true"
                     />
                   )}
@@ -517,9 +551,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               {disabledProvider === 'github' && (
                 <div 
                   role="alert"
-                  className="relative z-10 mb-4 p-4 rounded-2xl bg-indigo-950/50 border border-[#6E5BFF]/50 text-[#F2F0FF] space-y-2.5 text-xs animate-in fade-in duration-200"
+                  className="relative z-10 mb-4 p-4 rounded-2xl bg-indigo-950/50 border border-[#3A5A86]/50 text-[#E3EDF9] space-y-2.5 text-xs animate-in fade-in duration-200"
                 >
-                  <div className="flex items-center gap-2 font-bold text-[#A38BFF]">
+                  <div className="flex items-center gap-2 font-bold text-[#E3EDF9]">
                     <Github className="w-4 h-4 text-white shrink-0" />
                     <span>GitHub OAuth Provider Configuration Required</span>
                   </div>
@@ -532,7 +566,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                       <li>In GitHub: <strong>Settings &rarr; Developer settings &rarr; OAuth Apps &rarr; New OAuth App</strong></li>
                       <li>
                         Set Authorization callback URL to:<br />
-                        <code className="text-[#A38BFF] bg-black/70 px-1.5 py-0.5 rounded text-[10px] select-all inline-block mt-0.5">
+                        <code className="text-[#E3EDF9] bg-black/70 px-1.5 py-0.5 rounded text-[10px] select-all inline-block mt-0.5">
                           https://talentio-92919.firebaseapp.com/__/auth/handler
                         </code>
                       </li>
@@ -579,12 +613,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 <div className="space-y-1.5 animate-in fade-in duration-150">
                   <label 
                     htmlFor="register-name" 
-                    className="block text-xs font-semibold text-[#b9b3d5]"
+                    className="block text-xs font-semibold text-[#9ab0cb]"
                   >
                     Full Name
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                    <User className="w-4 h-4 text-[#E3EDF9] absolute left-3.5 top-3.5 pointer-events-none" />
                     <input
                       id="register-name"
                       type="text"
@@ -593,7 +627,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your full name"
                       autoComplete="name"
-                      className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                      className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#E3EDF9]/15 text-[#E3EDF9] placeholder-[#9ab0cb]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#3A5A86] focus:ring-4 focus:ring-[#3A5A86]/15 focus:bg-black/30 transition-all"
                     />
                   </div>
                 </div>
@@ -603,12 +637,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 <div className="space-y-1.5">
                   <label 
                     htmlFor={mode === 'login' ? 'login-email' : 'register-email'}
-                    className="block text-xs font-semibold text-[#b9b3d5]"
+                    className="block text-xs font-semibold text-[#9ab0cb]"
                   >
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                    <Mail className="w-4 h-4 text-[#E3EDF9] absolute left-3.5 top-3.5 pointer-events-none" />
                     <input
                       id={mode === 'login' ? 'login-email' : 'register-email'}
                       type="email"
@@ -617,7 +651,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
-                      className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                      className="w-full h-11 pl-10 pr-4 rounded-2xl bg-black/20 border border-[#E3EDF9]/15 text-[#E3EDF9] placeholder-[#9ab0cb]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#3A5A86] focus:ring-4 focus:ring-[#3A5A86]/15 focus:bg-black/30 transition-all"
                     />
                   </div>
                 </div>
@@ -627,7 +661,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   <div className="flex items-center justify-between">
                     <label 
                       htmlFor={mode === 'login' ? 'login-password' : 'register-password'}
-                      className="block text-xs font-semibold text-[#b9b3d5]"
+                      className="block text-xs font-semibold text-[#9ab0cb]"
                     >
                       Password
                     </label>
@@ -641,7 +675,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                    <Lock className="w-4 h-4 text-[#E3EDF9] absolute left-3.5 top-3.5 pointer-events-none" />
                     <input
                       id={mode === 'login' ? 'login-password' : 'register-password'}
                       type={showPassword ? 'text' : 'password'}
@@ -650,13 +684,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder={mode === 'login' ? 'Enter your password' : 'Create a strong password (min. 8 chars)'}
                       autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      className="w-full h-11 pl-10 pr-11 rounded-2xl bg-black/20 border border-[#F2F0FF]/15 text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#6E5BFF] focus:ring-4 focus:ring-[#6E5BFF]/15 focus:bg-black/30 transition-all"
+                      className="w-full h-11 pl-10 pr-11 rounded-2xl bg-black/20 border border-[#E3EDF9]/15 text-[#E3EDF9] placeholder-[#9ab0cb]/40 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#3A5A86] focus:ring-4 focus:ring-[#3A5A86]/15 focus:bg-black/30 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      className="absolute right-3.5 top-3.5 text-[#b9b3d5]/70 hover:text-[#F2F0FF] transition-colors p-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-lg"
+                      className="absolute right-3.5 top-3.5 text-[#9ab0cb]/70 hover:text-[#E3EDF9] transition-colors p-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9] rounded-lg"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -684,7 +718,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                     <div className="flex items-center justify-between">
                       <label 
                         htmlFor="register-confirm-password" 
-                        className="block text-xs font-semibold text-[#b9b3d5]"
+                        className="block text-xs font-semibold text-[#9ab0cb]"
                       >
                         Confirm Password
                       </label>
@@ -695,7 +729,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                       )}
                     </div>
                     <div className="relative">
-                      <Lock className="w-4 h-4 text-[#A38BFF] absolute left-3.5 top-3.5 pointer-events-none" />
+                      <Lock className="w-4 h-4 text-[#E3EDF9] absolute left-3.5 top-3.5 pointer-events-none" />
                       <input
                         id="register-confirm-password"
                         type={showConfirmPassword ? 'text' : 'password'}
@@ -704,17 +738,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Re-enter your password"
                         autoComplete="new-password"
-                        className={`w-full h-11 pl-10 pr-11 rounded-2xl bg-black/20 border text-[#F2F0FF] placeholder-[#b9b3d5]/40 text-xs sm:text-sm font-medium focus:outline-none focus:ring-4 focus:bg-black/30 transition-all ${
+                        className={`w-full h-11 pl-10 pr-11 rounded-2xl bg-black/20 border text-[#E3EDF9] placeholder-[#9ab0cb]/40 text-xs sm:text-sm font-medium focus:outline-none focus:ring-4 focus:bg-black/30 transition-all ${
                           confirmPassword && !passwordsMatch 
                             ? 'border-rose-500/60 focus:border-rose-500 focus:ring-rose-500/15' 
-                            : 'border-[#F2F0FF]/15 focus:border-[#6E5BFF] focus:ring-[#6E5BFF]/15'
+                            : 'border-[#E3EDF9]/15 focus:border-[#3A5A86] focus:ring-[#3A5A86]/15'
                         }`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                        className="absolute right-3.5 top-3.5 text-[#b9b3d5]/70 hover:text-[#F2F0FF] transition-colors p-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF] rounded-lg"
+                        className="absolute right-3.5 top-3.5 text-[#9ab0cb]/70 hover:text-[#E3EDF9] transition-colors p-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9] rounded-lg"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -725,7 +759,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 {/* Role selection (Register mode only) */}
                 {mode === 'register' && (
                   <div className="space-y-1.5 pt-1 animate-in fade-in duration-150">
-                    <span className="block text-xs font-semibold text-[#b9b3d5]">
+                    <span className="block text-xs font-semibold text-[#9ab0cb]">
                       I am joining as
                     </span>
                     <div className="grid grid-cols-2 gap-2">
@@ -734,11 +768,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                         onClick={() => setRole('client')}
                         className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           role === 'client'
-                            ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
-                            : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
+                            ? 'border-[#3A5A86] bg-[#3A5A86]/30 text-[#E3EDF9]'
+                            : 'border-[#E3EDF9]/15 bg-black/20 text-[#9ab0cb] hover:border-[#E3EDF9]/40'
                         }`}
                       >
-                        <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                        <User className="w-3.5 h-3.5 text-[#E3EDF9]" />
                         <span>Client (Hire)</span>
                       </button>
 
@@ -747,11 +781,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                         onClick={() => setRole('freelancer')}
                         className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           role === 'freelancer'
-                            ? 'border-[#6E5BFF] bg-[#3D2FD1]/30 text-[#F2F0FF]'
-                            : 'border-[#F2F0FF]/15 bg-black/20 text-[#b9b3d5] hover:border-[#A38BFF]/40'
+                            ? 'border-[#3A5A86] bg-[#3A5A86]/30 text-[#E3EDF9]'
+                            : 'border-[#E3EDF9]/15 bg-black/20 text-[#9ab0cb] hover:border-[#E3EDF9]/40'
                         }`}
                       >
-                        <Briefcase className="w-3.5 h-3.5 text-[#A38BFF]" />
+                        <Briefcase className="w-3.5 h-3.5 text-[#E3EDF9]" />
                         <span>Freelancer (Work)</span>
                       </button>
                     </div>
@@ -761,12 +795,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 {/* Remember Me & Forgot Password (Login mode) */}
                 {mode === 'login' && (
                   <div className="flex items-center justify-between pt-1 pb-1 text-xs">
-                    <label className="flex items-center gap-2 text-[#b9b3d5] cursor-pointer select-none">
+                    <label className="flex items-center gap-2 text-[#9ab0cb] cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#F2F0FF]/20 bg-black/30 text-[#6E5BFF] focus:ring-[#6E5BFF] focus:ring-offset-0 cursor-pointer accent-[#6E5BFF]"
+                        className="w-4 h-4 rounded border-[#E3EDF9]/20 bg-black/30 text-[#3A5A86] focus:ring-[#3A5A86] focus:ring-offset-0 cursor-pointer accent-[#3A5A86]"
                       />
                       <span>Remember me</span>
                     </label>
@@ -774,7 +808,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                     <button
                       type="button"
                       onClick={() => setActivePage('forgot-password')}
-                      className="text-[#A38BFF] hover:text-[#F2F0FF] font-semibold hover:underline transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#A38BFF] rounded"
+                      className="text-[#E3EDF9] hover:text-[#E3EDF9] font-semibold hover:underline transition-colors cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E3EDF9] rounded"
                     >
                       Forgot password?
                     </button>
@@ -785,7 +819,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 <button
                   type="submit"
                   disabled={loading || socialLoading !== null}
-                  className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] hover:from-[#4736E6] hover:to-[#7B69FF] active:scale-[0.99] shadow-[0_12px_30px_rgba(61,47,209,0.35)] hover:shadow-[0_16px_36px_rgba(110,91,255,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[#6E5BFF]/30 mt-2"
+                  className="w-full h-11 rounded-2xl text-white font-extrabold text-xs sm:text-sm bg-gradient-to-r from-[#3A5A86] to-[#3A5A86] hover:from-[#23324A] hover:to-[#3A5A86] active:scale-[0.99] shadow-[0_12px_30px_rgba(61,47,209,0.35)] hover:shadow-[0_16px_36px_rgba(110,91,255,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[#3A5A86]/30 mt-2"
                 >
                   {loading ? (
                     <>
@@ -803,11 +837,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
 
               {/* Universal Divider */}
               <div className="relative flex items-center py-2 text-center my-1 z-10">
-                <div className="flex-grow border-t border-[#F2F0FF]/15" />
-                <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-[#b9b3d5]/70">
+                <div className="flex-grow border-t border-[#E3EDF9]/15" />
+                <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-[#9ab0cb]/70">
                   or continue with
                 </span>
-                <div className="flex-grow border-t border-[#F2F0FF]/15" />
+                <div className="flex-grow border-t border-[#E3EDF9]/15" />
               </div>
 
               {/* Social Logins: Strictly Google & GitHub Only */}
@@ -816,10 +850,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={loading || socialLoading !== null}
-                  className="h-11 px-4 rounded-xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 text-[#F2F0FF] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF]"
+                  className="h-11 px-4 rounded-xl border border-[#E3EDF9]/15 bg-[#E3EDF9]/[0.035] hover:border-[#E3EDF9]/40 hover:bg-[#3A5A86]/10 text-[#E3EDF9] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9]"
                 >
                   {socialLoading === 'google' ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#A38BFF]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#E3EDF9]" />
                   ) : (
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -835,35 +869,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   type="button"
                   onClick={handleGithubLogin}
                   disabled={loading || socialLoading !== null}
-                  className="h-11 px-4 rounded-xl border border-[#F2F0FF]/15 bg-[#F2F0FF]/[0.035] hover:border-[#A38BFF]/40 hover:bg-[#6E5BFF]/10 text-[#F2F0FF] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A38BFF]"
+                  className="h-11 px-4 rounded-xl border border-[#E3EDF9]/15 bg-[#E3EDF9]/[0.035] hover:border-[#E3EDF9]/40 hover:bg-[#3A5A86]/10 text-[#E3EDF9] text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3EDF9]"
                 >
                   {socialLoading === 'github' ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-[#A38BFF]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#E3EDF9]" />
                   ) : (
-                    <Github className="w-4 h-4 shrink-0 text-[#A38BFF]" />
+                    <Github className="w-4 h-4 shrink-0 text-[#E3EDF9]" />
                   )}
                   <span>Continue with GitHub</span>
                 </button>
               </div>
 
               {/* Bottom Switcher */}
-              <div className="relative z-10 mt-5 pt-3.5 border-t border-[#F2F0FF]/10 text-center text-xs text-[#b9b3d5]">
+              <div className="relative z-10 mt-5 pt-3.5 border-t border-[#E3EDF9]/10 text-center text-xs text-[#9ab0cb]">
                 <span>
                   {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
                 </span>
                 <button
                   type="button"
                   onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-                  className="font-extrabold text-[#A38BFF] hover:text-[#F2F0FF] hover:underline cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#A38BFF] rounded"
+                  className="font-extrabold text-[#E3EDF9] hover:text-[#E3EDF9] hover:underline cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#E3EDF9] rounded"
                 >
                   {mode === 'login' ? 'Register' : 'Login'}
                 </button>
               </div>
 
-              {/* Protected by Google reCAPTCHA Enterprise badge */}
-              <div className="relative z-10 mt-4 pt-3 border-t border-[#F2F0FF]/10 flex items-center justify-center gap-1.5 text-[11px] text-[#b9b3d5]/70">
+              {/* Protected by Google reCAPTCHA badge */}
+              <div className="relative z-10 mt-4 pt-3 border-t border-[#E3EDF9]/10 flex items-center justify-center gap-1.5 text-[11px] text-[#9ab0cb]/70">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Protected by Google reCAPTCHA Enterprise</span>
+                <span>Protected by Google reCAPTCHA</span>
               </div>
 
             </div>
@@ -872,27 +906,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
         </main>
 
         {/* Footer */}
-        <footer className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-[#F2F0FF]/10 text-xs text-[#b9b3d5]/70">
+        <footer className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-[#E3EDF9]/10 text-xs text-[#9ab0cb]/70">
           <span>© 2026 Talentio. All rights reserved.</span>
           <div className="flex items-center gap-5">
             <button 
               type="button" 
               onClick={() => setActivePage('playbook')}
-              className="hover:text-[#A38BFF] transition-colors cursor-pointer"
+              className="hover:text-[#E3EDF9] transition-colors cursor-pointer"
             >
               Terms
             </button>
             <button 
               type="button" 
               onClick={() => setActivePage('playbook')}
-              className="hover:text-[#A38BFF] transition-colors cursor-pointer"
+              className="hover:text-[#E3EDF9] transition-colors cursor-pointer"
             >
               Privacy
             </button>
             <button 
               type="button" 
               onClick={() => setActivePage('support')}
-              className="hover:text-[#A38BFF] transition-colors cursor-pointer"
+              className="hover:text-[#E3EDF9] transition-colors cursor-pointer"
             >
               Support
             </button>
@@ -900,6 +934,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
         </footer>
 
       </div>
+
+      {/* Interactive Human Verification Modal with Google reCAPTCHA v2 Checkbox */}
+      <HumanVerificationModal
+        isOpen={isHumanModalOpen}
+        actionTitle={verificationActionTitle}
+        errorMessage={verificationError}
+        onVerifySuccess={(token: string) => {
+          if (pendingAuthAction) {
+            const action = pendingAuthAction;
+            setPendingAuthAction(null);
+            action(token);
+          }
+        }}
+        onCancel={() => {
+          setIsHumanModalOpen(false);
+          setPendingAuthAction(null);
+          setLoading(false);
+          setSocialLoading(null);
+          setVerificationError(null);
+        }}
+      />
     </div>
   );
 };

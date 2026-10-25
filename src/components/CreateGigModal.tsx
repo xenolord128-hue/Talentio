@@ -30,6 +30,7 @@ export const CreateGigModal: React.FC = () => {
     isCreateGigModalOpen, 
     setIsCreateGigModalOpen, 
     createServiceGig,
+    setActivePage,
     user,
     showToast
   } = useGuide();
@@ -84,6 +85,71 @@ export const CreateGigModal: React.FC = () => {
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   if (!isCreateGigModalOpen) return null;
+
+  // Mandatory KYC Verification Guard for Freelancers
+  if (user?.userType === 'freelancer' && user.kycStatus !== 'verified' && !user.verifiedBadge) {
+    const kycState = user.kycStatus || 'not_started';
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="w-full max-w-lg rounded-3xl bg-[#191432] border border-[#6E5BFF]/40 text-white p-6 sm:p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-[#3D2FD1] via-[#6E5BFF] to-[#A38BFF]" />
+          
+          <button
+            onClick={() => setIsCreateGigModalOpen(false)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="w-16 h-16 rounded-2xl bg-[#6E5BFF]/20 border border-[#6E5BFF]/40 text-[#A38BFF] flex items-center justify-center mx-auto shadow-inner">
+            <ShieldCheck className="w-8 h-8 text-[#6E5BFF]" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Identity Verification Required</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              Verify Your Legal Identity to Publish Gigs
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
+              Under Talentio&apos;s Trust, Safety & Escrow Protection Policy, all freelancers must complete mandatory KYC identity verification before publishing service listings or receiving client milestone payments.
+            </p>
+          </div>
+
+          {/* Current Verification Status Box */}
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+            <span className="text-slate-400">Current KYC Status:</span>
+            <span className="font-bold text-[#A38BFF] capitalize font-mono">
+              {kycState.replace('_', ' ')}
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsCreateGigModalOpen(false)}
+              className="w-full sm:w-1/2 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+            >
+              Back to Marketplace
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreateGigModalOpen(false);
+                setActivePage('kyc');
+              }}
+              className="w-full sm:w-1/2 py-3 rounded-xl bg-[#6E5BFF] hover:bg-[#5844ED] text-white text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <span>Start Verification</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentCategoryData = PROFESSIONAL_CATEGORIES.find(c => c.id === category) || PROFESSIONAL_CATEGORIES[0];
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   LanguageMode, 
   Freelancer, 
@@ -37,6 +37,7 @@ import {
   syncUserProfileDocument,
   formatUserProfile,
   isAuthorizedAdminEmail,
+  verifyServerAdminAccess,
   sendPasswordReset
 } from '../lib/firebaseAuth';
 import {
@@ -61,9 +62,12 @@ import {
   subscribeToNotices,
   markNoticeAsRead,
   subscribeToUserNotifications,
-  seedInitialTalentioDatabase
+  seedInitialTalentioDatabase,
+  submitKycVerificationDocument,
+  subscribeToKycVerifications,
+  updateKycVerificationDocument
 } from '../lib/firestore';
-import { PlatformNotice, NoticeCategory } from '../types';
+import { PlatformNotice, NoticeCategory, KycRecord, KycStatus, KycDocumentType } from '../types';
 import { realtimeService } from '../lib/realtimeService';
 import { 
   subscribeUserToPush, 
@@ -109,7 +113,9 @@ export type TalentioPage =
   | 'security'
   | 'roadmap'
   | 'leaderboard'
-  | 'admin';
+  | 'admin'
+  | 'kyc'
+  | 'verify-kyc';
 
 interface ToastState {
   id: string;
@@ -304,6 +310,9 @@ interface GuideContextType {
   isClient: boolean;
   isFreelancer: boolean;
   isAdmin: boolean;
+  isAdminAuthorized: boolean;
+  isAdminVerifying: boolean;
+  verifyAdminAccess: () => Promise<boolean>;
   authPromptReason: string | null;
   setAuthPromptReason: (reason: string | null) => void;
   isAuthModalOpen: boolean;
@@ -334,6 +343,20 @@ interface GuideContextType {
   rejectServiceGig: (gigId: string, reason: string) => Promise<void>;
   toggleFeatureServiceGig: (gigId: string) => Promise<void>;
   removeServiceGig: (gigId: string) => Promise<void>;
+
+  // KYC Verification
+  kycRecords: KycRecord[];
+  submitKycVerification: (submission: {
+    documentType: KycDocumentType;
+    documentNumber?: string;
+    documentCountry: string;
+    documentFrontImage: string;
+    documentBackImage?: string;
+    selfieImage?: string;
+  }) => Promise<{ success: boolean; autoApproved: boolean; status: KycStatus; error?: string }>;
+  approveKycVerification: (recordId: string, userId: string, notes?: string) => Promise<void>;
+  rejectKycVerification: (recordId: string, userId: string, reason: string) => Promise<void>;
+  requestKycResubmission: (recordId: string, userId: string, reason: string) => Promise<void>;
 
   // Modals & Drawers
   isPostJobModalOpen: boolean;
@@ -486,6 +509,9 @@ export const getInitialPageFromUrl = (): TalentioPage => {
       return 'login';
     case '/register':
       return 'register';
+    case '/kyc':
+    case '/verify-kyc':
+      return 'kyc';
     default:
       return 'explore';
   }
@@ -534,6 +560,9 @@ export const getPathFromPage = (page: TalentioPage): string => {
       return '/settings';
     case 'profile':
       return '/profile';
+    case 'kyc':
+    case 'verify-kyc':
+      return '/kyc';
     case 'favorites':
     case 'saved':
       return '/favorites';
@@ -623,6 +652,10 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.id && !parsed.id.startsWith('demo-') && parsed.id !== 'user-client-1') {
+          // Never trust cached admin role until cryptographically verified by server
+          if (parsed.role === 'ADMIN' || parsed.role === 'admin') {
+            parsed.role = 'CLIENT';
+          }
           return parsed;
         }
       } catch (e) {
@@ -632,6 +665,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   });
   const [authLoading, setAuthLoading] = useState(true);
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState<boolean>(false);
+  const [isAdminVerifying, setIsAdminVerifying] = useState<boolean>(false);
 
   // Firestore Realtime Collections
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
@@ -761,6 +796,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('talentio_saved_gigs');
     return saved ? JSON.parse(saved) : ['service-1', 'service-2'];
   });
+
+  const [kycRecords, setKycRecords] = useState<KycRecord[]>([]);
 
   const [notifications, setNotifications] = useState<AppNotification[]>([
     {
@@ -902,32 +939,49 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
       setFirebaseUser(fUser);
       if (fUser) {
+        setIsAdminVerifying(true);
         try {
           const syncedProfile = await syncUserProfileDocument(fUser);
           setUser(syncedProfile);
           localStorage.setItem('talentio_user_profile', JSON.stringify(syncedProfile));
+          // Perform server-side administrator verification
+          const isServerAdmin = await verifyServerAdminAccess(true);
+          setIsAdminAuthorized(isServerAdmin);
         } catch (err) {
           console.warn('Firebase user sync note:', err);
+          setIsAdminAuthorized(false);
+        } finally {
+          setIsAdminVerifying(false);
         }
       } else {
-        // If an active admin session token is present, preserve the administrator session
+        // If an active admin session token is present, verify it with the server
         const adminToken = localStorage.getItem('talentio_admin_token');
         if (adminToken) {
+          setIsAdminVerifying(true);
           try {
-            const cached = localStorage.getItem('talentio_user_profile');
-            if (cached) {
-              const parsed = JSON.parse(cached);
-              if (parsed && (parsed.email === 'xenolord128@gmail.com' || parsed.email === 'lord79915@gmail.com')) {
-                setUser(parsed);
-                setAuthLoading(false);
-                return;
+            const isServerAdmin = await verifyServerAdminAccess(true);
+            if (isServerAdmin) {
+              const cached = localStorage.getItem('talentio_user_profile');
+              if (cached) {
+                const parsed = JSON.parse(cached);
+                if (parsed && (parsed.email === 'xenolord128@gmail.com' || parsed.email === 'lord79915@gmail.com')) {
+                  setUser(parsed);
+                  setIsAdminAuthorized(true);
+                  setIsAdminVerifying(false);
+                  setAuthLoading(false);
+                  return;
+                }
               }
             }
           } catch {}
+          setIsAdminVerifying(false);
         }
 
+        setIsAdminAuthorized(false);
+        setIsAdminVerifying(false);
         setUser(null);
         localStorage.removeItem('talentio_user_profile');
+        localStorage.removeItem('talentio_admin_token');
       }
       setAuthLoading(false);
     });
@@ -1012,12 +1066,6 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     });
 
-    const unsubAdminLogs = subscribeToAdminLogs((logs) => {
-      if (logs && logs.length > 0) {
-        setAdminActions(logs);
-      }
-    });
-
     const unsubNotices = subscribeToNotices((firestoreNotices) => {
       if (firestoreNotices && firestoreNotices.length > 0) {
         setNotices(firestoreNotices);
@@ -1030,10 +1078,31 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       unsubJobs();
       unsubProposals();
       unsubOrders();
-      unsubAdminLogs();
       unsubNotices();
     };
   }, []);
+
+  // Admin-Only Subscriptions: Only run when admin session is verified to eliminate permission errors & save mobile bandwidth
+  useEffect(() => {
+    if (!isAdminAuthorized) return;
+
+    const unsubAdminLogs = subscribeToAdminLogs((logs) => {
+      if (logs && logs.length > 0) {
+        setAdminActions(logs);
+      }
+    });
+
+    const unsubKyc = subscribeToKycVerifications((records) => {
+      if (records) {
+        setKycRecords(records);
+      }
+    });
+
+    return () => {
+      unsubAdminLogs();
+      unsubKyc();
+    };
+  }, [isAdminAuthorized]);
 
   // Local storage persistence for fallback UI prefs
   useEffect(() => {
@@ -1153,7 +1222,29 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const isClient = Boolean(user && (user.role === 'CLIENT' || user.userType === 'client'));
   const isFreelancer = Boolean(user && (user.role === 'FREELANCER' || user.userType === 'freelancer' || user.userType === 'agency'));
-  const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'admin' || isAuthorizedAdminEmail(user.email)));
+  
+  // Dedicated server-authorized administrative gate.
+  // Never true during loading, unverified states, or for non-administrator accounts.
+  const isAdmin = Boolean(!authLoading && !isAdminVerifying && isAdminAuthorized && user);
+
+  const verifyAdminAccess = useCallback(async (): Promise<boolean> => {
+    if (!auth.currentUser && !localStorage.getItem('talentio_admin_token')) {
+      setIsAdminAuthorized(false);
+      setIsAdminVerifying(false);
+      return false;
+    }
+    setIsAdminVerifying(true);
+    try {
+      const verified = await verifyServerAdminAccess(true);
+      setIsAdminAuthorized(verified);
+      return verified;
+    } catch {
+      setIsAdminAuthorized(false);
+      return false;
+    } finally {
+      setIsAdminVerifying(false);
+    }
+  }, []);
 
   // Auth Protection Interceptor
   const requireAuth = (actionReason?: string, onAuthorized?: () => void): boolean => {
@@ -1313,6 +1404,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const logout = async () => {
+    setIsAdminAuthorized(false);
+    setIsAdminVerifying(false);
     try {
       await logoutFirebase();
     } catch (err) {
@@ -1321,6 +1414,8 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setUser(null);
     setFirebaseUser(null);
     localStorage.removeItem('talentio_user_profile');
+    localStorage.removeItem('talentio_admin_token');
+    localStorage.removeItem('talentio_admin_session');
     showToast('Logged out of Talentio.', 'info');
     setActivePageState('login');
   };
@@ -1534,6 +1629,313 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`Service gig removed from catalog.`, 'info');
   };
 
+  // KYC Verification Handlers
+  const submitKycVerification = async (submission: {
+    legalFullName?: string;
+    dateOfBirth?: string;
+    countryOfResidence?: string;
+    documentIssuingCountry?: string;
+    documentType: KycDocumentType;
+    documentNumber?: string;
+    documentCountry: string;
+    documentFrontImage: string;
+    documentBackImage?: string;
+    signatureImage?: string;
+    selfieImage?: string;
+    consentAcknowledged: boolean;
+  }): Promise<{ success: boolean; autoApproved: boolean; status: KycStatus; error?: string }> => {
+    if (!user) {
+      showToast('Please sign in to submit KYC documents.', 'warning');
+      return { success: false, autoApproved: false, status: 'not_started', error: 'Authentication required' };
+    }
+
+    try {
+      showToast('Inspecting identity document & biometric security features...', 'info');
+
+      // Call server-side verification endpoint
+      const response = await fetch('/api/kyc/verify-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          legalFullName: submission.legalFullName || user.name || user.fullName,
+          dateOfBirth: submission.dateOfBirth,
+          countryOfResidence: submission.countryOfResidence,
+          documentIssuingCountry: submission.documentIssuingCountry || submission.documentCountry,
+          documentType: submission.documentType,
+          documentNumber: submission.documentNumber,
+          documentCountry: submission.documentCountry,
+          frontImageData: submission.documentFrontImage,
+          backImageData: submission.documentBackImage,
+          signatureImageData: submission.signatureImage,
+          selfieImageData: submission.selfieImage,
+          consentAcknowledged: submission.consentAcknowledged
+        })
+      });
+
+      const data = await response.json();
+      const autoApproved = !!data.autoApproved;
+      const initialStatus: KycStatus = autoApproved ? 'verified' : (data.recommendedStatus === 'rejected' ? 'rejected' : 'under_review');
+
+      const kycRecord: KycRecord = {
+        id: `kyc-${user.id}`,
+        userId: user.id,
+        userName: user.name || user.fullName || 'User',
+        userEmail: user.email,
+        userAvatar: user.avatar,
+        legalFullName: submission.legalFullName || user.name || user.fullName,
+        dateOfBirth: submission.dateOfBirth,
+        countryOfResidence: submission.countryOfResidence,
+        documentIssuingCountry: submission.documentIssuingCountry || submission.documentCountry,
+        documentType: submission.documentType,
+        documentNumber: submission.documentNumber || data.aiVerification?.extractedDocNumber || undefined,
+        documentCountry: submission.documentCountry,
+        documentFrontImage: submission.documentFrontImage,
+        documentBackImage: submission.documentBackImage,
+        signatureImage: submission.signatureImage,
+        selfieImage: submission.selfieImage,
+        faceMatchConfidence: data.aiVerification?.faceMatchConfidence,
+        livenessConfidence: data.aiVerification?.livenessConfidence,
+        providerTransactionId: data.providerTransactionId,
+        reviewPriority: 'normal',
+        consentAcknowledged: submission.consentAcknowledged,
+        consentTimestamp: new Date().toISOString(),
+        status: initialStatus,
+        aiVerification: data.aiVerification,
+        aiConfidenceScore: data.aiVerification?.confidenceScore,
+        aiAnalysisNotes: data.aiVerification?.analysisNotes,
+        submittedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        reviewedAt: autoApproved ? new Date().toISOString() : undefined,
+        reviewedBy: autoApproved ? 'TALENTIO_AI_GUARDIAN' : undefined
+      };
+
+      await submitKycVerificationDocument(kycRecord);
+
+      // Update user document
+      const userUpdates: Partial<UserProfile> = {
+        kycStatus: initialStatus,
+        kycLegalFullName: submission.legalFullName,
+        kycDob: submission.dateOfBirth,
+        kycCountryOfResidence: submission.countryOfResidence,
+        kycDocumentType: submission.documentType,
+        kycDocumentCountry: submission.documentCountry,
+        kycDocumentNumber: kycRecord.documentNumber,
+        kycSubmittedAt: kycRecord.submittedAt,
+        kycAiScore: data.aiVerification?.confidenceScore,
+        kycAiSummary: data.aiVerification?.analysisNotes,
+        kycAiStatus: data.aiVerification?.status
+      };
+
+      if (autoApproved) {
+        userUpdates.verifiedBadge = true;
+        userUpdates.accountStatus = 'approved';
+        userUpdates.isApprovedSeller = true;
+        userUpdates.kycReviewedAt = new Date().toISOString();
+        userUpdates.kycReviewedBy = 'TALENTIO_AI_GUARDIAN';
+      }
+
+      await updateUserRecord(user.id, userUpdates);
+
+      // Local state sync
+      setUser(prev => prev ? { ...prev, ...userUpdates } : null);
+      setKycRecords(prev => {
+        const filtered = prev.filter(r => r.userId !== user.id);
+        return [kycRecord, ...filtered];
+      });
+
+      // Dispatch platform notification notice
+      await addNotice({
+        targetUserId: user.id,
+        title: autoApproved ? '🛡️ Identity Verified (Instant Approval)' : '⏳ KYC Verification Packet Submitted',
+        description: autoApproved 
+          ? 'Your identity documents and biometric verification have passed automated analysis with a verified trust badge.'
+          : 'Your identity packet has been securely encrypted and submitted to the Talentio compliance team. Verification takes approximately 15-30 minutes.',
+        category: autoApproved ? 'approval' : 'system',
+        priority: 'high',
+        iconType: 'shield',
+        actionUrl: 'profile'
+      });
+
+      if (autoApproved) {
+        showToast('🎉 KYC Instant AI Verification Approved! Verified badge activated.', 'success');
+      } else {
+        showToast('KYC documents submitted successfully! Compliance review is now underway.', 'info');
+      }
+
+      return { success: true, autoApproved, status: initialStatus };
+    } catch (err: any) {
+      console.error('KYC submission failed:', err);
+      showToast('Error submitting KYC documents: ' + (err?.message || 'Network error'), 'error');
+      return { success: false, autoApproved: false, status: 'not_started', error: err?.message };
+    }
+  };
+
+  const approveKycVerification = async (recordId: string, targetUserId: string, notes?: string) => {
+    const now = new Date().toISOString();
+    await updateKycVerificationDocument(recordId, {
+      status: 'verified',
+      adminNotes: notes || 'Identity documents verified and approved by compliance administrator.',
+      reviewedAt: now,
+      reviewedBy: user?.name || 'Administrator'
+    });
+
+    await updateUserRecord(targetUserId, {
+      kycStatus: 'verified',
+      verifiedBadge: true,
+      accountStatus: 'approved',
+      isApprovedSeller: true,
+      kycReviewedAt: now,
+      kycReviewedBy: user?.name || 'Administrator'
+    });
+
+    if (user?.id === targetUserId) {
+      setUser(prev => prev ? {
+        ...prev,
+        kycStatus: 'verified',
+        verifiedBadge: true,
+        accountStatus: 'approved',
+        isApprovedSeller: true
+      } : null);
+    }
+
+    setKycRecords(prev => prev.map(r => r.id === recordId ? {
+      ...r,
+      status: 'verified',
+      adminNotes: notes,
+      reviewedAt: now,
+      reviewedBy: user?.name || 'Administrator'
+    } : r));
+
+    // Audit log
+    await logAdminAction({
+      id: `act-${Date.now()}`,
+      adminId: user?.id || 'admin',
+      adminName: user?.name || 'Administrator',
+      targetId: targetUserId,
+      targetName: 'KYC Verification',
+      targetType: 'user',
+      action: 'approve',
+      reason: notes || 'KYC Approved',
+      timestamp: 'Just now'
+    });
+
+    // Notify user
+    await addNotice({
+      targetUserId,
+      title: '🛡️ Identity Verified (KYC Approved)',
+      description: 'Your identity documents have been approved by the Talentio compliance administration. Your account is now fully verified with unrestricted marketplace capabilities.',
+      category: 'approval',
+      priority: 'high',
+      iconType: 'shield',
+      actionUrl: 'profile'
+    });
+
+    showToast('KYC Verification approved successfully!', 'success');
+  };
+
+  const rejectKycVerification = async (recordId: string, targetUserId: string, reason: string) => {
+    const now = new Date().toISOString();
+    await updateKycVerificationDocument(recordId, {
+      status: 'rejected',
+      rejectionReason: reason,
+      reviewedAt: now,
+      reviewedBy: user?.name || 'Administrator'
+    });
+
+    await updateUserRecord(targetUserId, {
+      kycStatus: 'rejected',
+      kycRejectionReason: reason,
+      verifiedBadge: false
+    });
+
+    if (user?.id === targetUserId) {
+      setUser(prev => prev ? {
+        ...prev,
+        kycStatus: 'rejected',
+        kycRejectionReason: reason,
+        verifiedBadge: false
+      } : null);
+    }
+
+    setKycRecords(prev => prev.map(r => r.id === recordId ? {
+      ...r,
+      status: 'rejected',
+      rejectionReason: reason,
+      reviewedAt: now,
+      reviewedBy: user?.name || 'Administrator'
+    } : r));
+
+    // Audit log
+    await logAdminAction({
+      id: `act-${Date.now()}`,
+      adminId: user?.id || 'admin',
+      adminName: user?.name || 'Administrator',
+      targetId: targetUserId,
+      targetName: 'KYC Verification',
+      targetType: 'user',
+      action: 'reject',
+      reason,
+      timestamp: 'Just now'
+    });
+
+    // Notify user
+    await addNotice({
+      targetUserId,
+      title: '⚠️ KYC Verification Rejected',
+      description: `Your identity verification was rejected: "${reason}". Please review requirements and resubmit.`,
+      category: 'system',
+      priority: 'high',
+      iconType: 'shield',
+      actionUrl: 'kyc'
+    });
+
+    showToast('KYC Verification rejected with reason note.', 'info');
+  };
+
+  const requestKycResubmission = async (recordId: string, targetUserId: string, reason: string) => {
+    const now = new Date().toISOString();
+    await updateKycVerificationDocument(recordId, {
+      status: 'resubmission_required',
+      rejectionReason: reason,
+      reviewedAt: now,
+      reviewedBy: user?.name || 'Administrator'
+    });
+
+    await updateUserRecord(targetUserId, {
+      kycStatus: 'resubmission_required',
+      kycRejectionReason: reason
+    });
+
+    if (user?.id === targetUserId) {
+      setUser(prev => prev ? {
+        ...prev,
+        kycStatus: 'resubmission_required',
+        kycRejectionReason: reason
+      } : null);
+    }
+
+    setKycRecords(prev => prev.map(r => r.id === recordId ? {
+      ...r,
+      status: 'resubmission_required',
+      rejectionReason: reason,
+      reviewedAt: now,
+      reviewedBy: user?.name || 'Administrator'
+    } : r));
+
+    // Notify user
+    await addNotice({
+      targetUserId,
+      title: '🔄 KYC Resubmission Requested',
+      description: `Please re-upload clearer photos of your document: "${reason}".`,
+      category: 'system',
+      priority: 'high',
+      iconType: 'shield',
+      actionUrl: 'kyc'
+    });
+
+    showToast('Resubmission request sent to user.', 'info');
+  };
+
   const toggleSaveFreelancer = (id: string) => {
     if (!requireAuth('Please sign in to save freelancers.')) return;
 
@@ -1658,6 +2060,13 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const openProposalModal = (job: ProjectJob) => {
     if (!requireAuth('Please sign in to submit proposals.')) return;
     
+    // Mandatory KYC Guard for Freelancers
+    if (user?.userType === 'freelancer' && user.kycStatus !== 'verified' && !user.verifiedBadge) {
+      showToast('Mandatory KYC Verification Required: Freelancers must be identity-verified before submitting proposals on client projects.', 'warning');
+      setActivePage('kyc');
+      return;
+    }
+
     if (user?.accountStatus && user.accountStatus !== 'approved') {
       showToast('Your seller profile is pending approval. You will be able to submit bids once approved.', 'warning');
       return;
@@ -1669,6 +2078,13 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const submitProposal = async (proposalData: Omit<UserProposal, 'id' | 'status' | 'submittedAt'>) => {
     if (!requireAuth('Please sign in to submit a proposal.')) return;
+
+    // Mandatory KYC Guard for Freelancers
+    if (user?.userType === 'freelancer' && user.kycStatus !== 'verified' && !user.verifiedBadge) {
+      showToast('Mandatory KYC Verification Required: Please complete identity verification before submitting proposals.', 'warning');
+      setActivePage('kyc');
+      return;
+    }
 
     if (user?.accountStatus && user.accountStatus !== 'approved') {
       showToast('Your seller profile is pending approval. You cannot submit proposals yet.', 'warning');
@@ -1690,6 +2106,13 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createServiceGig = async (newService: Omit<TalentioService, 'id' | 'rating' | 'reviewsCount'>) => {
     if (!requireAuth('Please sign in to publish a service package.')) return;
+
+    // Mandatory KYC Guard for Freelancers
+    if (user?.userType === 'freelancer' && user.kycStatus !== 'verified' && !user.verifiedBadge) {
+      showToast('Identity Verification Required: Freelancers must complete KYC verification before publishing service listings.', 'warning');
+      setActivePage('kyc');
+      return;
+    }
 
     if (user?.accountStatus && user.accountStatus !== 'approved') {
       showToast('Your seller account is currently under review. You cannot publish gigs until your account has been approved.', 'warning');
@@ -1850,130 +2273,183 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Roadmap progress reset.', 'info');
   };
 
+  const contextValue = useMemo<GuideContextType>(() => ({
+    activePage,
+    setActivePage,
+    language,
+    setLanguage: setLanguageState,
+    currency,
+    setCurrency,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    isSearchModalOpen,
+    setIsSearchModalOpen,
+    user,
+    firebaseUser,
+    authLoading,
+    isAuthenticated: !!user,
+    authPromptReason,
+    setAuthPromptReason,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    isOnboardingModalOpen,
+    setIsOnboardingModalOpen,
+    requireAuth,
+    loginWithEmail,
+    loginWithGoogle,
+    loginWithGithub,
+    sendPasswordResetEmailLink,
+    registerAccount,
+    registerFullAccount,
+    logout,
+    switchDemoAccount,
+    completeOnboarding,
+    updateUserProfile,
+    isClient,
+    isFreelancer,
+    isAdmin,
+    isAdminAuthorized,
+    isAdminVerifying,
+    verifyAdminAccess,
+    allUsers,
+    adminActions,
+    approveUserAccount,
+    rejectUserAccount,
+    suspendUserAccount,
+    banUserAccount,
+    restoreUserAccount,
+    approveServiceGig,
+    rejectServiceGig,
+    toggleFeatureServiceGig,
+    removeServiceGig,
+    kycRecords,
+    submitKycVerification,
+    approveKycVerification,
+    rejectKycVerification,
+    requestKycResubmission,
+    isPostJobModalOpen,
+    setIsPostJobModalOpen,
+    isHireModalOpen,
+    setIsHireModalOpen,
+    isServiceModalOpen,
+    setIsServiceModalOpen,
+    isProposalModalOpen,
+    setIsProposalModalOpen,
+    isCreateGigModalOpen,
+    setIsCreateGigModalOpen,
+    isShortcutsModalOpen,
+    setIsShortcutsModalOpen,
+    isWidgetManagerOpen,
+    setIsWidgetManagerOpen,
+    closeAllModals,
+    isAnyModalOpen,
+    proposalJobTarget,
+    openProposalModal,
+    selectedFreelancer,
+    setSelectedFreelancer,
+    selectedService,
+    setSelectedService,
+    freelancers,
+    services,
+    postedJobs,
+    addPostedJob,
+    proposals,
+    submitProposal,
+    createServiceGig,
+    savedFreelancerIds,
+    toggleSaveFreelancer,
+    savedGigIds,
+    toggleSaveGig,
+    isGigSaved,
+    openGigDetails,
+    openCategoryMarketplace,
+    notifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    clearAllNotifications,
+    notices,
+    unreadNoticesCount,
+    addNotice,
+    markNoticeRead,
+    markAllNoticesRead,
+    deleteNotice,
+    contract,
+    startServiceOrderEscrow,
+    submitDeliverable,
+    releaseMilestoneEscrow,
+    requestContractRevision,
+    resetContract,
+    chatMessages,
+    sendChatMessage,
+    acceptOffer,
+    toasts,
+    showToast,
+    removeToast,
+    activeGuideId,
+    setActiveGuideId,
+    completedSteps,
+    toggleStepCompleted,
+    bookmarkedGuideIds,
+    toggleBookmarkGuide,
+    activeDeviceFilter,
+    setActiveDeviceFilter,
+    resetProgress,
+    openGuide: (guideId: string) => {
+      setActiveGuideId(guideId);
+      setActivePage('playbook');
+    },
+    toastMessage: (msg: string) => showToast(msg)
+  }), [
+    activePage,
+    language,
+    currency,
+    searchQuery,
+    selectedCategory,
+    isSearchModalOpen,
+    user,
+    firebaseUser,
+    authLoading,
+    authPromptReason,
+    isAuthModalOpen,
+    isOnboardingModalOpen,
+    isAdminAuthorized,
+    isAdminVerifying,
+    allUsers,
+    adminActions,
+    kycRecords,
+    isPostJobModalOpen,
+    isHireModalOpen,
+    isServiceModalOpen,
+    isProposalModalOpen,
+    isCreateGigModalOpen,
+    isShortcutsModalOpen,
+    isWidgetManagerOpen,
+    isAnyModalOpen,
+    proposalJobTarget,
+    selectedFreelancer,
+    selectedService,
+    freelancers,
+    services,
+    postedJobs,
+    proposals,
+    savedFreelancerIds,
+    savedGigIds,
+    notifications,
+    notices,
+    unreadNoticesCount,
+    contract,
+    chatMessages,
+    toasts,
+    activeGuideId,
+    completedSteps,
+    bookmarkedGuideIds,
+    activeDeviceFilter
+  ]);
+
   return (
-    <GuideContext.Provider
-      value={{
-        activePage,
-        setActivePage,
-        language,
-        setLanguage: setLanguageState,
-        currency,
-        setCurrency,
-        searchQuery,
-        setSearchQuery,
-        selectedCategory,
-        setSelectedCategory,
-        isSearchModalOpen,
-        setIsSearchModalOpen,
-        user,
-        firebaseUser,
-        authLoading,
-        isAuthenticated: !!user,
-        authPromptReason,
-        setAuthPromptReason,
-        isAuthModalOpen,
-        setIsAuthModalOpen,
-        isOnboardingModalOpen,
-        setIsOnboardingModalOpen,
-        requireAuth,
-        loginWithEmail,
-        loginWithGoogle,
-        loginWithGithub,
-        sendPasswordResetEmailLink,
-        registerAccount,
-        registerFullAccount,
-        logout,
-        switchDemoAccount,
-        completeOnboarding,
-        updateUserProfile,
-        isClient,
-        isFreelancer,
-        isAdmin,
-        allUsers,
-        adminActions,
-        approveUserAccount,
-        rejectUserAccount,
-        suspendUserAccount,
-        banUserAccount,
-        restoreUserAccount,
-        approveServiceGig,
-        rejectServiceGig,
-        toggleFeatureServiceGig,
-        removeServiceGig,
-        isPostJobModalOpen,
-        setIsPostJobModalOpen,
-        isHireModalOpen,
-        setIsHireModalOpen,
-        isServiceModalOpen,
-        setIsServiceModalOpen,
-        isProposalModalOpen,
-        setIsProposalModalOpen,
-        isCreateGigModalOpen,
-        setIsCreateGigModalOpen,
-        isShortcutsModalOpen,
-        setIsShortcutsModalOpen,
-        isWidgetManagerOpen,
-        setIsWidgetManagerOpen,
-        closeAllModals,
-        isAnyModalOpen,
-        proposalJobTarget,
-        openProposalModal,
-        selectedFreelancer,
-        setSelectedFreelancer,
-        selectedService,
-        setSelectedService,
-        freelancers,
-        services,
-        postedJobs,
-        addPostedJob,
-        proposals,
-        submitProposal,
-        createServiceGig,
-        savedFreelancerIds,
-        toggleSaveFreelancer,
-        savedGigIds,
-        toggleSaveGig,
-        isGigSaved,
-        openGigDetails,
-        openCategoryMarketplace,
-        notifications,
-        markNotificationRead,
-        markAllNotificationsRead,
-        clearAllNotifications,
-        notices,
-        unreadNoticesCount,
-        addNotice,
-        markNoticeRead,
-        markAllNoticesRead,
-        deleteNotice,
-        contract,
-        startServiceOrderEscrow,
-        submitDeliverable,
-        releaseMilestoneEscrow,
-        requestContractRevision,
-        resetContract,
-        chatMessages,
-        sendChatMessage,
-        acceptOffer,
-        toasts,
-        showToast,
-        removeToast,
-        activeGuideId,
-        setActiveGuideId,
-        completedSteps,
-        toggleStepCompleted,
-        bookmarkedGuideIds,
-        toggleBookmarkGuide,
-        activeDeviceFilter,
-        setActiveDeviceFilter,
-        resetProgress,
-        openGuide: (guideId: string) => {
-          setActiveGuideId(guideId);
-          setActivePage('playbook');
-        },
-        toastMessage: (msg: string) => showToast(msg)
-      }}
-    >
+    <GuideContext.Provider value={contextValue}>
       {children}
     </GuideContext.Provider>
   );

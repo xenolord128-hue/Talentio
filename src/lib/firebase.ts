@@ -16,6 +16,7 @@ export const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || (rawFirebaseConfig as any).measurementId || '',
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || rawFirebaseConfig.firestoreDatabaseId || '',
   oAuthClientId: import.meta.env.VITE_FIREBASE_OAUTH_CLIENT_ID || (rawFirebaseConfig as any).oAuthClientId || '',
+  recaptchaSiteKey: import.meta.env.VITE_RECAPTCHA_SITE_KEY || (rawFirebaseConfig as any).recaptchaSiteKey || '',
 };
 
 // Initialize Firebase App instance singleton

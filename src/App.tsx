@@ -4,56 +4,78 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
-import { SearchModal } from './components/SearchModal';
-import { PostJobModal } from './components/PostJobModal';
-import { FreelancerProfileModal } from './components/FreelancerProfileModal';
-import { ServiceDetailModal } from './components/ServiceDetailModal';
-import { AuthModal } from './components/AuthModal';
-import { OnboardingModal } from './components/OnboardingModal';
-import { ProposalModal } from './components/ProposalModal';
-import { CreateGigModal } from './components/CreateGigModal';
-import { ShortcutsHelpModal } from './components/ShortcutsHelpModal';
-import { WidgetManagerModal } from './components/WidgetManagerModal';
 import { TalentioAIAssistant } from './components/TalentioAIAssistant';
 import { TalentioAIProvider } from './context/TalentioAIContext';
 import { AdProvider } from './context/AdContext';
 import { AdPlacement } from './components/ads/AdPlacement';
 import { ToastContainer } from './components/ToastContainer';
 import { OfflineNoticeBanner } from './components/OfflineNoticeBanner';
-import { AuthGateway, AdminAuthGatewayCheck } from './components/AuthGateway';
-import { ProfileCompletionBarrier } from './components/ProfileCompletionBarrier';
-import { SellerStatusBanner } from './components/SellerStatusBanner';
+import { AdminAuthGatewayCheck } from './components/AuthGateway';
 import { useGlobalKeyShortcuts } from './hooks/useGlobalKeyShortcuts';
 import { SEOHead } from './components/SEOHead';
-
-// Talentio Marketplace Pages
-import { HomePage } from './pages/HomePage';
-import { FreelancersPage } from './pages/FreelancersPage';
-import { ServicesPage } from './pages/ServicesPage';
-import { WorkstationPage } from './pages/WorkstationPage';
-import { ChatPage } from './pages/ChatPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { PlaybookPage } from './pages/PlaybookPage';
-import { AdminPage } from './pages/AdminPage';
-import { LeaderboardPage } from './pages/LeaderboardPage';
-import { GigDetailsPage } from './pages/GigDetailsPage';
-import { CategoriesPage } from './pages/CategoriesPage';
-import { SearchResultsPage } from './pages/SearchResultsPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { UserProfilePage } from './pages/UserProfilePage';
-import { FavoritesPage } from './pages/FavoritesPage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { NoticesPage } from './pages/NoticesPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { HelpSupportPage } from './pages/HelpSupportPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { AccessDeniedPage } from './pages/AccessDeniedPage';
+import { PageSkeleton } from './components/PageSkeleton';
 import { Loader2 } from 'lucide-react';
 import { TalentioLogo } from './components/TalentioLogo';
 
+// Core Critical Entry Pages (Eagerly Loaded for Fast First Contentful Paint)
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+
+// Route-Split Lazy Pages (Loaded on Demand)
+const FreelancersPage = React.lazy(() => import('./pages/FreelancersPage').then(m => ({ default: m.FreelancersPage })));
+const ServicesPage = React.lazy(() => import('./pages/ServicesPage').then(m => ({ default: m.ServicesPage })));
+const WorkstationPage = React.lazy(() => import('./pages/WorkstationPage').then(m => ({ default: m.WorkstationPage })));
+const ChatPage = React.lazy(() => import('./pages/ChatPage').then(m => ({ default: m.ChatPage })));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const PlaybookPage = React.lazy(() => import('./pages/PlaybookPage').then(m => ({ default: m.PlaybookPage })));
+const AdminPage = React.lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const LeaderboardPage = React.lazy(() => import('./pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
+const GigDetailsPage = React.lazy(() => import('./pages/GigDetailsPage').then(m => ({ default: m.GigDetailsPage })));
+const CategoriesPage = React.lazy(() => import('./pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })));
+const SearchResultsPage = React.lazy(() => import('./pages/SearchResultsPage').then(m => ({ default: m.SearchResultsPage })));
+const UserProfilePage = React.lazy(() => import('./pages/UserProfilePage').then(m => ({ default: m.UserProfilePage })));
+const FavoritesPage = React.lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const NoticesPage = React.lazy(() => import('./pages/NoticesPage').then(m => ({ default: m.NoticesPage })));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const HelpSupportPage = React.lazy(() => import('./pages/HelpSupportPage').then(m => ({ default: m.HelpSupportPage })));
+const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+const AccessDeniedPage = React.lazy(() => import('./pages/AccessDeniedPage').then(m => ({ default: m.AccessDeniedPage })));
+const KycVerificationPage = React.lazy(() => import('./pages/KycVerificationPage').then(m => ({ default: m.KycVerificationPage })));
+
+// Lazy-Loaded Dialog Modals (Loaded only when user triggers action)
+const SearchModal = React.lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
+const PostJobModal = React.lazy(() => import('./components/PostJobModal').then(m => ({ default: m.PostJobModal })));
+const FreelancerProfileModal = React.lazy(() => import('./components/FreelancerProfileModal').then(m => ({ default: m.FreelancerProfileModal })));
+const ServiceDetailModal = React.lazy(() => import('./components/ServiceDetailModal').then(m => ({ default: m.ServiceDetailModal })));
+const AuthModal = React.lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const OnboardingModal = React.lazy(() => import('./components/OnboardingModal').then(m => ({ default: m.OnboardingModal })));
+const ProposalModal = React.lazy(() => import('./components/ProposalModal').then(m => ({ default: m.ProposalModal })));
+const CreateGigModal = React.lazy(() => import('./components/CreateGigModal').then(m => ({ default: m.CreateGigModal })));
+const ShortcutsHelpModal = React.lazy(() => import('./components/ShortcutsHelpModal').then(m => ({ default: m.ShortcutsHelpModal })));
+const WidgetManagerModal = React.lazy(() => import('./components/WidgetManagerModal').then(m => ({ default: m.WidgetManagerModal })));
+
 const AppContent: React.FC = () => {
-  const { activePage, isAuthenticated, user, authLoading, setActivePage } = useGuide();
+  const { 
+    activePage, 
+    isAuthenticated, 
+    user, 
+    authLoading, 
+    setActivePage,
+    isSearchModalOpen,
+    isPostJobModalOpen,
+    isHireModalOpen,
+    selectedFreelancer,
+    isServiceModalOpen,
+    selectedService,
+    isAuthModalOpen,
+    isOnboardingModalOpen,
+    isProposalModalOpen,
+    isCreateGigModalOpen,
+    isShortcutsModalOpen,
+    isWidgetManagerOpen
+  } = useGuide();
   const { theme } = useTheme();
 
   // Initialize Global Key Listener Hook for Fast Navigation (⌘K, ESC, ⌘J, Alt+1-7, ?, Alt+T)
@@ -69,11 +91,11 @@ const AppContent: React.FC = () => {
   // Loading state while checking Firebase authentication session on initial load or refresh
   if (authLoading) {
     return (
-      <div className="min-h-screen w-full bg-[#1A1633] flex items-center justify-center text-[#F2F0FF]">
+      <div className="min-h-screen w-full bg-[#23324A] flex items-center justify-center text-[#E3EDF9]">
         <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
           <TalentioLogo size="lg" />
-          <div className="flex items-center gap-2 text-[#A38BFF] text-sm font-medium">
-            <Loader2 className="w-4 h-4 animate-spin text-[#6E5BFF]" />
+          <div className="flex items-center gap-2 text-[#E3EDF9]/80 text-sm font-medium">
+            <Loader2 className="w-4 h-4 animate-spin text-[#3A5A86]" />
             <span>Connecting to Talentio...</span>
           </div>
         </div>
@@ -84,7 +106,7 @@ const AppContent: React.FC = () => {
   // Strict Global Authentication Gate — Unauthenticated visitors must sign in before accessing the marketplace
   if (!isAuthenticated || !user) {
     return (
-      <div className="min-h-screen w-full bg-[#0E0B1F]">
+      <div className="min-h-screen w-full bg-[#23324A]">
         <SEOHead />
         <OfflineNoticeBanner />
         {activePage === 'forgot-password' ? (
@@ -165,6 +187,9 @@ const AppContent: React.FC = () => {
             <AdminPage />
           </AdminAuthGatewayCheck>
         );
+      case 'kyc':
+      case 'verify-kyc':
+        return <KycVerificationPage />;
       case 'leaderboard':
       case 'ranking':
       case 'rankings':
@@ -178,16 +203,16 @@ const AppContent: React.FC = () => {
   const isDedicatedAuthPage = activePage === 'login' || activePage === 'register' || activePage === 'forgot-password';
 
   return (
-    <div className={`min-h-screen max-w-full overflow-x-hidden w-full flex flex-col font-sans transition-colors duration-200 selection:bg-[#3D2FD1] selection:text-white ${
+    <div className={`min-h-screen max-w-full overflow-x-hidden w-full flex flex-col font-sans transition-colors duration-200 selection:bg-[#3A5A86] selection:text-white ${
       isChatPage ? 'h-screen overflow-hidden pb-0' : isDedicatedAuthPage ? 'pb-0' : 'pb-24 sm:pb-28'
     } ${
       isDedicatedAuthPage
-        ? 'bg-[#1A1633] text-[#F2F0FF]'
+        ? 'bg-[#23324A] text-[#E3EDF9]'
         : theme === 'high-contrast' 
           ? 'bg-black text-white' 
           : theme === 'dark' 
-            ? 'bg-[#0F0B1E] text-slate-100' 
-            : 'bg-slate-50 text-[#1A1633]'
+            ? 'bg-[#23324A] text-[#E3EDF9]' 
+            : 'bg-[#E3EDF9] text-[#23324A]'
     }`}>
       
       {/* Sticky Compact Global Navigation (Hidden on dedicated Message and Auth pages) */}
@@ -198,7 +223,9 @@ const AppContent: React.FC = () => {
 
       {/* Main Dynamic Page Content */}
       <main className={`flex-1 w-full max-w-full ${isChatPage ? 'h-full overflow-hidden' : 'overflow-x-hidden'}`}>
-        {renderActivePage()}
+        <React.Suspense fallback={<PageSkeleton />}>
+          {renderActivePage()}
+        </React.Suspense>
       </main>
 
       {/* Before Footer Placement (Public Pages) */}
@@ -221,35 +248,38 @@ const AppContent: React.FC = () => {
       {/* Mobile Bottom Quick Navigation Bar (Hidden on dedicated Message and Auth pages) */}
       {!isChatPage && !isDedicatedAuthPage && <MobileBottomNav />}
 
-      {/* Global Instant Search Modal Triggered by ⌘K / Ctrl+K */}
-      <SearchModal />
+      {/* Modals & Dialogs (Loaded on-demand and mounted only when active) */}
+      <React.Suspense fallback={null}>
+        {/* Global Instant Search Modal Triggered by ⌘K / Ctrl+K */}
+        {isSearchModalOpen && <SearchModal />}
 
-      {/* Post Project / RFP Escrow Modal */}
-      <PostJobModal />
+        {/* Post Project / RFP Escrow Modal */}
+        {isPostJobModalOpen && <PostJobModal />}
 
-      {/* Freelancer Profile & Hire Modal */}
-      <FreelancerProfileModal />
+        {/* Freelancer Profile & Hire Modal */}
+        {(isHireModalOpen || !!selectedFreelancer) && <FreelancerProfileModal />}
 
-      {/* Service Scoping & 3-Tier Escrow Checkout Modal */}
-      <ServiceDetailModal />
+        {/* Service Scoping & 3-Tier Escrow Checkout Modal */}
+        {(isServiceModalOpen || !!selectedService) && <ServiceDetailModal />}
 
-      {/* Authentication Modal (Hidden when on dedicated Auth pages) */}
-      {!isDedicatedAuthPage && <AuthModal />}
+        {/* Authentication Modal (Hidden when on dedicated Auth pages) */}
+        {!isDedicatedAuthPage && isAuthModalOpen && <AuthModal />}
 
-      {/* Mandatory 6-Step Profile Onboarding Wizard */}
-      <OnboardingModal />
+        {/* Mandatory 6-Step Profile Onboarding Wizard */}
+        {isOnboardingModalOpen && <OnboardingModal />}
 
-      {/* Escrow Proposal & Bid Modal for Freelancers */}
-      <ProposalModal />
+        {/* Escrow Proposal & Bid Modal for Freelancers */}
+        {isProposalModalOpen && <ProposalModal />}
 
-      {/* Create & Publish Milestone Service Gig Modal */}
-      <CreateGigModal />
+        {/* Create & Publish Milestone Service Gig Modal */}
+        {isCreateGigModalOpen && <CreateGigModal />}
 
-      {/* Global Keyboard Shortcuts Reference Modal (Triggered by ? or Cmd+/) */}
-      <ShortcutsHelpModal />
+        {/* Global Keyboard Shortcuts Reference Modal (Triggered by ? or Cmd+/) */}
+        {isShortcutsModalOpen && <ShortcutsHelpModal />}
 
-      {/* Android Live Home Screen Widget Manager & Customizer Modal */}
-      <WidgetManagerModal />
+        {/* Android Live Home Screen Widget Manager & Customizer Modal */}
+        {isWidgetManagerOpen && <WidgetManagerModal />}
+      </React.Suspense>
 
       {/* TALENTIO AI Built-in Assistant & Voice Companion */}
       <TalentioAIAssistant />

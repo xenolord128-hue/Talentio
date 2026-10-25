@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { sendPasswordReset, formatAuthError } from '../lib/firebaseAuth';
 import { TalentioLogo } from '../components/TalentioLogo';
-import { executeRecaptcha, verifyRecaptchaToken } from '../lib/recaptchaEnterprise';
+import { verifyRecaptchaTokenOnServer } from '../lib/recaptcha';
+import { HumanVerificationModal } from '../components/HumanVerificationModal';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound, ShieldCheck } from 'lucide-react';
 
 export const ForgotPasswordPage: React.FC = () => {
@@ -11,27 +12,24 @@ export const ForgotPasswordPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isHumanModalOpen, setIsHumanModalOpen] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    if (!email || !email.includes('@')) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-
+  const performPasswordReset = async (recaptchaToken: string) => {
     setLoading(true);
+    setVerificationError(null);
     try {
-      // Execute reCAPTCHA Enterprise verification
-      const recaptchaToken = await executeRecaptcha('RESET_PASSWORD');
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'RESET_PASSWORD');
+      // Authoritative Server-Side verification of reCAPTCHA v2 token
+      const recaptchaResult = await verifyRecaptchaTokenOnServer(recaptchaToken);
 
       if (!recaptchaResult.valid) {
-        setErrorMessage('Security verification failed. Please refresh and try again.');
+        setVerificationError(recaptchaResult.message || 'Verification failed. Please complete reCAPTCHA again.');
+        setIsHumanModalOpen(true);
         setLoading(false);
         return;
       }
 
+      setIsHumanModalOpen(false);
       await sendPasswordReset(email.trim());
       setSubmitted(true);
       showToast('Password reset instructions sent to your email.', 'success');
@@ -43,6 +41,18 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setVerificationError(null);
+    if (!email || !email.includes('@')) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
+    setIsHumanModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 bg-[#0E0B1F]">
       <div className="w-full max-w-md space-y-6">
@@ -52,56 +62,69 @@ export const ForgotPasswordPage: React.FC = () => {
           <div className="inline-flex justify-center mb-2">
             <TalentioLogo size="md" variant="white" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display">
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display">
             Reset Your Password
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-normal">
-            Enter your registered account email to receive secure recovery instructions
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
+            Enter your account email address and we'll send you secure instructions to reset your password.
           </p>
         </div>
 
-        <div className="bg-[#171330] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-5">
+        {/* Card Container */}
+        <div className="bg-[#1A1633]/90 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           {submitted ? (
-            <div className="text-center space-y-4 py-3">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
+            <div className="text-center py-4 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-base font-extrabold text-white">Reset Link Dispatched</h3>
-              <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
-                We've sent a password reset link to <span className="text-white font-mono font-bold">{email}</span>. Please check your inbox and follow the link to establish new credentials.
-              </p>
-              <div className="pt-2">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-white">Check Your Inbox</h3>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
+                  We have sent password reset instructions to{' '}
+                  <strong className="text-emerald-300">{email}</strong>. Follow the link in that email to choose a new password.
+                </p>
+              </div>
+              <div className="pt-4 space-y-2">
                 <button
                   type="button"
                   onClick={() => setActivePage('login')}
-                  className="w-full py-3 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold transition-all cursor-pointer"
+                  className="w-full h-11 rounded-2xl bg-[#6E5BFF] hover:bg-[#5844e6] text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#6E5BFF]/30"
                 >
-                  Return to Sign In
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Return to Sign In</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubmitted(false)}
+                  className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Didn't receive it? Try another email
                 </button>
               </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {errorMessage && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Account Email Address
+                <label className="block text-xs font-semibold text-slate-300">
+                  Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                   <input
                     type="email"
                     required
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/15 rounded-xl text-xs sm:text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:border-[#6E5BFF] transition-colors"
+                    autoComplete="email"
+                    className="w-full h-11 pl-10 pr-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 transition-all"
                   />
                 </div>
               </div>
@@ -109,7 +132,7 @@ export const ForgotPasswordPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-extrabold text-xs sm:text-sm shadow-md shadow-[#3D2FD1]/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full h-11 rounded-2xl bg-[#6E5BFF] hover:bg-[#5844e6] disabled:opacity-50 text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#6E5BFF]/30"
               >
                 {loading ? (
                   <span>Sending Reset Email...</span>
@@ -124,7 +147,7 @@ export const ForgotPasswordPage: React.FC = () => {
               <div className="pt-2 text-center space-y-3">
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Protected by Google reCAPTCHA Enterprise</span>
+                  <span>Protected by Google reCAPTCHA</span>
                 </div>
                 <button
                   type="button"
@@ -140,6 +163,20 @@ export const ForgotPasswordPage: React.FC = () => {
         </div>
 
       </div>
+
+      <HumanVerificationModal
+        isOpen={isHumanModalOpen}
+        actionTitle="Password Reset Human Verification"
+        errorMessage={verificationError}
+        onVerifySuccess={(token: string) => {
+          performPasswordReset(token);
+        }}
+        onCancel={() => {
+          setIsHumanModalOpen(false);
+          setVerificationError(null);
+        }}
+      />
     </div>
   );
 };
+export default ForgotPasswordPage;

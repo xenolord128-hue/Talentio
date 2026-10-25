@@ -34,9 +34,15 @@
       "purpose": "maskable"
     },
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "/assets/talentio-logo.png",
+      "type": "image/png",
+      "sizes": "640x640",
+      "purpose": "any"
+    },
+    {
+      "src": "https://i.ibb.co.com/twGnD56G/New-Project-5-9848897.png",
+      "type": "image/png",
+      "sizes": "640x640",
       "purpose": "any"
     }
   ],
@@ -46,35 +52,35 @@
       "short_name": "Services",
       "description": "Explore vetted digital services and packages",
       "url": "/?page=services",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Direct Messenger",
       "short_name": "Messages",
       "description": "Chat with clients and freelancers in real time",
       "url": "/?page=chat",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Escrow Workstation",
       "short_name": "Workstation",
       "description": "Manage active orders, deliverables, and milestones",
       "url": "/?page=workstation",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Post a Project",
       "short_name": "Post Job",
       "description": "Publish a milestone-based job RFP",
       "url": "/?action=post-job",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Live Home Widgets",
       "short_name": "Widgets",
       "description": "Customize and add aesthetic live widgets to your home screen",
       "url": "/?action=widgets",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "widgets": [
@@ -89,14 +95,14 @@
       "type": "application/json",
       "screenshots": [
         {
-          "src": "/favicon.svg",
+          "src": "/icons/icon-512.png",
           "sizes": "512x512",
           "label": "Talentio Android Glassmorphic Widget"
         }
       ],
       "icons": [
         {
-          "src": "/favicon.svg",
+          "src": "/icons/icon-192.png",
           "sizes": "192x192"
         }
       ]

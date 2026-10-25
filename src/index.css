@@ -1,28 +1,59 @@
 @import "tailwindcss";
 
 @theme {
-  --color-talentio-deep: #1A1633;
-  --color-talentio-indigo: #3D2FD1;
-  --color-talentio-violet: #6E5BFF;
-  --color-talentio-lavender: #A38BFF;
-  --color-talentio-light: #F2F0FF;
+  --color-base: #E3EDF9;
+  --color-primary: #3A5A86;
+  --color-dark: #23324A;
+
+  /* Backward compatibility aliases */
+  --color-talentio-deep: #23324A;
+  --color-talentio-indigo: #3A5A86;
+  --color-talentio-violet: #3A5A86;
+  --color-talentio-lavender: #E3EDF9;
+  --color-talentio-light: #E3EDF9;
+
+  /* Admin Panel Design System Tokens mapped to the 3-color palette */
+  --color-admin-bg: #23324A;
+  --color-admin-surface: #23324A;
+  --color-admin-surface-lowest: #1c283c;
+  --color-admin-surface-low: #23324A;
+  --color-admin-card: #2c3e5a;
+  --color-admin-surface-high: #354a6b;
+  --color-admin-surface-highest: #3A5A86;
+  --color-admin-surface-bright: #446594;
+  --color-admin-accent-container: #3A5A86;
+  --color-admin-accent: #E3EDF9;
+  --color-admin-accent-fixed: #E3EDF9;
+  --color-admin-text: #E3EDF9;
+  --color-admin-text-muted: rgba(227, 237, 249, 0.75);
+  --color-admin-outline: #3A5A86;
+  --color-admin-border: rgba(58, 90, 134, 0.4);
 }
 
 :root {
-  --talentio-deep: #1A1633;
-  --talentio-indigo: #3D2FD1;
-  --talentio-violet: #6E5BFF;
-  --talentio-lavender: #A38BFF;
-  --talentio-light: #F2F0FF;
+  --color-base: #E3EDF9;
+  --color-primary: #3A5A86;
+  --color-dark: #23324A;
+
+  --rgb-base: 227, 237, 249;
+  --rgb-primary: 58, 90, 134;
+  --rgb-dark: 35, 50, 74;
+
+  --talentio-deep: #23324A;
+  --talentio-indigo: #3A5A86;
+  --talentio-violet: #3A5A86;
+  --talentio-lavender: #E3EDF9;
+  --talentio-light: #E3EDF9;
+
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  --canvas-bg: #F8FAFC;
-  --canvas-text: #1A1633;
+  --canvas-bg: #E3EDF9;
+  --canvas-text: #23324A;
 }
 
 html.dark {
-  --canvas-bg: #0F0B1E;
-  --canvas-text: #F8FAFC;
+  --canvas-bg: #23324A;
+  --canvas-text: #E3EDF9;
 }
 
 html.high-contrast {
@@ -87,38 +118,39 @@ html.high-contrast select:focus {
 
 /* Dark Mode Global Overrides */
 html.dark body {
-  background-color: #0F0B1E;
-  color: #F8FAFC;
+  background-color: #23324A;
+  color: #E3EDF9;
 }
 
 html.dark .bg-slate-50,
 html.dark .bg-slate-100 {
-  background-color: #15102A !important;
+  background-color: #1c283c !important;
 }
 
 html.dark .bg-white {
-  background-color: #1A1633 !important;
-  color: #F8FAFC;
+  background-color: #23324A !important;
+  color: #E3EDF9;
 }
 
 html.dark .text-slate-900,
-html.dark .text-[#1A1633] {
-  color: #F8FAFC !important;
+html.dark [class*="text-[#1A1633]"],
+html.dark [class*="text-[#23324A]"] {
+  color: #E3EDF9 !important;
 }
 
 html.dark .text-slate-700,
 html.dark .text-slate-800 {
-  color: #CBD5E1 !important;
+  color: rgba(227, 237, 249, 0.85) !important;
 }
 
 html.dark .text-slate-600 {
-  color: #94A3B8 !important;
+  color: rgba(227, 237, 249, 0.65) !important;
 }
 
 html.dark .border-slate-100,
 html.dark .border-slate-200,
 html.dark .border-slate-300 {
-  border-color: rgba(163, 139, 255, 0.18) !important;
+  border-color: rgba(58, 90, 134, 0.3) !important;
 }
 
 h1, h2, h3, .font-display {
@@ -127,36 +159,36 @@ h1, h2, h3, .font-display {
 
 /* iOS Liquid Water-Glass & Water-Morphism utilities (GPU-Accelerated for 60fps on budget devices) */
 .ios-glass {
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(227, 237, 249, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  box-shadow: 0 16px 45px 0 rgba(26, 22, 51, 0.12);
+  border: 1px solid rgba(58, 90, 134, 0.25);
+  box-shadow: 0 16px 45px 0 rgba(35, 50, 74, 0.1);
   transform: translate3d(0, 0, 0);
   will-change: transform;
 }
 
 .ios-glass-dark {
-  background: rgba(26, 22, 51, 0.85);
+  background: rgba(35, 50, 74, 0.88);
   backdrop-filter: blur(20px) saturate(190%);
   -webkit-backdrop-filter: blur(20px) saturate(190%);
-  border: 1px solid rgba(163, 139, 255, 0.25);
-  box-shadow: 0 20px 50px 0 rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(58, 90, 134, 0.35);
+  box-shadow: 0 20px 50px 0 rgba(15, 23, 36, 0.5);
   transform: translate3d(0, 0, 0);
   will-change: transform;
 }
 
 /* Water-Morphism Liquid Floating Dock - Ultra Smooth on Low-End / Budget Phones */
 .water-glass-dock {
-  background: linear-gradient(135deg, rgba(26, 22, 51, 0.88) 0%, rgba(14, 11, 31, 0.94) 100%);
+  background: linear-gradient(135deg, rgba(35, 50, 74, 0.94) 0%, rgba(25, 36, 54, 0.98) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(163, 139, 255, 0.3);
+  border: 1px solid rgba(58, 90, 134, 0.35);
   box-shadow: 
-    0 20px 40px -8px rgba(0, 0, 0, 0.65),
-    0 0 20px 0 rgba(110, 91, 255, 0.18),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 2px 0 rgba(110, 91, 255, 0.15);
+    0 20px 40px -8px rgba(15, 23, 36, 0.65),
+    0 0 20px 0 rgba(58, 90, 134, 0.2),
+    inset 0 1px 1px 0 rgba(227, 237, 249, 0.25),
+    inset 0 -1px 2px 0 rgba(35, 50, 74, 0.25);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   will-change: transform;
@@ -164,26 +196,26 @@ h1, h2, h3, .font-display {
 
 /* Water-Morphism Floating Card */
 .water-glass-card {
-  background: linear-gradient(145deg, rgba(22, 18, 46, 0.82) 0%, rgba(14, 11, 31, 0.92) 100%);
+  background: linear-gradient(145deg, rgba(35, 50, 74, 0.9) 0%, rgba(28, 40, 60, 0.95) 100%);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(163, 139, 255, 0.26);
+  border: 1px solid rgba(58, 90, 134, 0.3);
   box-shadow: 
-    0 20px 50px -10px rgba(0, 0, 0, 0.7),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 2px 0 rgba(110, 91, 255, 0.2);
+    0 20px 50px -10px rgba(15, 23, 36, 0.6),
+    inset 0 1px 1.5px 0 rgba(227, 237, 249, 0.2),
+    inset 0 -1px 2px 0 rgba(58, 90, 134, 0.25);
   transform: translate3d(0, 0, 0);
   will-change: transform;
 }
 
 /* Water-Pill Active Element */
 .water-pill-active {
-  background: linear-gradient(135deg, #3D2FD1 0%, #6E5BFF 100%);
+  background: #3A5A86;
   box-shadow: 
-    0 6px 18px -2px rgba(61, 47, 209, 0.45),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 2px 0 rgba(26, 22, 51, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    0 6px 18px -2px rgba(58, 90, 134, 0.4),
+    inset 0 1px 1.5px 0 rgba(227, 237, 249, 0.4),
+    inset 0 -1px 2px 0 rgba(35, 50, 74, 0.3);
+  border: 1px solid rgba(227, 237, 249, 0.3);
   transform: translate3d(0, 0, 0);
 }
 
@@ -261,20 +293,20 @@ h1, h2, h3, .font-display {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(163, 139, 255, 0.4);
+  background: rgba(58, 90, 134, 0.4);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 91, 255, 0.6);
+  background: rgba(58, 90, 134, 0.7);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(110, 91, 255, 0.3);
+  background: rgba(58, 90, 134, 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(163, 139, 255, 0.5);
+  background: rgba(227, 237, 249, 0.6);
 }
 
 /* Line clamp utilities */
@@ -301,15 +333,15 @@ h1, h2, h3, .font-display {
 
 /* Talentio subtle glow utilities */
 .talentio-glow-subtle {
-  box-shadow: 0 0 25px -5px rgba(110, 91, 255, 0.15);
+  box-shadow: 0 0 25px -5px rgba(58, 90, 134, 0.2);
 }
 
 .talentio-glow-hover:hover {
-  box-shadow: 0 10px 30px -10px rgba(61, 47, 209, 0.25);
+  box-shadow: 0 10px 30px -10px rgba(35, 50, 74, 0.3);
 }
 
 .talentio-gradient-accent {
-  background: linear-gradient(135deg, #3D2FD1 0%, #6E5BFF 50%, #A38BFF 100%);
+  background: linear-gradient(135deg, #E3EDF9 0%, #3A5A86 50%, #23324A 100%);
 }
 
 /* Hero Banner 3D & Orange Glow Animations */
@@ -440,8 +472,8 @@ html.dark .ios-glass {
   position: relative;
   width: 100%;
   max-width: 380px;
-  background: rgba(20, 15, 42, 0.78);
-  border: 1px solid rgba(163, 139, 255, 0.28);
+  background: rgba(35, 50, 74, 0.95);
+  border: 1px solid rgba(58, 90, 134, 0.4);
   border-radius: 28px;
   padding: 2.25rem 1.75rem 2rem;
   display: flex;
@@ -449,12 +481,12 @@ html.dark .ios-glass {
   align-items: center;
   text-align: center;
   box-shadow:
-    0 25px 60px -10px rgba(0, 0, 0, 0.8),
-    0 0 50px -10px rgba(110, 91, 255, 0.35),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+    0 25px 60px -10px rgba(15, 23, 36, 0.8),
+    0 0 50px -10px rgba(58, 90, 134, 0.35),
+    inset 0 1px 1px 0 rgba(227, 237, 249, 0.2);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  color: #FFFFFF;
+  color: #E3EDF9;
   transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, opacity;
   overflow: hidden;
@@ -489,20 +521,20 @@ html.dark .ios-glass {
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.015em;
-  color: #FFFFFF;
+  color: #E3EDF9;
   margin-top: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  text-shadow: 0 2px 10px rgba(163, 139, 255, 0.3);
+  text-shadow: 0 2px 10px rgba(58, 90, 134, 0.4);
 }
 
 .ai-substatus {
   font-family: var(--font-sans);
   font-size: 0.9rem;
   line-height: 1.45;
-  color: #C5BAFF;
+  color: rgba(227, 237, 249, 0.85);
   margin-top: 0.6rem;
   margin-bottom: 1.75rem;
   width: 100%;
@@ -524,9 +556,9 @@ html.dark .ios-glass {
   padding: 0.65rem 2rem;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #E2DEFC;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #E3EDF9;
+  background: rgba(227, 237, 249, 0.08);
+  border: 1px solid rgba(227, 237, 249, 0.2);
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -553,11 +585,11 @@ html.dark .ios-glass {
    ========================================================== */
 
 .loader {
-  --color-one: #A38BFF;
-  --color-two: #3D2FD1;
-  --color-three: rgba(163, 139, 255, 0.55);
-  --color-four: rgba(61, 47, 209, 0.55);
-  --color-five: rgba(163, 139, 255, 0.25);
+  --color-one: #E3EDF9;
+  --color-two: #3A5A86;
+  --color-three: rgba(227, 237, 249, 0.55);
+  --color-four: rgba(58, 90, 134, 0.55);
+  --color-five: rgba(227, 237, 249, 0.25);
   --time-animation: 2s;
   --size: 1; /* You can change the size */
   position: relative;
@@ -730,15 +762,15 @@ html.dark .ios-glass {
 
 .talentio-auth-bg {
   background: 
-    radial-gradient(circle at 12% 18%, rgba(110,91,255,0.22), transparent 30%),
-    radial-gradient(circle at 88% 78%, rgba(163,139,255,0.16), transparent 28%),
-    linear-gradient(135deg, #0e0b1d 0%, #1A1633 48%, #120e29 100%);
+    radial-gradient(circle at 12% 18%, rgba(58,90,134,0.3), transparent 30%),
+    radial-gradient(circle at 88% 78%, rgba(58,90,134,0.2), transparent 28%),
+    linear-gradient(135deg, #1c283c 0%, #23324A 50%, #151f2e 100%);
 }
 
 .talentio-auth-grid {
   background-image: 
-    linear-gradient(rgba(242,240,255,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(242,240,255,0.035) 1px, transparent 1px);
+    linear-gradient(rgba(227,237,249,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227,237,249,0.04) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
   -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 92%);
@@ -814,14 +846,21 @@ html.dark .ios-glass {
   width: 90px;
 }
 
-/* Hide floating Google reCAPTCHA Enterprise badge & error overlay at bottom-right */
-.grecaptcha-badge,
-iframe[src*="recaptcha"],
-div[style*="z-index: 2000000000"] {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  display: none !important;
+/* Keep reCAPTCHA v2 Checkbox centered, clean, and properly responsive */
+.recaptcha-checkbox-container {
+  min-height: 78px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+@media (max-width: 380px) {
+  .recaptcha-checkbox-container {
+    transform: scale(0.88);
+    transform-origin: center center;
+  }
 }
 
 @media (max-width: 768px) {

@@ -141,13 +141,13 @@ export const SearchModal: React.FC = () => {
       {/* Apple-Themed Glassmorphism Modal Panel */}
       <div 
         id="apple-spotlight-modal-panel"
-        className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#120D26]/85 backdrop-blur-2xl border border-white/60 dark:border-white/15 text-slate-900 dark:text-white shadow-[0_25px_80px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_90px_rgba(0,0,0,0.7)] overflow-hidden z-10 animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]"
+        className="relative w-full max-w-2xl rounded-2xl sm:rounded-3xl bg-white/85 dark:bg-[#172233]/85 backdrop-blur-2xl border border-white/60 dark:border-white/15 text-slate-900 dark:text-white shadow-[0_25px_80px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_90px_rgba(0,0,0,0.7)] overflow-hidden z-10 animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]"
         onClick={e => e.stopPropagation()}
       >
         
         {/* Apple Spotlight Top Search Bar */}
         <div className="p-3 sm:p-4 border-b border-slate-200/70 dark:border-white/10 flex items-center gap-2.5 sm:gap-3 bg-white/40 dark:bg-white/5 backdrop-blur-md">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#3D2FD1]/10 dark:bg-[#6E5BFF]/20 flex items-center justify-center text-[#3D2FD1] dark:text-[#A38BFF] shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#3A5A86]/10 dark:bg-[#3A5A86]/20 flex items-center justify-center text-[#3A5A86] dark:text-[#E3EDF9] shrink-0">
             <Search className="w-5 h-5" />
           </div>
 
@@ -197,7 +197,7 @@ export const SearchModal: React.FC = () => {
               onClick={() => setFilterType('all')}
               className={`px-3 py-1 sm:py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                 filterType === 'all'
-                  ? 'bg-white dark:bg-[#3D2FD1] text-[#3D2FD1] dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#3A5A86] text-[#3A5A86] dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -208,7 +208,7 @@ export const SearchModal: React.FC = () => {
               onClick={() => setFilterType('freelancers')}
               className={`px-3 py-1 sm:py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                 filterType === 'freelancers'
-                  ? 'bg-white dark:bg-[#3D2FD1] text-[#3D2FD1] dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#3A5A86] text-[#3A5A86] dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -219,7 +219,7 @@ export const SearchModal: React.FC = () => {
               onClick={() => setFilterType('services')}
               className={`px-3 py-1 sm:py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                 filterType === 'services'
-                  ? 'bg-white dark:bg-[#3D2FD1] text-[#3D2FD1] dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-[#3A5A86] text-[#3A5A86] dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -230,7 +230,7 @@ export const SearchModal: React.FC = () => {
           {/* Quick Trending Suggestions */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 overflow-x-auto py-0.5">
             <span className="shrink-0 flex items-center gap-1 font-semibold text-slate-400">
-              <TrendingUp className="w-3 h-3 text-[#3D2FD1] dark:text-[#A38BFF]" />
+              <TrendingUp className="w-3 h-3 text-[#3A5A86] dark:text-[#E3EDF9]" />
               Trending:
             </span>
             {quickPills.slice(0, 4).map(pill => (
@@ -241,7 +241,7 @@ export const SearchModal: React.FC = () => {
                   setQuery(pill);
                   handleSearchAll(pill);
                 }}
-                className="px-2 py-0.5 rounded-md bg-white/80 dark:bg-white/10 hover:bg-[#3D2FD1] hover:text-white dark:hover:bg-[#3D2FD1] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 font-medium transition-all cursor-pointer whitespace-nowrap"
+                className="px-2 py-0.5 rounded-md bg-white/80 dark:bg-white/10 hover:bg-[#3A5A86] hover:text-white dark:hover:bg-[#3A5A86] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 font-medium transition-all cursor-pointer whitespace-nowrap"
               >
                 {pill}
               </button>
@@ -253,7 +253,7 @@ export const SearchModal: React.FC = () => {
         {query.trim() && (
           <div 
             onClick={() => handleSearchAll()}
-            className="px-4 py-2.5 bg-[#3D2FD1]/10 dark:bg-[#6E5BFF]/15 hover:bg-[#3D2FD1]/20 border-b border-[#3D2FD1]/20 flex items-center justify-between text-xs font-semibold text-[#3D2FD1] dark:text-[#A38BFF] cursor-pointer transition-colors"
+            className="px-4 py-2.5 bg-[#3A5A86]/10 dark:bg-[#3A5A86]/15 hover:bg-[#3A5A86]/20 border-b border-[#3A5A86]/20 flex items-center justify-between text-xs font-semibold text-[#3A5A86] dark:text-[#E3EDF9] cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5" />
@@ -274,13 +274,13 @@ export const SearchModal: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-[#3D2FD1] dark:text-[#A38BFF]" />
+                  <Users className="w-3.5 h-3.5 text-[#3A5A86] dark:text-[#E3EDF9]" />
                   Top Vetted Freelancers ({filteredFreelancers.length})
                 </span>
                 <button
                   type="button"
                   onClick={() => handleSearchAll()}
-                  className="text-[11px] font-bold text-[#3D2FD1] dark:text-[#A38BFF] hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-[#3A5A86] dark:text-[#E3EDF9] hover:underline cursor-pointer"
                 >
                   View All
                 </button>
@@ -298,17 +298,17 @@ export const SearchModal: React.FC = () => {
                         <img
                           src={f.avatar}
                           alt={f.name}
-                          className="w-10 h-10 rounded-xl object-cover ring-1 ring-[#3D2FD1]/30"
+                          className="w-10 h-10 rounded-xl object-cover ring-1 ring-[#3A5A86]/30"
                         />
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#120D26]" />
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#172233]" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#3D2FD1] dark:group-hover:text-[#A38BFF] truncate transition-colors">
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#3A5A86] dark:group-hover:text-[#E3EDF9] truncate transition-colors">
                             {f.name}
                           </h4>
                           {f.verifiedBadge && (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#6E5BFF] shrink-0" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#3A5A86] shrink-0" />
                           )}
                           <span className="text-[10px] text-slate-400 shrink-0">{f.countryFlag}</span>
                         </div>
@@ -327,7 +327,7 @@ export const SearchModal: React.FC = () => {
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-xs sm:text-sm font-extrabold text-[#3D2FD1] dark:text-[#A38BFF] block">
+                      <span className="text-xs sm:text-sm font-extrabold text-[#3A5A86] dark:text-[#E3EDF9] block">
                         ${f.hourlyRate}/hr
                       </span>
                       <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 justify-end mt-0.5">
@@ -346,7 +346,7 @@ export const SearchModal: React.FC = () => {
             <div className="space-y-2 pt-3">
               <div className="flex items-center justify-between px-1">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-400 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-[#3D2FD1] dark:text-[#A38BFF]" />
+                  <Layers className="w-3.5 h-3.5 text-[#3A5A86] dark:text-[#E3EDF9]" />
                   Direct Fixed Gigs & Services ({filteredServices.length})
                 </span>
                 <button
@@ -356,7 +356,7 @@ export const SearchModal: React.FC = () => {
                     setActivePage('services');
                     setIsSearchModalOpen(false);
                   }}
-                  className="text-[11px] font-bold text-[#3D2FD1] dark:text-[#A38BFF] hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-[#3A5A86] dark:text-[#E3EDF9] hover:underline cursor-pointer"
                 >
                   View All
                 </button>
@@ -373,10 +373,10 @@ export const SearchModal: React.FC = () => {
                       <img
                         src={s.coverImage}
                         alt={s.title}
-                        className="w-12 h-10 rounded-xl object-cover ring-1 ring-[#3D2FD1]/30 shrink-0"
+                        className="w-12 h-10 rounded-xl object-cover ring-1 ring-[#3A5A86]/30 shrink-0"
                       />
                       <div className="min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#3D2FD1] dark:group-hover:text-[#A38BFF] truncate transition-colors">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#3A5A86] dark:group-hover:text-[#E3EDF9] truncate transition-colors">
                           {s.title}
                         </h4>
                         <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
@@ -388,7 +388,7 @@ export const SearchModal: React.FC = () => {
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-xs sm:text-sm font-extrabold text-[#3D2FD1] dark:text-[#A38BFF] block">
+                      <span className="text-xs sm:text-sm font-extrabold text-[#3A5A86] dark:text-[#E3EDF9] block">
                         From ${s.startingPrice}
                       </span>
                       <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 justify-end mt-0.5">
@@ -405,7 +405,7 @@ export const SearchModal: React.FC = () => {
           {/* Empty state when no matches */}
           {filteredFreelancers.length === 0 && filteredServices.length === 0 && (
             <div className="py-10 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/10 text-[#3D2FD1] dark:text-[#A38BFF] flex items-center justify-center mx-auto border border-slate-200 dark:border-white/10">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/10 text-[#3A5A86] dark:text-[#E3EDF9] flex items-center justify-center mx-auto border border-slate-200 dark:border-white/10">
                 <Search className="w-6 h-6" />
               </div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -428,7 +428,7 @@ export const SearchModal: React.FC = () => {
                     setIsSearchModalOpen(false);
                     setActivePage('post-job');
                   }}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#3D2FD1] text-xs font-bold text-white shadow-sm hover:bg-[#2F23A3] cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#3A5A86] text-xs font-bold text-white shadow-sm hover:bg-[#23324A] cursor-pointer"
                 >
                   Post a Project
                 </button>

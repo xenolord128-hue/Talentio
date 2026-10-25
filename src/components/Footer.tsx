@@ -29,7 +29,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#1A1633] text-white border-t border-[#3D2FD1]/30">
+    <footer className="bg-[#23324A] text-white border-t border-[#3A5A86]/30">
       
       {/* Top Value Proposition Strip */}
       <div className="border-b border-white/10">
@@ -37,8 +37,8 @@ export const Footer: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#3D2FD1]/30 border border-[#6E5BFF]/30 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5 text-[#A38BFF]" />
+              <div className="w-10 h-10 rounded-xl bg-[#3A5A86]/30 border border-[#3A5A86]/30 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5 text-[#E3EDF9]" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">100% Escrow Protection</h4>
@@ -47,8 +47,8 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#3D2FD1]/30 border border-[#6E5BFF]/30 flex items-center justify-center shrink-0">
-                <Award className="w-5 h-5 text-[#A38BFF]" />
+              <div className="w-10 h-10 rounded-xl bg-[#3A5A86]/30 border border-[#3A5A86]/30 flex items-center justify-center shrink-0">
+                <Award className="w-5 h-5 text-[#E3EDF9]" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Vetted Global Talent</h4>
@@ -57,8 +57,8 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#3D2FD1]/30 border border-[#6E5BFF]/30 flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5 text-[#A38BFF]" />
+              <div className="w-10 h-10 rounded-xl bg-[#3A5A86]/30 border border-[#3A5A86]/30 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-[#E3EDF9]" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Automated NDAs & IP</h4>
@@ -67,8 +67,8 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#3D2FD1]/30 border border-[#6E5BFF]/30 flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-[#A38BFF]" />
+              <div className="w-10 h-10 rounded-xl bg-[#3A5A86]/30 border border-[#3A5A86]/30 flex items-center justify-center shrink-0">
+                <Globe className="w-5 h-5 text-[#E3EDF9]" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider">Global Multi-Currency</h4>
@@ -87,7 +87,7 @@ export const Footer: React.FC = () => {
           {/* Brand Info */}
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <TalentioLogo size="md" variant="gradient" />
+              <TalentioLogo size="md" variant="transparent" />
               <span className="text-xl font-extrabold tracking-tight text-white font-display">TALENTIO</span>
             </div>
 
@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
 
             {/* Newsletter Form */}
             <form onSubmit={handleSubscribe} className="space-y-2 pt-2">
-              <span className="text-[11px] font-bold text-[#A38BFF] uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-[#E3EDF9] uppercase tracking-wider block">
                 Stay updated with freelance talent in Bangladesh
               </span>
               <div className="flex items-center gap-2">
@@ -106,11 +106,11 @@ export const Footer: React.FC = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="Enter your email address..."
-                  className="bg-white text-[#1A1633] placeholder:text-slate-400 text-xs px-3.5 py-2.5 rounded-xl border border-white/20 focus:border-[#6E5BFF] focus:outline-none flex-1"
+                  className="bg-white text-[#23324A] placeholder:text-slate-400 text-xs px-3.5 py-2.5 rounded-xl border border-white/20 focus:border-[#3A5A86] focus:outline-none flex-1"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold transition-colors shrink-0 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-[#3A5A86] hover:bg-[#3A5A86] text-white text-xs font-bold transition-colors shrink-0 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
@@ -120,30 +120,30 @@ export const Footer: React.FC = () => {
 
           {/* Column 1: For Clients */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">For Clients</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#E3EDF9]">For Clients</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Hire Freelancers in Bangladesh
                 </a>
               </li>
               <li>
-                <a href="/services" onClick={(e) => { e.preventDefault(); setActivePage('services'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/services" onClick={(e) => { e.preventDefault(); setActivePage('services'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Freelance Services &amp; Gigs
                 </a>
               </li>
               <li>
-                <a href="/categories" onClick={(e) => { e.preventDefault(); setActivePage('categories'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/categories" onClick={(e) => { e.preventDefault(); setActivePage('categories'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Browse Categories &amp; Skills
                 </a>
               </li>
               <li>
-                <a href="/leaderboard" onClick={(e) => { e.preventDefault(); setActivePage('leaderboard'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/leaderboard" onClick={(e) => { e.preventDefault(); setActivePage('leaderboard'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Top Bangladeshi Freelancers
                 </a>
               </li>
               <li>
-                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Escrow Milestones &amp; Protection
                 </a>
               </li>
@@ -152,25 +152,25 @@ export const Footer: React.FC = () => {
 
           {/* Column 2: For Freelancers */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">For Freelancers</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#E3EDF9]">For Freelancers</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/freelancers" onClick={(e) => { e.preventDefault(); setActivePage('freelancers'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Find Freelance Jobs &amp; Projects
                 </a>
               </li>
               <li>
-                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Talentio Academy &amp; Playbook
                 </a>
               </li>
               <li>
-                <a href="/notices" onClick={(e) => { e.preventDefault(); setActivePage('notices'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/notices" onClick={(e) => { e.preventDefault(); setActivePage('notices'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Platform Updates &amp; Notices
                 </a>
               </li>
               <li>
-                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Support &amp; Escrow Help
                 </a>
               </li>
@@ -179,25 +179,25 @@ export const Footer: React.FC = () => {
 
           {/* Column 3: Trust & Legal */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#A38BFF]">Trust &amp; Safety</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#E3EDF9]">Trust &amp; Safety</h4>
             <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Trust &amp; Support Center
                 </a>
               </li>
               <li>
-                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Security Defense Scanner
                 </a>
               </li>
               <li>
-                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/help" onClick={(e) => { e.preventDefault(); setActivePage('help'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Escrow FAQ &amp; Arbitration
                 </a>
               </li>
               <li>
-                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#6E5BFF] transition-colors cursor-pointer inline-block">
+                <a href="/playbook" onClick={(e) => { e.preventDefault(); setActivePage('playbook'); }} className="hover:text-[#3A5A86] transition-colors cursor-pointer inline-block">
                   Terms of Service &amp; IP
                 </a>
               </li>
@@ -220,7 +220,7 @@ export const Footer: React.FC = () => {
               className="inline-flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
               title="View Keyboard Shortcuts (?)"
             >
-              <Keyboard className="w-3.5 h-3.5 text-[#A38BFF]" />
+              <Keyboard className="w-3.5 h-3.5 text-[#E3EDF9]" />
               <span>Shortcuts</span>
               <kbd className="px-1 py-0.2 rounded bg-black/40 text-[9px] font-mono text-slate-300 border border-white/10">?</kbd>
             </button>

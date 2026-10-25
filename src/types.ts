@@ -426,8 +426,88 @@ export interface UserProfile {
   typicalBudgetRange?: string;
   balanceAvailable?: number;
   balanceInEscrow?: number;
+  // KYC Verification Fields
+  kycStatus?: 'not_started' | 'not_submitted' | 'in_progress' | 'submitted' | 'under_review' | 'pending' | 'verified' | 'action_required' | 'rejected' | 'resubmission_required';
+  kycLegalFullName?: string;
+  kycDob?: string;
+  kycCountryOfResidence?: string;
+  kycDocumentType?: 'national_id' | 'passport' | 'driving_license' | 'other';
+  kycDocumentNumber?: string;
+  kycDocumentCountry?: string;
+  kycDocumentFrontPath?: string;
+  kycDocumentBackPath?: string;
+  kycSignaturePath?: string;
+  kycSelfiePhotoPath?: string;
+  kycSubmittedAt?: string;
+  kycReviewedAt?: string;
+  kycReviewedBy?: string;
+  kycRejectionReason?: string;
+  kycAiScore?: number;
+  kycAiSummary?: string;
+  kycAiStatus?: 'pending' | 'ai_passed' | 'ai_review' | 'ai_flagged';
   createdAt?: string;
   updatedAt?: string;
+}
+
+export type KycStatus = 
+  | 'not_started' 
+  | 'not_submitted' 
+  | 'in_progress' 
+  | 'submitted' 
+  | 'under_review' 
+  | 'pending' 
+  | 'verified' 
+  | 'action_required' 
+  | 'rejected' 
+  | 'resubmission_required';
+
+export type KycDocumentType = 'national_id' | 'passport' | 'driving_license' | 'other';
+
+export interface KycRecord {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail?: string;
+  userAvatar?: string;
+  legalFullName?: string;
+  dateOfBirth?: string;
+  countryOfResidence?: string;
+  documentIssuingCountry?: string;
+  documentType: KycDocumentType;
+  documentNumber?: string;
+  documentCountry: string;
+  documentFrontImage?: string; // Stored securely/referenced
+  documentBackImage?: string;
+  signatureImage?: string;
+  selfieImage?: string;
+  livenessConfidence?: number;
+  faceMatchConfidence?: number;
+  providerTransactionId?: string;
+  reviewPriority?: 'normal' | 'high' | 'urgent';
+  consentAcknowledged?: boolean;
+  consentTimestamp?: string;
+  status: KycStatus;
+  rejectionReason?: string;
+  adminNotes?: string;
+  submittedAt: string;
+  updatedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  aiVerification?: {
+    status: 'pending' | 'ai_passed' | 'ai_review' | 'ai_flagged';
+    confidenceScore: number;
+    extractedName?: string;
+    extractedDob?: string;
+    extractedDocNumber?: string;
+    extractedCountry?: string;
+    isLegitimateCheck: boolean;
+    tamperingDetected: boolean;
+    blurDetected: boolean;
+    analysisNotes: string;
+    verifiedAt: string;
+  };
+  aiConfidenceScore?: number;
+  aiAnalysisNotes?: string;
 }
 
 export interface AdminAction {

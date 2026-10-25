@@ -68,7 +68,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
               title={opt.label}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-[#3D2FD1] text-white shadow-md high-contrast:bg-yellow-400 high-contrast:text-black high-contrast:font-black'
+                  ? 'bg-[#3A5A86] text-white shadow-md high-contrast:bg-yellow-400 high-contrast:text-black high-contrast:font-black'
                   : 'text-slate-300 hover:text-white hover:bg-white/5 high-contrast:text-white high-contrast:hover:bg-white/20'
               }`}
             >
@@ -97,11 +97,11 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
                 onClick={() => setTheme(opt.mode)}
                 className={`flex flex-col items-center justify-center p-2.5 rounded-xl text-center transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#3D2FD1] text-white shadow-md high-contrast:bg-yellow-400 high-contrast:text-black font-black'
+                    ? 'bg-[#3A5A86] text-white shadow-md high-contrast:bg-yellow-400 high-contrast:text-black font-black'
                     : 'text-slate-300 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-white high-contrast:text-black' : 'text-[#A38BFF]'}`} />
+                <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-white high-contrast:text-black' : 'text-[#E3EDF9]'}`} />
                 <span className="text-[11px] font-bold leading-tight">{opt.mode === 'high-contrast' ? 'Contrast' : opt.label.split(' ')[0]}</span>
               </button>
             );
@@ -122,7 +122,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         aria-expanded={isOpen}
         title={`Current: ${currentOption.label} (Click to switch)`}
       >
-        <CurrentIcon className="w-4 h-4 text-[#A38BFF] high-contrast:text-yellow-400" />
+        <CurrentIcon className="w-4 h-4 text-[#E3EDF9] high-contrast:text-yellow-400" />
         <span className="text-xs font-bold hidden xl:inline capitalize">
           {theme.replace('-', ' ')}
         </span>
@@ -131,7 +131,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
 
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-56 rounded-2xl ios-glass-dark dark:bg-[#120F24] high-contrast:bg-black high-contrast:border-2 high-contrast:border-yellow-400 p-1.5 z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-150 border border-white/10"
+          className="absolute right-0 mt-2 w-56 rounded-2xl ios-glass-dark dark:bg-[#23324A] high-contrast:bg-black high-contrast:border-2 high-contrast:border-yellow-400 p-1.5 z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-150 border border-white/10"
           role="menu"
           aria-orientation="vertical"
         >
@@ -152,12 +152,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
                 }}
                 className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-left ${
                   isSelected
-                    ? 'bg-[#3D2FD1] text-white high-contrast:bg-yellow-400 high-contrast:text-black font-black'
+                    ? 'bg-[#3A5A86] text-white high-contrast:bg-yellow-400 high-contrast:text-black font-black'
                     : 'text-slate-200 hover:bg-white/10 hover:text-white high-contrast:text-white high-contrast:hover:bg-zinc-800'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`w-4 h-4 ${isSelected ? 'text-white high-contrast:text-black' : 'text-[#A38BFF]'}`} />
+                  <Icon className={`w-4 h-4 ${isSelected ? 'text-white high-contrast:text-black' : 'text-[#E3EDF9]'}`} />
                   <div>
                     <div>{opt.label}</div>
                     <div className={`text-[10px] font-normal ${isSelected ? 'text-white/80 high-contrast:text-black/80' : 'text-slate-400'}`}>

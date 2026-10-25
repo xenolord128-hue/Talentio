@@ -28,7 +28,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
   const isSaved = savedFreelancerIds.includes(freelancer.id);
 
   return (
-    <div className="rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 hover:border-[#A38BFF] shadow-sm hover:shadow-xl hover:shadow-[#3D2FD1]/15 transition-all duration-300 flex flex-col justify-between overflow-hidden group">
+    <div className="rounded-3xl bg-white/85 backdrop-blur-md border border-[#E3EDF9]/30 hover:border-[#E3EDF9] shadow-sm hover:shadow-xl hover:shadow-[#3A5A86]/15 transition-all duration-300 flex flex-col justify-between overflow-hidden group">
       
       {/* Card Header & Avatar */}
       <div className="p-5 sm:p-6 space-y-4">
@@ -41,7 +41,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
               src={freelancer.avatar}
               alt={`${freelancer.name} - ${freelancer.title} in ${freelancer.location}`}
               loading="lazy"
-              className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover ring-2 ring-[#F2F0FF] group-hover:scale-105 transition-transform duration-200 shadow-sm"
+              className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover ring-2 ring-[#E3EDF9] group-hover:scale-105 transition-transform duration-200 shadow-sm"
             />
             {freelancer.availableNow && (
               <span 
@@ -54,7 +54,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
           {/* Badges & Save Button */}
           <div className="flex items-center gap-2">
             {freelancer.proBadge && (
-              <span className="px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#F2F0FF] text-[#3D2FD1] border border-[#A38BFF]/30 shadow-xs">
+              <span className="px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#E3EDF9] text-[#3A5A86] border border-[#E3EDF9]/30 shadow-xs">
                 Talentio Pro
               </span>
             )}
@@ -65,8 +65,8 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
               }}
               className={`p-3 rounded-2xl border transition-colors cursor-pointer min-w-[48px] min-h-[48px] flex items-center justify-center ${
                 isSaved
-                  ? 'bg-[#3D2FD1] text-white border-[#3D2FD1]'
-                  : 'bg-white/80 backdrop-blur-md text-slate-400 hover:text-[#3D2FD1] border-[#A38BFF]/30 hover:border-[#A38BFF] hover:bg-[#F2F0FF]'
+                  ? 'bg-[#3A5A86] text-white border-[#3A5A86]'
+                  : 'bg-white/80 backdrop-blur-md text-slate-400 hover:text-[#3A5A86] border-[#E3EDF9]/30 hover:border-[#E3EDF9] hover:bg-[#E3EDF9]'
               }`}
               title={isSaved ? 'Saved' : 'Save to Shortlist'}
             >
@@ -81,7 +81,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
           <div className="flex items-center gap-2 flex-wrap">
             <h3 
               onClick={() => onSelectProfile(freelancer)}
-              className="font-extrabold text-base sm:text-lg text-[#1A1633] group-hover:text-[#3D2FD1] transition-colors cursor-pointer font-display"
+              className="font-extrabold text-base sm:text-lg text-[#23324A] group-hover:text-[#3A5A86] transition-colors cursor-pointer font-display"
             >
               {freelancer.name}
             </h3>
@@ -106,7 +106,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
           {freelancer.skills.slice(0, 4).map(skill => (
             <span
               key={skill}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#F2F0FF]/90 text-[#3D2FD1] border border-[#A38BFF]/20"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#E3EDF9]/90 text-[#3A5A86] border border-[#E3EDF9]/20"
             >
               {skill}
             </span>
@@ -124,10 +124,10 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
       <div className="p-5 sm:p-6 pt-0 space-y-4">
         
         {/* Statistics Strip with Glassmorphism */}
-        <div className="p-4 rounded-2xl bg-white/70 backdrop-blur-md border border-[#A38BFF]/25 flex items-center justify-between text-xs sm:text-sm">
+        <div className="p-4 rounded-2xl bg-white/70 backdrop-blur-md border border-[#E3EDF9]/25 flex items-center justify-between text-xs sm:text-sm">
           <div>
             <span className="text-[11px] text-slate-500 uppercase font-mono font-semibold block">Hourly Rate</span>
-            <span className="text-sm sm:text-base font-black text-[#3D2FD1]">
+            <span className="text-sm sm:text-base font-black text-[#3A5A86]">
               {formatPrice(freelancer.hourlyRate, currency)}/hr
             </span>
           </div>
@@ -136,7 +136,7 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
             <span className="text-[11px] text-slate-500 uppercase font-mono font-semibold block">Job Success</span>
             <div className="flex items-center gap-1 justify-end">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="font-extrabold text-[#1A1633]">{freelancer.rating}</span>
+              <span className="font-extrabold text-[#23324A]">{freelancer.rating}</span>
               <span className="text-slate-400 text-xs font-medium">({freelancer.reviewsCount})</span>
             </div>
           </div>
@@ -147,14 +147,14 @@ export const FreelancerCard: React.FC<FreelancerCardProps> = ({
           
           <button
             onClick={() => onSelectProfile(freelancer)}
-            className="py-3.5 px-4 rounded-2xl border border-[#3D2FD1] text-[#3D2FD1] hover:bg-[#F2F0FF] text-xs sm:text-sm font-bold transition-all text-center cursor-pointer min-h-[48px] flex items-center justify-center bg-white/60 backdrop-blur-xs"
+            className="py-3.5 px-4 rounded-2xl border border-[#3A5A86] text-[#3A5A86] hover:bg-[#E3EDF9] text-xs sm:text-sm font-bold transition-all text-center cursor-pointer min-h-[48px] flex items-center justify-center bg-white/60 backdrop-blur-xs"
           >
             View Profile
           </button>
 
           <button
             onClick={() => onHireDirect(freelancer)}
-            className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] hover:from-[#6E5BFF] hover:to-[#A38BFF] text-white text-xs sm:text-sm font-bold transition-all shadow-md shadow-[#3D2FD1]/25 flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
+            className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#3A5A86] to-[#3A5A86] hover:from-[#3A5A86] hover:to-[#E3EDF9] text-white text-xs sm:text-sm font-bold transition-all shadow-md shadow-[#3A5A86]/25 flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
           >
             <span>Hire Now</span>
             <ArrowRight className="w-4 h-4" />

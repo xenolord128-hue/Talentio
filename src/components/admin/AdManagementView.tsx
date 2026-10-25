@@ -258,33 +258,33 @@ export const AdManagementView: React.FC = () => {
     <div className="space-y-6">
       
       {/* 1. HEADER & MASTER GLOBAL TOGGLE */}
-      <div className="bg-white dark:bg-[#15112B] rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+      <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200 dark:border-[#3A5A86]/40 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#F2F0FF] dark:bg-[#201A45] text-[#3D2FD1] dark:text-[#9B8CFF]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#E3EDF9] dark:bg-[#3A5A86]/50 text-[#3A5A86] dark:text-[#E3EDF9]">
               <Layers className="w-3.5 h-3.5" />
               <span>Adsterra Monetization Engine</span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-display">
               Ad Management &amp; Monetization
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-[#ccdcee] max-w-2xl">
               Configure, paste, preview and toggle Adsterra advertising tags dynamically. Placements are restricted strictly to public marketplace pages by default to protect sensitive user workflows.
             </p>
           </div>
 
           {/* Master Global Switch */}
-          <div className="flex flex-col items-end gap-2 bg-slate-50 dark:bg-[#1B1635] p-4 rounded-xl border border-slate-200 dark:border-white/5">
+          <div className="flex flex-col items-end gap-2 bg-slate-50 dark:bg-[#23324A]/70 p-4 rounded-xl border border-slate-200 dark:border-[#3A5A86]/40">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-[#E3EDF9]">
                 Global Ads
               </span>
               <button
                 type="button"
                 id="global-ads-toggle-btn"
                 onClick={() => setGlobalAdsEnabled(!globalAdsEnabled)}
-                className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3D2FD1] ${
-                  globalAdsEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3A5A86] ${
+                  globalAdsEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-[#2a3b54]'
                 }`}
                 role="switch"
                 aria-checked={globalAdsEnabled}
@@ -298,7 +298,7 @@ export const AdManagementView: React.FC = () => {
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-semibold">
               <span className={`w-2 h-2 rounded-full ${globalAdsEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-              <span className={globalAdsEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}>
+              <span className={globalAdsEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-[#9ab0cb]'}>
                 {globalAdsEnabled ? 'Monetization Active' : 'Ads Globally Suspended'}
               </span>
             </div>
@@ -316,26 +316,26 @@ export const AdManagementView: React.FC = () => {
 
       {/* 2. STATS OVERVIEW CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-[#15112B] p-4 rounded-xl border border-slate-200 dark:border-white/10">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Placements</span>
+        <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md p-4 rounded-xl border border-slate-200 dark:border-[#3A5A86]/40 shadow-sm">
+          <span className="text-xs text-slate-500 dark:text-[#9ab0cb] font-medium">Total Placements</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-display">{totalCount}</p>
         </div>
-        <div className="bg-white dark:bg-[#15112B] p-4 rounded-xl border border-slate-200 dark:border-white/10">
+        <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md p-4 rounded-xl border border-slate-200 dark:border-[#3A5A86]/40 shadow-sm">
           <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Active Advertisements</span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 font-display">{activeCount}</p>
         </div>
-        <div className="bg-white dark:bg-[#15112B] p-4 rounded-xl border border-slate-200 dark:border-white/10">
-          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Desktop Coverage</span>
+        <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md p-4 rounded-xl border border-slate-200 dark:border-[#3A5A86]/40 shadow-sm">
+          <span className="text-xs text-blue-600 dark:text-[#E3EDF9] font-medium">Desktop Coverage</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-display">{desktopCount}</p>
         </div>
-        <div className="bg-white dark:bg-[#15112B] p-4 rounded-xl border border-slate-200 dark:border-white/10">
-          <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">Mobile Coverage</span>
+        <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md p-4 rounded-xl border border-slate-200 dark:border-[#3A5A86]/40 shadow-sm">
+          <span className="text-xs text-purple-600 dark:text-[#E3EDF9] font-medium">Mobile Coverage</span>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1 font-display">{mobileCount}</p>
         </div>
       </div>
 
       {/* 3. CONTROLS BAR: SEARCH, FILTERS, ADD AD BUTTON */}
-      <div className="bg-white dark:bg-[#15112B] rounded-2xl p-4 border border-slate-200 dark:border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200 dark:border-[#3A5A86]/40 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Search */}
           <div className="relative flex-1 md:w-64">
@@ -345,7 +345,7 @@ export const AdManagementView: React.FC = () => {
               placeholder="Search ad label, network..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#3D2FD1]"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-[#23324A]/70 border border-slate-200 dark:border-[#3A5A86]/40 text-slate-900 dark:text-[#E3EDF9] placeholder-slate-400 focus:outline-none focus:border-[#E3EDF9]"
             />
           </div>
 
@@ -353,7 +353,7 @@ export const AdManagementView: React.FC = () => {
           <select
             value={placementFilter}
             onChange={(e) => setPlacementFilter(e.target.value)}
-            className="text-xs py-2 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none"
+            className="text-xs py-2 px-3 rounded-xl bg-slate-50 dark:bg-[#23324A]/70 border border-slate-200 dark:border-[#3A5A86]/40 text-slate-800 dark:text-[#E3EDF9] focus:outline-none"
           >
             <option value="all">All Placements</option>
             <option value="top_banner">Top Banner</option>
@@ -371,7 +371,7 @@ export const AdManagementView: React.FC = () => {
           <select
             value={deviceFilter}
             onChange={(e) => setDeviceFilter(e.target.value)}
-            className="text-xs py-2 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none"
+            className="text-xs py-2 px-3 rounded-xl bg-slate-50 dark:bg-[#23324A]/70 border border-slate-200 dark:border-[#3A5A86]/40 text-slate-800 dark:text-[#E3EDF9] focus:outline-none"
           >
             <option value="all">All Devices</option>
             <option value="desktop">Desktop</option>
@@ -383,7 +383,7 @@ export const AdManagementView: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs py-2 px-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none"
+            className="text-xs py-2 px-3 rounded-xl bg-slate-50 dark:bg-[#23324A]/70 border border-slate-200 dark:border-[#3A5A86]/40 text-slate-800 dark:text-[#E3EDF9] focus:outline-none"
           >
             <option value="all">All Status</option>
             <option value="active">Active Only</option>
@@ -396,7 +396,7 @@ export const AdManagementView: React.FC = () => {
           <button
             type="button"
             onClick={() => setResetConfirmOpen(true)}
-            className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-1.5 transition-colors"
+            className="text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#3A5A86]/40 text-slate-700 dark:text-[#ccdcee] hover:bg-slate-50 dark:hover:bg-[#2a3b54] flex items-center gap-1.5 transition-colors cursor-pointer"
             title="Reset to the default 5 safe Adsterra placements"
           >
             <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
@@ -407,16 +407,16 @@ export const AdManagementView: React.FC = () => {
             type="button"
             id="add-advertisement-btn"
             onClick={handleOpenAddModal}
-            className="text-xs font-bold px-4 py-2 rounded-xl bg-[#3D2FD1] hover:bg-[#3224B8] text-white flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+            className="text-xs font-bold px-4 py-2 rounded-xl bg-[#3A5A86] hover:bg-[#304360] text-white flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0 border border-[#E3EDF9]/30"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 text-[#E3EDF9]" />
             <span>+ Add Advertisement</span>
           </button>
         </div>
       </div>
 
       {/* 4. ADS TABLE (ACCORDING TO USER SPECIFICATION) */}
-      <div className="bg-white dark:bg-[#15112B] rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#23324A]/80 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-[#3A5A86]/40 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -539,7 +539,7 @@ export const AdManagementView: React.FC = () => {
                               setPreviewModalAd(ad);
                               setPreviewDevice(ad.devices === 'mobile' ? 'mobile' : 'desktop');
                             }}
-                            className="p-1.5 text-slate-500 hover:text-[#3D2FD1] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-[#3A5A86] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                             title="Live Preview Ad"
                           >
                             <Eye className="w-4 h-4" />
@@ -549,7 +549,7 @@ export const AdManagementView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(ad)}
-                            className="p-1.5 text-slate-500 hover:text-[#3D2FD1] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-[#3A5A86] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                             title="Edit Ad Settings & Code"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -559,7 +559,7 @@ export const AdManagementView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => duplicateAd(ad.id)}
-                            className="p-1.5 text-slate-500 hover:text-[#3D2FD1] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-500 hover:text-[#3A5A86] hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                             title="Duplicate Placement"
                           >
                             <Copy className="w-4 h-4" />
@@ -587,8 +587,8 @@ export const AdManagementView: React.FC = () => {
 
       {/* 5. ADD / EDIT ADVERTISEMENT MODAL */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-3xl bg-white dark:bg-[#15112B] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-[#23324A] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#3A5A86]/50 overflow-hidden my-8">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/[0.02]">
@@ -609,7 +609,7 @@ export const AdManagementView: React.FC = () => {
                     onClick={() => setFormTab('config')}
                     className={`px-2.5 py-1 rounded-md transition-all ${
                       formTab === 'config' 
-                        ? 'bg-white dark:bg-[#201A45] text-[#3D2FD1] dark:text-white shadow-sm' 
+                        ? 'bg-white dark:bg-[#23324A] text-[#3A5A86] dark:text-white shadow-sm' 
                         : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
@@ -620,7 +620,7 @@ export const AdManagementView: React.FC = () => {
                     onClick={() => setFormTab('preview')}
                     className={`px-2.5 py-1 rounded-md transition-all ${
                       formTab === 'preview' 
-                        ? 'bg-white dark:bg-[#201A45] text-[#3D2FD1] dark:text-white shadow-sm' 
+                        ? 'bg-white dark:bg-[#23324A] text-[#3A5A86] dark:text-white shadow-sm' 
                         : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
@@ -654,7 +654,7 @@ export const AdManagementView: React.FC = () => {
                       value={formData.name || ''}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="e.g., AD 4 — 728×90 Leaderboard"
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#3D2FD1]"
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#3A5A86]"
                     />
                   </div>
 
@@ -667,7 +667,7 @@ export const AdManagementView: React.FC = () => {
                       value={formData.network || 'Adsterra'}
                       onChange={(e) => setFormData({ ...formData, network: e.target.value })}
                       placeholder="e.g., Adsterra, Google AdSense, Custom"
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#3D2FD1]"
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-[#3A5A86]"
                     />
                   </div>
                 </div>
@@ -681,7 +681,7 @@ export const AdManagementView: React.FC = () => {
                     <select
                       value={formData.format || 'banner_728x90'}
                       onChange={(e) => handleFormatChange(e.target.value as AdFormat)}
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#1B1635] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#1e2c40] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
                     >
                       <option value="banner_728x90">728×90 Leaderboard Banner</option>
                       <option value="banner_468x60">468×60 Standard Banner</option>
@@ -700,7 +700,7 @@ export const AdManagementView: React.FC = () => {
                       type="number"
                       value={formData.width || 728}
                       onChange={(e) => setFormData({ ...formData, width: Number(e.target.value) })}
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#1B1635] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#1e2c40] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
@@ -712,7 +712,7 @@ export const AdManagementView: React.FC = () => {
                       type="number"
                       value={formData.height || 90}
                       onChange={(e) => setFormData({ ...formData, height: Number(e.target.value) })}
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#1B1635] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#1e2c40] border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -796,7 +796,7 @@ export const AdManagementView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, targetPages: PUBLIC_PAGES_OPTIONS.map(p => p.id) })}
-                      className="text-[11px] font-semibold text-[#3D2FD1] hover:underline"
+                      className="text-[11px] font-semibold text-[#3A5A86] hover:underline"
                     >
                       Select All Public Pages
                     </button>
@@ -810,7 +810,7 @@ export const AdManagementView: React.FC = () => {
                           key={page.id}
                           className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs transition-colors ${
                             isChecked 
-                              ? 'bg-white dark:bg-[#201A45] text-[#3D2FD1] dark:text-white font-bold shadow-xs' 
+                              ? 'bg-white dark:bg-[#23324A] text-[#3A5A86] dark:text-white font-bold shadow-xs' 
                               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
                           }`}
                         >
@@ -818,7 +818,7 @@ export const AdManagementView: React.FC = () => {
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => handleToggleTargetPage(page.id)}
-                            className="rounded border-slate-300 text-[#3D2FD1] focus:ring-[#3D2FD1]"
+                            className="rounded border-slate-300 text-[#3A5A86] focus:ring-[#3A5A86]"
                           />
                           <span className="truncate">{page.label}</span>
                         </label>
@@ -856,7 +856,7 @@ export const AdManagementView: React.FC = () => {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-[#3D2FD1]" />
+                      <Code2 className="w-3.5 h-3.5 text-[#3A5A86]" />
                       <span>Ad Provider Code Snippet (HTML / JavaScript) *</span>
                     </label>
                     <span className="text-[11px] text-slate-400">
@@ -870,7 +870,7 @@ export const AdManagementView: React.FC = () => {
                     value={formData.code || ''}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                     placeholder="<script src='https://...'></script>"
-                    className="w-full font-mono text-[11px] p-3 rounded-xl bg-slate-900 text-emerald-400 border border-slate-800 focus:outline-none focus:border-[#3D2FD1] leading-relaxed resize-y"
+                    className="w-full font-mono text-[11px] p-3 rounded-xl bg-slate-900 text-emerald-400 border border-slate-800 focus:outline-none focus:border-[#3A5A86] leading-relaxed resize-y"
                     spellCheck={false}
                   />
                 </div>
@@ -906,7 +906,7 @@ export const AdManagementView: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="text-xs font-bold px-5 py-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#3224B8] text-white shadow-sm transition-all"
+                    className="text-xs font-bold px-5 py-2.5 rounded-xl bg-[#3A5A86] hover:bg-[#2e486c] text-white shadow-sm transition-all"
                   >
                     {editingAd ? 'Save Placement Changes' : 'Create & Save Advertisement'}
                   </button>
@@ -940,7 +940,7 @@ export const AdManagementView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFormTab('config')}
-                    className="text-xs font-bold px-4 py-2 rounded-xl bg-[#3D2FD1] text-white"
+                    className="text-xs font-bold px-4 py-2 rounded-xl bg-[#3A5A86] text-white"
                   >
                     Back to Configuration
                   </button>
@@ -954,8 +954,8 @@ export const AdManagementView: React.FC = () => {
 
       {/* 6. STANDALONE LIVE PREVIEW MODAL */}
       {previewModalAd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative w-full max-w-4xl bg-white dark:bg-[#15112B] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-[#23324A] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#3A5A86]/50 overflow-hidden my-8">
             
             {/* Header with Device Switcher */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/[0.02]">
@@ -975,7 +975,7 @@ export const AdManagementView: React.FC = () => {
                   onClick={() => setPreviewDevice('desktop')}
                   className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                     previewDevice === 'desktop'
-                      ? 'bg-white dark:bg-[#201A45] text-[#3D2FD1] dark:text-white shadow-xs'
+                      ? 'bg-white dark:bg-[#23324A] text-[#3A5A86] dark:text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
@@ -987,7 +987,7 @@ export const AdManagementView: React.FC = () => {
                   onClick={() => setPreviewDevice('tablet')}
                   className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                     previewDevice === 'tablet'
-                      ? 'bg-white dark:bg-[#201A45] text-[#3D2FD1] dark:text-white shadow-xs'
+                      ? 'bg-white dark:bg-[#23324A] text-[#3A5A86] dark:text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
@@ -999,7 +999,7 @@ export const AdManagementView: React.FC = () => {
                   onClick={() => setPreviewDevice('mobile')}
                   className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                     previewDevice === 'mobile'
-                      ? 'bg-white dark:bg-[#201A45] text-[#3D2FD1] dark:text-white shadow-xs'
+                      ? 'bg-white dark:bg-[#23324A] text-[#3A5A86] dark:text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
@@ -1018,9 +1018,9 @@ export const AdManagementView: React.FC = () => {
             </div>
 
             {/* Viewport Frame */}
-            <div className="p-8 bg-slate-100 dark:bg-[#0E0A1E] flex items-center justify-center overflow-x-auto min-h-[300px]">
+            <div className="p-8 bg-slate-100 dark:bg-[#172233] flex items-center justify-center overflow-x-auto min-h-[300px]">
               <div 
-                className="transition-all duration-300 bg-white dark:bg-[#15112B] p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-white/10 flex flex-col items-center justify-center max-w-full"
+                className="transition-all duration-300 bg-white dark:bg-[#192435] p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-white/10 flex flex-col items-center justify-center max-w-full"
                 style={{
                   width: previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '768px' : '375px'
                 }}
@@ -1053,8 +1053,8 @@ export const AdManagementView: React.FC = () => {
 
       {/* 7. DELETE CONFIRMATION MODAL */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white dark:bg-[#15112B] rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="w-full max-w-md bg-white dark:bg-[#23324A] rounded-2xl p-6 border border-slate-200 dark:border-[#3A5A86]/50 shadow-xl space-y-4">
             <div className="flex items-center gap-3 text-rose-600">
               <div className="p-2.5 rounded-full bg-rose-50 dark:bg-rose-950/40">
                 <Trash2 className="w-5 h-5" />
@@ -1091,10 +1091,10 @@ export const AdManagementView: React.FC = () => {
 
       {/* 8. RESTORE FACTORY ADSTERRA CODES CONFIRMATION */}
       {resetConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white dark:bg-[#15112B] rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-xl space-y-4">
-            <div className="flex items-center gap-3 text-[#3D2FD1]">
-              <div className="p-2.5 rounded-full bg-[#F2F0FF] dark:bg-[#201A45]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="w-full max-w-md bg-white dark:bg-[#23324A] rounded-2xl p-6 border border-slate-200 dark:border-[#3A5A86]/50 shadow-xl space-y-4">
+            <div className="flex items-center gap-3 text-[#3A5A86]">
+              <div className="p-2.5 rounded-full bg-[#E3EDF9] dark:bg-[#23324A]">
                 <RotateCcw className="w-5 h-5" />
               </div>
               <h4 className="text-base font-bold text-slate-900 dark:text-white">Restore Adsterra Presets</h4>
@@ -1120,7 +1120,7 @@ export const AdManagementView: React.FC = () => {
                   setSaveSuccessMsg('Adsterra default placements restored successfully.');
                   setTimeout(() => setSaveSuccessMsg(null), 4000);
                 }}
-                className="text-xs font-bold px-4 py-2 rounded-xl bg-[#3D2FD1] hover:bg-[#3224B8] text-white shadow-sm"
+                className="text-xs font-bold px-4 py-2 rounded-xl bg-[#3A5A86] hover:bg-[#2e486c] text-white shadow-sm"
               >
                 Yes, Restore Presets
               </button>

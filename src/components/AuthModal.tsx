@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { formatAuthError } from '../lib/firebaseAuth';
-import { executeRecaptcha, verifyRecaptchaToken } from '../lib/recaptchaEnterprise';
+import { verifyRecaptchaTokenOnServer } from '../lib/recaptcha';
+import { HumanVerificationModal } from './HumanVerificationModal';
 import { 
   X, 
   Mail, 
@@ -43,6 +44,12 @@ export const AuthModal: React.FC = () => {
   const [socialLoading, setSocialLoading] = useState<'google' | 'github' | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  // Human Verification Modal state (Google reCAPTCHA v2 Checkbox)
+  const [isHumanModalOpen, setIsHumanModalOpen] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [pendingAuthAction, setPendingAuthAction] = useState<((token: string) => Promise<void>) | null>(null);
+  const [verificationActionTitle, setVerificationActionTitle] = useState('Talentio Security Check');
+
   // If closed or user is already on a dedicated auth page, do not render
   if (!isAuthModalOpen || activePage === 'login' || activePage === 'register' || activePage === 'forgot-password') {
     return null;
@@ -52,68 +59,90 @@ export const AuthModal: React.FC = () => {
     setIsAuthModalOpen(false);
     setAuthPromptReason(null);
     setModalError(null);
+    setIsHumanModalOpen(false);
+    setPendingAuthAction(null);
+    setVerificationError(null);
   };
 
-  const handleSocialGoogle = async () => {
+  const handleSocialGoogle = () => {
     setModalError(null);
+    setVerificationError(null);
     setSocialLoading('google');
-    try {
-      // Execute reCAPTCHA Enterprise verification
-      const recaptchaToken = await executeRecaptcha('LOGIN');
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'LOGIN');
-      if (!recaptchaResult.valid) {
-        setModalError('Security verification failed. Please try again.');
-        setSocialLoading(null);
-        return;
-      }
 
-      await loginWithGoogle();
-      setIsAuthModalOpen(false);
-    } catch (err: any) {
-      setModalError(err?.message || 'Google sign in failed. Please try again.');
-    } finally {
-      setSocialLoading(null);
-    }
+    const executeGoogle = async (token: string) => {
+      try {
+        const verifyRes = await verifyRecaptchaTokenOnServer(token);
+        if (!verifyRes.valid) {
+          setVerificationError(verifyRes.message || 'reCAPTCHA verification failed. Please try again.');
+          setIsHumanModalOpen(true);
+          setSocialLoading(null);
+          return;
+        }
+
+        setIsHumanModalOpen(false);
+        await loginWithGoogle();
+        setIsAuthModalOpen(false);
+      } catch (err: any) {
+        setModalError(err?.message || 'Google sign in failed. Please try again.');
+      } finally {
+        setSocialLoading(null);
+      }
+    };
+
+    setVerificationActionTitle('Google Sign-In Human Verification');
+    setPendingAuthAction(() => executeGoogle);
+    setIsHumanModalOpen(true);
   };
 
-  const handleSocialGithub = async () => {
+  const handleSocialGithub = () => {
     setModalError(null);
+    setVerificationError(null);
     setSocialLoading('github');
-    try {
-      // Execute reCAPTCHA Enterprise verification
-      const recaptchaToken = await executeRecaptcha('LOGIN');
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, 'LOGIN');
-      if (!recaptchaResult.valid) {
-        setModalError('Security verification failed. Please try again.');
-        setSocialLoading(null);
-        return;
-      }
 
-      await loginWithGithub();
-      setIsAuthModalOpen(false);
-    } catch (err: any) {
-      setModalError(formatAuthError(err));
-    } finally {
-      setSocialLoading(null);
-    }
+    const executeGithub = async (token: string) => {
+      try {
+        const verifyRes = await verifyRecaptchaTokenOnServer(token);
+        if (!verifyRes.valid) {
+          setVerificationError(verifyRes.message || 'reCAPTCHA verification failed. Please try again.');
+          setIsHumanModalOpen(true);
+          setSocialLoading(null);
+          return;
+        }
+
+        setIsHumanModalOpen(false);
+        await loginWithGithub();
+        setIsAuthModalOpen(false);
+      } catch (err: any) {
+        setModalError(formatAuthError(err));
+      } finally {
+        setSocialLoading(null);
+      }
+    };
+
+    setVerificationActionTitle('GitHub Sign-In Human Verification');
+    setPendingAuthAction(() => executeGithub);
+    setIsHumanModalOpen(true);
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
+    setVerificationError(null);
 
     const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setModalError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setModalError('Password must be at least 6 characters.');
+      return;
+    }
+
     if (authMode === 'register') {
       if (!name.trim()) {
         setModalError('Please enter your full name.');
-        return;
-      }
-      if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-        setModalError('Please enter a valid email address.');
-        return;
-      }
-      if (password.length < 8) {
-        setModalError('Password must be at least 8 characters in length.');
         return;
       }
       if (!confirmPassword) {
@@ -127,28 +156,34 @@ export const AuthModal: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    try {
-      // Execute reCAPTCHA Enterprise verification
-      const actionName = authMode === 'login' ? 'LOGIN' : 'SIGNUP';
-      const recaptchaToken = await executeRecaptcha(actionName);
-      const recaptchaResult = await verifyRecaptchaToken(recaptchaToken, actionName);
-      if (!recaptchaResult.valid) {
-        setModalError('Security verification failed. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
 
-      if (authMode === 'login') {
-        await loginWithEmail(cleanEmail, password);
-      } else {
-        await registerAccount('email', cleanEmail, name.trim(), password);
+    const executeEmail = async (token: string) => {
+      try {
+        const verifyRes = await verifyRecaptchaTokenOnServer(token);
+        if (!verifyRes.valid) {
+          setVerificationError(verifyRes.message || 'reCAPTCHA verification failed. Please check the box again.');
+          setIsHumanModalOpen(true);
+          setIsSubmitting(false);
+          return;
+        }
+
+        setIsHumanModalOpen(false);
+        if (authMode === 'login') {
+          await loginWithEmail(cleanEmail, password);
+        } else {
+          await registerAccount('email', cleanEmail, name.trim(), password);
+        }
+        setIsAuthModalOpen(false);
+      } catch (err: any) {
+        setModalError(err?.message || 'Authentication failed. Please verify credentials.');
+      } finally {
+        setIsSubmitting(false);
       }
-      setIsAuthModalOpen(false);
-    } catch (err: any) {
-      setModalError(err?.message || 'Authentication failed. Please verify credentials.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    };
+
+    setVerificationActionTitle(authMode === 'login' ? 'Sign In Human Verification' : 'Registration Human Verification');
+    setPendingAuthAction(() => executeEmail);
+    setIsHumanModalOpen(true);
   };
 
   return (
@@ -234,19 +269,20 @@ export const AuthModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab 1: Email Form */}
+        {/* Modal-wide error message */}
+        {modalError && (
+          <div className="mb-4 p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-start gap-2.5 text-rose-200 text-xs animate-in shake duration-200">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>{modalError}</span>
+          </div>
+        )}
+
+        {/* Tab 1: Email / Password Flow */}
         {activeTab === 'email' && (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
-            {modalError && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2 text-xs text-rose-200">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{modalError}</span>
-              </div>
-            )}
-
             {authMode === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
                   Full Name
                 </label>
                 <input
@@ -254,47 +290,49 @@ export const AuthModal: React.FC = () => {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Alexander Vance"
-                  className="w-full px-4 py-3.5 min-h-[48px] rounded-xl bg-white/10 border border-white/15 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/30 transition-all"
+                  placeholder="e.g. John Doe"
+                  className="w-full h-11 px-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 transition-all"
                 />
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-300">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alexander@example.com"
-                  className="w-full pl-10 pr-4 py-3.5 min-h-[48px] rounded-xl bg-white/10 border border-white/15 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/30 transition-all"
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className="w-full h-11 pl-10 pr-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 transition-all"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-300">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-10 pr-11 py-3.5 min-h-[48px] rounded-xl bg-white/10 border border-white/15 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/30 transition-all"
+                  placeholder="At least 6 characters"
+                  autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                  className="w-full h-11 pl-10 pr-10 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -302,24 +340,25 @@ export const AuthModal: React.FC = () => {
             </div>
 
             {authMode === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-300">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full pl-10 pr-11 py-3.5 min-h-[48px] rounded-xl bg-white/10 border border-white/15 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/30 transition-all"
+                    placeholder="Repeat password"
+                    autoComplete="new-password"
+                    className="w-full h-11 pl-10 pr-10 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-[#6E5BFF] focus:ring-2 focus:ring-[#6E5BFF]/20 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -330,48 +369,37 @@ export const AuthModal: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-2 py-4 min-h-[48px] rounded-xl bg-gradient-to-r from-[#3D2FD1] via-[#6E5BFF] to-[#A38BFF] hover:opacity-95 text-white font-bold text-sm shadow-lg shadow-[#3D2FD1]/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50"
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] hover:from-[#3527b8] hover:to-[#5844e6] disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-[#3D2FD1]/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
-              <span>{isSubmitting ? 'Authenticating...' : authMode === 'login' ? 'Sign In to Talentio' : 'Create Account'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>{authMode === 'login' ? 'Sign In' : 'Create Account'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
         )}
 
-        {/* Tab 2: Google OAuth */}
+        {/* Tab 2: Google Sign-in */}
         {activeTab === 'google' && (
-          <div className="space-y-4 text-center py-2">
-            {modalError && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2 text-xs text-rose-200 text-left">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{modalError}</span>
-              </div>
-            )}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-left">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-xl bg-white/10 border border-white/10">
-                  <Globe className="w-6 h-6 text-[#A38BFF]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Google One-Click Sign In</h3>
-                  <p className="text-xs text-slate-400">Instantly sign in with your verified Google account</p>
-                </div>
-              </div>
-              <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside mt-3">
-                <li>Instant escrow wallet creation</li>
-                <li>Automatic profile verification</li>
-                <li>Zero password to remember</li>
-              </ul>
-            </div>
-
+          <div className="space-y-4 text-center py-3">
+            <p className="text-xs text-slate-300">
+              Continue using your verified Google Account with instant profile onboarding.
+            </p>
             <button
               type="button"
-              disabled={socialLoading !== null || isSubmitting}
               onClick={handleSocialGoogle}
-              className="w-full py-4 min-h-[48px] rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-lg flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-[1.01] disabled:opacity-50"
+              disabled={socialLoading !== null}
+              className="w-full h-12 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
             >
               {socialLoading === 'google' ? (
-                <Loader2 className="w-5 h-5 animate-spin text-[#3D2FD1]" />
+                <Loader2 className="w-5 h-5 animate-spin text-slate-900" />
               ) : (
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -380,42 +408,22 @@ export const AuthModal: React.FC = () => {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
               )}
-              <span>{socialLoading === 'google' ? 'Connecting with Google...' : 'Continue with Google'}</span>
+              <span>{socialLoading === 'google' ? 'Connecting to Google...' : 'Continue with Google'}</span>
             </button>
           </div>
         )}
 
-        {/* Tab 3: GitHub OAuth */}
+        {/* Tab 3: GitHub Sign-in */}
         {activeTab === 'github' && (
-          <div className="space-y-4 text-center py-2">
-            {modalError && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center gap-2 text-xs text-rose-200 text-left">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{modalError}</span>
-              </div>
-            )}
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-left">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-xl bg-white/10 border border-white/10">
-                  <Github className="w-6 h-6 text-[#A38BFF]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">GitHub Developer Sign In</h3>
-                  <p className="text-xs text-slate-400">Sign in with your verified GitHub profile</p>
-                </div>
-              </div>
-              <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside mt-3">
-                <li>Automatic repo and portfolio import ready</li>
-                <li>Instant verified developer badge</li>
-                <li>Fast-track escrow tier verification</li>
-              </ul>
-            </div>
-
+          <div className="space-y-4 text-center py-3">
+            <p className="text-xs text-slate-300">
+              Sign in with your developer GitHub identity for code collaboration.
+            </p>
             <button
               type="button"
-              disabled={socialLoading !== null || isSubmitting}
               onClick={handleSocialGithub}
-              className="w-full py-4 min-h-[48px] rounded-xl bg-black hover:bg-slate-900 text-white font-bold text-sm border border-white/20 shadow-lg flex items-center justify-center gap-2.5 cursor-pointer transition-all hover:scale-[1.01] disabled:opacity-50"
+              disabled={socialLoading !== null}
+              className="w-full h-12 rounded-2xl bg-[#24292e] hover:bg-[#1b1f23] border border-white/20 text-white font-bold text-xs sm:text-sm shadow-lg transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
             >
               {socialLoading === 'github' ? (
                 <Loader2 className="w-5 h-5 animate-spin text-[#A38BFF]" />
@@ -445,10 +453,33 @@ export const AuthModal: React.FC = () => {
         {/* reCAPTCHA Security Badge */}
         <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Protected by Google reCAPTCHA Enterprise</span>
+          <span>Protected by Google reCAPTCHA</span>
         </div>
 
       </div>
+
+      {/* Interactive Visual Human Verification Modal with Google reCAPTCHA v2 Checkbox */}
+      <HumanVerificationModal
+        isOpen={isHumanModalOpen}
+        actionTitle={verificationActionTitle}
+        errorMessage={verificationError}
+        onVerifySuccess={(token: string) => {
+          if (pendingAuthAction) {
+            const action = pendingAuthAction;
+            setPendingAuthAction(null);
+            action(token);
+          }
+        }}
+        onCancel={() => {
+          setIsHumanModalOpen(false);
+          setPendingAuthAction(null);
+          setIsSubmitting(false);
+          setSocialLoading(null);
+          setVerificationError(null);
+        }}
+      />
     </div>
   );
 };
+
+export default AuthModal;

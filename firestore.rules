@@ -18,6 +18,7 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.token.admin == true ||
         request.auth.token.role == 'admin' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
         ((request.auth.token.email == 'lord79915@gmail.com' || request.auth.token.email == 'xenolord128@gmail.com') && request.auth.token.email_verified == true)
       );
     }
@@ -58,13 +59,13 @@ service cloud.firestore {
       allow read: if isSignedIn();
       // Only owner can create, but cannot grant themselves ADMIN role unless possessing admin claim
       allow create: if isSignedIn() && isOwner(userId) && (
-        (request.resource.data.role != 'ADMIN' && request.resource.data.role != 'admin') ||
+        (request.resource.data.role != 'ADMIN' && request.resource.data.role != 'admin' && request.resource.data.userType != 'admin') ||
         hasAdminClaim()
       );
-      // Owner can update their profile information, but CANNOT modify role, accountStatus, or subscriptionStatus
+      // Owner can update their profile information, but CANNOT modify role, isAdmin, admin, permissions, accountStatus, or subscriptionStatus
       allow update: if isSignedIn() && (
         (isOwner(userId) && 
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'accountStatus', 'subscriptionStatus', 'subscriptionEndDate', 'platformFeePercent'])) ||
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin', 'admin', 'permissions', 'accountStatus', 'subscriptionStatus', 'subscriptionEndDate', 'platformFeePercent'])) ||
         hasAdminClaim()
       );
       allow delete: if hasAdminClaim();
@@ -161,6 +162,28 @@ service cloud.firestore {
 
     match /push_subscriptions/{subId} {
       allow read, write: if true;
+    }
+
+    // ========================================================================
+    // 9.1 KYC VERIFICATIONS (IDENTITY DOCUMENTS - STRICT ACCESS CONTROL)
+    // ========================================================================
+    match /kyc_verifications/{kycId} {
+      // User can read their own submission, or admin can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        hasAdminClaim()
+      );
+      // User can submit their own KYC document
+      allow create: if isSignedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        hasAdminClaim()
+      );
+      // Admin can update approval/rejection or user can resubmit if rejected
+      allow update: if isSignedIn() && (
+        hasAdminClaim() ||
+        (resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid)
+      );
+      allow delete: if hasAdminClaim();
     }
 
     // ========================================================================

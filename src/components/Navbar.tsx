@@ -38,7 +38,9 @@ import {
   Trophy,
   Bell,
   Smartphone,
-  Bot
+  Bot,
+  FileCheck,
+  IdCard
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -57,6 +59,8 @@ export const Navbar: React.FC = () => {
     setCurrency,
     user,
     isAuthenticated,
+    isAdmin,
+    isAdminVerifying,
     logout,
     switchDemoAccount,
     chatMessages,
@@ -111,7 +115,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#120F24]/95 backdrop-blur-xl text-white border-b border-white/10 shadow-[0_4px_25px_rgba(0,0,0,0.3)] max-w-full">
+    <header className="sticky top-0 z-40 bg-[#23324A]/95 backdrop-blur-xl text-white border-b border-[#3A5A86]/30 shadow-[0_4px_25px_rgba(35,50,74,0.3)] max-w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
           
@@ -122,7 +126,7 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-2.5 group text-left cursor-pointer focus:outline-none"
               title="Talentio Marketplace"
             >
-              <TalentioLogo size="sm" variant="gradient" animated />
+              <TalentioLogo size="sm" variant="transparent" animated />
               <div className="flex flex-col">
                 <span className="text-base sm:text-lg font-black tracking-tight text-white font-display">TALENTIO</span>
               </div>
@@ -136,10 +140,10 @@ export const Navbar: React.FC = () => {
             {/* TALENTIO AI Top Assistant Quick Trigger */}
             <button
               onClick={() => { setAIOpen(true); setAIMinimized(false); }}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-gradient-to-r from-[#3D2FD1]/40 to-[#6E5BFF]/30 hover:from-[#3D2FD1]/70 hover:to-[#6E5BFF]/60 backdrop-blur-md text-xs font-bold text-white border border-[#6E5BFF]/40 transition-all cursor-pointer shadow-sm active:scale-95 group"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-gradient-to-r from-[#3A5A86]/40 to-[#23324A]/50 hover:from-[#3A5A86]/70 hover:to-[#23324A]/80 backdrop-blur-md text-xs font-bold text-white border border-[#3A5A86]/40 transition-all cursor-pointer shadow-sm active:scale-95 group"
               title="Open TALENTIO AI Website Guide & Voice Assistant"
             >
-              <Bot className="w-4 h-4 text-[#A38BFF] group-hover:text-white transition-colors" />
+              <Bot className="w-4 h-4 text-[#E3EDF9] group-hover:text-white transition-colors" />
               <span>AI Guide</span>
               <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
             </button>
@@ -147,7 +151,7 @@ export const Navbar: React.FC = () => {
             {/* Currency Switcher - Visible on Mobile and Desktop */}
             <button
               onClick={() => setIsCurrencyModalOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-xs font-mono font-bold text-white border border-white/20 transition-all cursor-pointer shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-xs font-mono font-bold text-white border border-white/20 transition-all cursor-pointer shadow-sm active:scale-95"
               title="Change Global Currency (150+ Currencies Supported)"
               aria-label={`Current Currency: ${currency}. Click to switch.`}
             >
@@ -161,7 +165,7 @@ export const Navbar: React.FC = () => {
               {isAuthenticated && user ? (
                 <button
                   onClick={handleProfileClick}
-                  className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer shadow-sm transition-all min-h-[40px] justify-center active:scale-95"
+                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer shadow-sm transition-all min-h-[44px] min-w-[44px] justify-center active:scale-95"
                   aria-label="User Profile and Account Settings"
                   title={`${user.name} (${user.userType})`}
                 >
@@ -170,16 +174,16 @@ export const Navbar: React.FC = () => {
                       src={user.avatar}
                       alt={user.name}
                       referrerPolicy="no-referrer"
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-[#A38BFF]"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-[#3A5A86]"
                     />
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#120F24]" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#23324A]" />
                   </div>
                   <div className="hidden sm:flex flex-col text-left pr-0.5">
                     <span className="text-xs font-bold text-white leading-tight line-clamp-1">
                       {user.name.split(' ')[0]}
                     </span>
-                    <span className="text-[9px] text-[#A38BFF] font-semibold uppercase leading-none">
-                      {user.role === 'admin' ? 'ADMIN' : user.userType}
+                    <span className="text-[9px] text-[#E3EDF9] font-semibold uppercase leading-none">
+                      {isAdmin ? 'ADMIN' : (user.userType === 'freelancer' ? 'freelancer' : 'client')}
                     </span>
                   </div>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
@@ -188,7 +192,7 @@ export const Navbar: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setActivePage('login')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95 border border-[#A38BFF]/40"
+                    className="flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-[#3A5A86] hover:bg-[#23324A] text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95 border border-[#E3EDF9]/30"
                     title="Sign In to your Talentio Account"
                   >
                     <LogIn className="w-3.5 h-3.5" />
@@ -199,7 +203,7 @@ export const Navbar: React.FC = () => {
                     className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer active:scale-95"
                     title="Create a new account"
                   >
-                    <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                    <User className="w-3.5 h-3.5 text-[#E3EDF9]" />
                     <span>Register</span>
                   </button>
                 </div>
@@ -207,7 +211,7 @@ export const Navbar: React.FC = () => {
 
               {/* Profile Dropdown Menu */}
               {dropdownOpen && isAuthenticated && user && (
-                <div className="absolute right-0 mt-2 w-72 rounded-3xl bg-[#171330] border border-white/15 text-white p-2.5 z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 mt-2 w-72 rounded-3xl bg-[#23324A] border border-[#3A5A86]/40 text-white p-2.5 z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                   
                   {/* User Profile Header */}
                   <div className="px-3 py-2.5 border-b border-white/10 mb-1">
@@ -216,7 +220,7 @@ export const Navbar: React.FC = () => {
                         src={user.avatar}
                         alt={user.name}
                         referrerPolicy="no-referrer"
-                        className="w-10 h-10 rounded-xl object-cover ring-1 ring-[#A38BFF]"
+                        className="w-10 h-10 rounded-xl object-cover ring-1 ring-[#3A5A86]"
                       />
                       <div className="flex-1 overflow-hidden">
                         <div className="text-xs sm:text-sm font-extrabold text-white truncate">{user.name}</div>
@@ -225,7 +229,7 @@ export const Navbar: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3D2FD1]/50 text-white border border-[#A38BFF]/30 capitalize">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3A5A86]/50 text-white border border-[#3A5A86]/40 capitalize">
                         {user.role === 'admin' ? 'Super Admin' : `${user.userType} Account`}
                       </span>
                       {user.userType !== 'client' && (
@@ -243,43 +247,94 @@ export const Navbar: React.FC = () => {
                   </div>
 
                   {/* Menu Items */}
-                  {user && (user.role === 'ADMIN' || user.role === 'admin' || isAuthorizedAdminEmail(user.email)) && (
+                  {isAdmin && (
                     <button
                       onClick={() => { setActivePage('admin'); setDropdownOpen(false); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#3D2FD1]/40 text-[#A38BFF] hover:bg-[#3D2FD1] hover:text-white transition-colors cursor-pointer border border-[#A38BFF]/30 mb-1"
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                        activePage === 'admin'
+                          ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                          : 'bg-[#3A5A86]/20 text-[#E3EDF9] hover:bg-[#3A5A86]/40 hover:text-white border border-[#3A5A86]/30'
+                      }`}
                     >
-                      <ShieldAlert className="w-4 h-4 text-emerald-400" />
+                      <ShieldAlert className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>Admin Control Center</span>
                     </button>
                   )}
 
                   <button
                     onClick={() => { setActivePage('profile'); setDropdownOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[#3D2FD1]/30 hover:bg-[#3D2FD1] transition-colors cursor-pointer border border-[#A38BFF]/30 mb-1"
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                      activePage === 'profile'
+                        ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                        : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    }`}
                   >
-                    <User className="w-4 h-4 text-[#A38BFF]" />
-                    <span>My Profile</span>
+                    <div className="flex items-center gap-2.5">
+                      <User className={`w-4 h-4 ${activePage === 'profile' ? 'text-white' : 'text-[#E3EDF9]'}`} />
+                      <span>My Profile</span>
+                    </div>
                   </button>
+
+                  {/* KYC Verification Option */}
+                  {(() => {
+                    const isKycActive = activePage === 'kyc' || activePage === 'verify-kyc';
+                    const kycStatus = user.kycStatus || 'not_submitted';
+                    let label = 'KYC Required';
+                    let badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+
+                    if (kycStatus === 'verified' || user.verifiedBadge) {
+                      label = 'KYC Verified';
+                      badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                    } else if (kycStatus === 'pending') {
+                      label = 'KYC Pending';
+                      badgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+                    } else if (kycStatus === 'rejected') {
+                      label = 'KYC Rejected';
+                      badgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+                    } else if (kycStatus === 'resubmission_required') {
+                      label = 'KYC Resubmission';
+                      badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                    }
+
+                    return (
+                      <button
+                        onClick={() => { setActivePage('kyc'); setDropdownOpen(false); }}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                          isKycActive
+                            ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                            : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <IdCard className={`w-4 h-4 ${isKycActive ? 'text-white' : 'text-[#E3EDF9]'}`} />
+                          <span>KYC Verification</span>
+                        </div>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                          {label}
+                        </span>
+                      </button>
+                    );
+                  })()}
 
                   <button
                     onClick={() => { setActivePage('dashboard'); setDropdownOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                      activePage === 'dashboard'
+                        ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                        : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    }`}
                   >
-                    <LayoutDashboard className="w-4 h-4 text-[#A38BFF]" />
+                    <LayoutDashboard className={`w-4 h-4 ${activePage === 'dashboard' ? 'text-white' : 'text-[#E3EDF9]'}`} />
                     <span>{user.userType === 'client' ? 'Client Workspace' : 'Freelancer Dashboard'}</span>
                   </button>
 
                   <button
-                    onClick={() => { setIsOnboardingModalOpen(true); setDropdownOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <Sliders className="w-4 h-4 text-[#6E5BFF]" />
-                    <span>Profile & KYC Details</span>
-                  </button>
-
-                  <button
                     onClick={() => { setActivePage('workstation'); setDropdownOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                      activePage === 'workstation'
+                        ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                        : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    }`}
                   >
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     <span>Active Escrow Contracts</span>
@@ -287,36 +342,52 @@ export const Navbar: React.FC = () => {
 
                   <button
                     onClick={() => { setActivePage('chat'); setDropdownOpen(false); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                      activePage === 'chat'
+                        ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                        : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    }`}
                   >
-                    <MessageSquare className="w-4 h-4 text-[#A38BFF]" />
+                    <MessageSquare className={`w-4 h-4 ${activePage === 'chat' ? 'text-white' : 'text-[#E3EDF9]'}`} />
                     <span>Messages & Live Chat</span>
                   </button>
 
                   <button
                     onClick={() => { setActivePage('notices'); setDropdownOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer mb-1 ${
+                      activePage === 'notices'
+                        ? 'bg-[#3A5A86] text-white shadow-sm ring-1 ring-[#E3EDF9]/40 font-black'
+                        : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                    }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Bell className="w-4 h-4 text-[#A38BFF]" />
+                      <Bell className={`w-4 h-4 ${activePage === 'notices' ? 'text-white' : 'text-[#E3EDF9]'}`} />
                       <span>Notices & Platform Updates</span>
                     </div>
                     {unreadNoticesCount > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#3D2FD1] text-white">
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#3A5A86] text-white">
                         {unreadNoticesCount}
                       </span>
                     )}
                   </button>
 
                   <button
+                    onClick={() => { setIsOnboardingModalOpen(true); setDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer mb-1"
+                  >
+                    <Sliders className="w-4 h-4 text-[#E3EDF9]" />
+                    <span>Profile Preferences</span>
+                  </button>
+
+                  <button
                     onClick={() => { setAIOpen(true); setAIMinimized(false); setDropdownOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3D2FD1]/30 to-[#6E5BFF]/30 hover:from-[#3D2FD1]/60 hover:to-[#6E5BFF]/60 border border-[#6E5BFF]/30 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3A5A86]/40 to-[#23324A]/60 hover:from-[#3A5A86]/70 hover:to-[#23324A]/90 border border-[#3A5A86]/40 transition-colors cursor-pointer mb-1"
                   >
                     <div className="flex items-center gap-2.5">
-                      <Bot className="w-4 h-4 text-[#A38BFF]" />
+                      <Bot className="w-4 h-4 text-[#E3EDF9]" />
                       <span>TALENTIO AI Assistant</span>
                     </div>
-                    <span className="px-1.5 py-0.2 rounded-md bg-[#3D2FD1] text-white text-[10px] font-bold flex items-center gap-1">
+                    <span className="px-1.5 py-0.2 rounded-md bg-[#3A5A86] text-white text-[10px] font-bold flex items-center gap-1">
                       <Sparkles className="w-2.5 h-2.5 text-amber-300" />
                       <span>Voice</span>
                     </span>
@@ -324,7 +395,7 @@ export const Navbar: React.FC = () => {
 
                   <button
                     onClick={() => { setIsWidgetManagerOpen(true); setDropdownOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer mb-1"
                   >
                     <div className="flex items-center gap-2.5">
                       <Smartphone className="w-4 h-4 text-emerald-400" />
@@ -338,7 +409,7 @@ export const Navbar: React.FC = () => {
                     className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-200 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5">
-                      <Globe className="w-4 h-4 text-[#A38BFF]" />
+                      <Globe className="w-4 h-4 text-[#E3EDF9]" />
                       <span>Currency ({currency})</span>
                     </div>
                     <span className="text-xs">{currentCurrencyObj.flag}</span>
@@ -353,7 +424,7 @@ export const Navbar: React.FC = () => {
                           ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                           : user.role === 'FREELANCER' || user.userType === 'freelancer'
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : 'bg-[#3D2FD1]/30 text-[#A38BFF] border border-[#3D2FD1]/50'
+                          : 'bg-[#3A5A86]/40 text-[#E3EDF9] border border-[#3A5A86]/50'
                       }`}>
                         {user.role || (user.userType === 'client' ? 'CLIENT' : 'FREELANCER')}
                       </span>
@@ -384,42 +455,42 @@ export const Navbar: React.FC = () => {
                 onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
                 className={`flex items-center gap-2 px-3 py-1.5 min-h-[40px] rounded-xl font-bold text-xs transition-all cursor-pointer shadow-sm active:scale-95 border ${
                   desktopMenuOpen
-                    ? 'bg-[#3D2FD1] text-white border-[#A38BFF]/50 ring-2 ring-[#6E5BFF]/30'
+                    ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-2 ring-[#3A5A86]/40'
                     : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
                 }`}
                 aria-label="Open Desktop Menu"
                 title="Talentio Desktop Menu"
               >
-                <Menu className="w-4 h-4 text-[#A38BFF]" />
+                <Menu className="w-4 h-4 text-[#E3EDF9]" />
                 <span className="font-display tracking-wide">Menu</span>
                 {unreadNoticesCount > 0 && (
-                  <span className="w-2 h-2 rounded-full bg-[#6E5BFF] animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-[#E3EDF9] animate-pulse" />
                 )}
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-300 transition-transform duration-200 ${desktopMenuOpen ? 'rotate-180 text-white' : ''}`} />
               </button>
 
               {/* Desktop Menu Dropdown / Popover */}
               {desktopMenuOpen && (
-                <div className="absolute right-0 mt-2.5 w-[380px] rounded-3xl bg-[#14102B]/98 backdrop-blur-2xl border border-white/20 text-white p-3 z-50 shadow-[0_20px_60px_rgba(0,0,0,0.65)] animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] overflow-y-auto space-y-3">
+                <div className="absolute right-0 mt-2.5 w-[380px] rounded-3xl bg-[#23324A]/98 backdrop-blur-2xl border border-[#3A5A86]/40 text-white p-3 z-50 shadow-[0_20px_60px_rgba(0,0,0,0.65)] animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] overflow-y-auto space-y-3">
                   
                   {/* 1. User Profile & Account Summary */}
                   {isAuthenticated && user ? (
-                    <div className="p-3 rounded-2xl bg-gradient-to-r from-[#1E1940] to-[#2B2358] border border-white/15 shadow-inner">
+                    <div className="p-3 rounded-2xl bg-[#3A5A86]/30 border border-[#3A5A86]/40 shadow-inner">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <img
                             src={user.avatar}
                             alt={user.name}
                             referrerPolicy="no-referrer"
-                            className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#A38BFF]"
+                            className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#3A5A86]"
                           />
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-[#14102B]" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-[#23324A]" />
                         </div>
                         <div className="flex-1 overflow-hidden">
                           <div className="text-sm font-extrabold text-white truncate">{user.name}</div>
                           <div className="text-[11px] text-slate-300 font-medium truncate">{user.handle || user.email}</div>
                           <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#3D2FD1] text-white border border-[#A38BFF]/30 uppercase">
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#3A5A86] text-white border border-[#E3EDF9]/30 uppercase">
                               {user.role === 'admin' ? 'Super Admin' : `${user.userType} Account`}
                             </span>
                             {user.userType !== 'client' && (
@@ -441,7 +512,11 @@ export const Navbar: React.FC = () => {
                             setActivePage('profile');
                             setDesktopMenuOpen(false);
                           }}
-                          className="px-2 py-1.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                          className={`px-2 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm border ${
+                            activePage === 'profile'
+                              ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-1 ring-[#E3EDF9]/30'
+                              : 'bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-transparent'
+                          }`}
                           title="View Profile"
                         >
                           <User className="w-3.5 h-3.5" />
@@ -449,20 +524,30 @@ export const Navbar: React.FC = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setIsOnboardingModalOpen(true);
+                            setActivePage('kyc');
                             setDesktopMenuOpen(false);
                           }}
-                          className="px-2 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className={`px-2 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm border ${
+                            activePage === 'kyc' || activePage === 'verify-kyc'
+                              ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-1 ring-[#E3EDF9]/30'
+                              : 'bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-transparent'
+                          }`}
+                          title="KYC Verification"
                         >
-                          <Sliders className="w-3.5 h-3.5 text-[#6E5BFF]" />
-                          <span>KYC Details</span>
+                          <IdCard className="w-3.5 h-3.5 text-[#E3EDF9]" />
+                          <span>KYC</span>
                         </button>
                         <button
                           onClick={() => {
                             setActivePage('dashboard');
                             setDesktopMenuOpen(false);
                           }}
-                          className="px-2 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className={`px-2 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm border ${
+                            activePage === 'dashboard'
+                              ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-1 ring-[#E3EDF9]/30'
+                              : 'bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white border-transparent'
+                          }`}
+                          title="Dashboard"
                         >
                           <Wallet className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Dashboard</span>
@@ -470,17 +555,17 @@ export const Navbar: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-white shadow-md">
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#3A5A86] to-[#23324A] text-white shadow-md border border-[#3A5A86]/40">
                       <div className="text-sm font-black mb-1">Welcome to Talentio</div>
-                      <div className="text-xs text-[#E0DBFF] mb-3">Sign in to access milestone escrow, live chat, and seller workstations.</div>
+                      <div className="text-xs text-[#E3EDF9]/90 mb-3">Sign in to access milestone escrow, live chat, and seller workstations.</div>
                       <button
                         onClick={() => {
                           setActivePage('login');
                           setDesktopMenuOpen(false);
                         }}
-                        className="w-full py-2 rounded-xl bg-white text-[#1A1633] font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors shadow cursor-pointer"
+                        className="w-full py-2 rounded-xl bg-[#E3EDF9] text-[#23324A] font-bold text-xs flex items-center justify-center gap-2 hover:bg-white transition-colors shadow cursor-pointer"
                       >
-                        <User className="w-4 h-4 text-[#3D2FD1]" />
+                        <User className="w-4 h-4 text-[#3A5A86]" />
                         <span>Sign In or Register</span>
                       </button>
                     </div>
@@ -490,7 +575,7 @@ export const Navbar: React.FC = () => {
                   <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
                     <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
                       <div className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-[#A38BFF]" />
+                        <Globe className="w-3.5 h-3.5 text-[#E3EDF9]" />
                         <span>Global Currency</span>
                       </div>
                       <span className="text-xs font-mono font-bold text-emerald-400">
@@ -517,7 +602,7 @@ export const Navbar: React.FC = () => {
                           }}
                           className={`py-1 px-1.5 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                             currency === item.code
-                              ? 'bg-[#3D2FD1] text-white ring-1 ring-[#A38BFF]'
+                              ? 'bg-[#3A5A86] text-white ring-1 ring-[#E3EDF9]/40'
                               : 'bg-white/5 hover:bg-white/15 text-slate-300'
                           }`}
                         >
@@ -564,7 +649,7 @@ export const Navbar: React.FC = () => {
                         }}
                         className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
                       >
-                        <MessageSquare className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                        <MessageSquare className="w-4 h-4 text-[#E3EDF9] shrink-0" />
                         <span className="truncate">Messages & Chat</span>
                       </button>
 
@@ -576,11 +661,11 @@ export const Navbar: React.FC = () => {
                         className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center justify-between text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <Bell className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                          <Bell className="w-4 h-4 text-[#E3EDF9] shrink-0" />
                           <span className="truncate">Notices</span>
                         </div>
                         {unreadNoticesCount > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-[#3D2FD1] text-white">
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-[#3A5A86] text-white">
                             {unreadNoticesCount}
                           </span>
                         )}
@@ -604,7 +689,7 @@ export const Navbar: React.FC = () => {
                         }}
                         className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
                       >
-                        <Users className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                        <Users className="w-4 h-4 text-[#E3EDF9] shrink-0" />
                         <span className="truncate">Browse Talent</span>
                       </button>
 
@@ -615,13 +700,13 @@ export const Navbar: React.FC = () => {
                         }}
                         className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-left flex items-center gap-2 text-xs font-bold text-slate-200 hover:text-white transition-colors cursor-pointer"
                       >
-                        <Layers className="w-4 h-4 text-[#A38BFF] shrink-0" />
+                        <Layers className="w-4 h-4 text-[#E3EDF9] shrink-0" />
                         <span className="truncate">Browse Services</span>
                       </button>
                     </div>
 
                     {/* Admin Desk if Admin */}
-                    {user && (user.role === 'ADMIN' || user.role === 'admin' || isAuthorizedAdminEmail(user.email)) && (
+                    {isAdmin && (
                       <button
                         onClick={() => {
                           setActivePage('admin');
@@ -648,14 +733,14 @@ export const Navbar: React.FC = () => {
                           }
                           setDesktopMenuOpen(false);
                         }}
-                        className="p-2 rounded-xl bg-[#3D2FD1]/30 hover:bg-[#3D2FD1]/60 border border-[#A38BFF]/30 text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+                        className="p-2 rounded-xl bg-[#3A5A86]/30 hover:bg-[#3A5A86]/60 border border-[#3A5A86]/40 text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
                         title="View User Profile"
                       >
                         <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-[#A38BFF]" />
+                          <User className="w-3.5 h-3.5 text-[#E3EDF9]" />
                           <span>Profile</span>
                         </div>
-                        <ArrowRight className="w-3 h-3 text-[#A38BFF]" />
+                        <ArrowRight className="w-3 h-3 text-[#E3EDF9]" />
                       </button>
 
                       <button
@@ -680,7 +765,7 @@ export const Navbar: React.FC = () => {
                         className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-1.5">
-                          <Keyboard className="w-3.5 h-3.5 text-[#A38BFF]" />
+                          <Keyboard className="w-3.5 h-3.5 text-[#E3EDF9]" />
                           <span>Hotkeys</span>
                         </div>
                         <kbd className="text-[9px] font-mono bg-black/40 px-1 py-0.2 rounded border border-white/10">?</kbd>
@@ -696,7 +781,7 @@ export const Navbar: React.FC = () => {
                           setIsCreateGigModalOpen(true);
                           setDesktopMenuOpen(false);
                         }}
-                        className="w-full py-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                        className="w-full py-2.5 rounded-xl bg-[#3A5A86] hover:bg-[#23324A] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border border-[#E3EDF9]/20"
                       >
                         <PlusCircle className="w-4 h-4" />
                         <span>Create & Publish Gig</span>
@@ -711,7 +796,7 @@ export const Navbar: React.FC = () => {
                           }
                           setDesktopMenuOpen(false);
                         }}
-                        className="w-full py-2.5 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                        className="w-full py-2.5 rounded-xl bg-[#3A5A86] hover:bg-[#23324A] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border border-[#E3EDF9]/20"
                       >
                         <PlusCircle className="w-4 h-4" />
                         <span>Post a Project (Escrow Job)</span>
@@ -726,13 +811,13 @@ export const Navbar: React.FC = () => {
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-400">Account Role:</span>
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                            user?.role === 'ADMIN' || user?.role === 'admin'
+                            isAdmin
                               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                               : user?.role === 'FREELANCER' || user?.userType === 'freelancer'
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                              : 'bg-[#3D2FD1]/30 text-[#A38BFF] border border-[#3D2FD1]/50'
+                              : 'bg-[#3A5A86]/40 text-[#E3EDF9] border border-[#3A5A86]/50'
                           }`}>
-                            {user?.role || (user?.userType === 'client' ? 'CLIENT' : 'FREELANCER')}
+                            {isAdmin ? 'ADMIN' : (user?.userType === 'freelancer' || user?.role === 'FREELANCER' ? 'FREELANCER' : 'CLIENT')}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
@@ -764,7 +849,7 @@ export const Navbar: React.FC = () => {
             {/* Mobile Hamburger Toggle Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 min-w-[40px] min-h-[40px] rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              className="md:hidden p-2 min-w-[44px] min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5 text-rose-400" /> : <Menu className="w-5 h-5 text-white" />}
@@ -777,11 +862,11 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer / Full Screen Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#120F24] border-t border-white/10 px-4 pt-4 pb-8 space-y-4 shadow-2xl animate-in slide-in-from-top-3 duration-200 max-h-[85vh] overflow-y-auto">
+        <div className="md:hidden bg-[#23324A] border-t border-white/10 px-4 pt-4 pb-8 space-y-4 shadow-2xl animate-in slide-in-from-top-3 duration-200 max-h-[85vh] overflow-y-auto">
           
           {/* User Account / Sign In Header Card in Mobile Drawer */}
           {isAuthenticated && user ? (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#1E1940] to-[#2B2358] border border-white/15 flex items-center justify-between gap-3 shadow-md">
+            <div className="p-3.5 rounded-2xl bg-[#3A5A86]/30 border border-[#3A5A86]/40 flex items-center justify-between gap-3 shadow-md">
               <div 
                 onClick={() => {
                   setActivePage('profile');
@@ -794,16 +879,16 @@ export const Navbar: React.FC = () => {
                   src={user.avatar}
                   alt={user.name}
                   referrerPolicy="no-referrer"
-                  className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#A38BFF] shrink-0"
+                  className="w-11 h-11 rounded-xl object-cover ring-2 ring-[#3A5A86] shrink-0"
                 />
                 <div className="overflow-hidden">
                   <div className="text-xs sm:text-sm font-extrabold text-white truncate flex items-center gap-1.5">
                     <span>{user.name}</span>
-                    <span className="text-[10px] text-[#A38BFF] font-normal">({user.handle || 'Profile'})</span>
+                    <span className="text-[10px] text-[#E3EDF9] font-normal">({user.handle || 'Profile'})</span>
                   </div>
                   <div className="text-[11px] text-slate-300 truncate">{user.email}</div>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#3D2FD1] text-white border border-[#A38BFF]/30 uppercase">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#3A5A86] text-white border border-[#E3EDF9]/30 uppercase">
                       {user.role === 'admin' ? 'Admin' : user.userType}
                     </span>
                     {user.accountStatus === 'approved' && (
@@ -831,7 +916,7 @@ export const Navbar: React.FC = () => {
                 setActivePage('login');
                 setMobileMenuOpen(false);
               }}
-              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#3D2FD1] to-[#6E5BFF] text-left flex items-center justify-between gap-3 cursor-pointer shadow-md text-white"
+              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#3A5A86] to-[#23324A] text-left flex items-center justify-between gap-3 cursor-pointer shadow-md text-white border border-[#3A5A86]/40"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white shrink-0">
@@ -839,7 +924,7 @@ export const Navbar: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-sm font-black text-white">Sign In to Talentio</div>
-                  <div className="text-xs text-[#E0DBFF]">Access escrow contracts, gigs, and messaging</div>
+                  <div className="text-xs text-[#E3EDF9]">Access escrow contracts, gigs, and messaging</div>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-white shrink-0" />
@@ -862,11 +947,11 @@ export const Navbar: React.FC = () => {
                     }}
                     className={`p-3 min-h-[44px] rounded-xl text-xs font-bold flex items-center gap-2.5 transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[#3D2FD1] text-white shadow-md'
+                        ? 'bg-[#3A5A86] text-white shadow-md'
                         : 'bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#A38BFF]'}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#E3EDF9]'}`} />
                     <span>{link.label}</span>
                   </button>
                 );
@@ -884,30 +969,42 @@ export const Navbar: React.FC = () => {
                     setActivePage('profile');
                     setMobileMenuOpen(false);
                   }}
-                  className="p-2.5 rounded-xl bg-[#3D2FD1] text-white border border-[#A38BFF]/40 text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer shadow-sm"
+                  className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer shadow-sm transition-all border ${
+                    activePage === 'profile'
+                      ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-1 ring-[#E3EDF9]/30'
+                      : 'bg-white/5 text-slate-200 hover:bg-white/10 border-white/10'
+                  }`}
                 >
-                  <User className="w-4 h-4 text-white" />
+                  <User className={`w-4 h-4 ${activePage === 'profile' ? 'text-white' : 'text-[#E3EDF9]'}`} />
                   <span>Profile</span>
                 </button>
                 <button
                   onClick={() => {
-                    setIsOnboardingModalOpen(true);
+                    setActivePage('kyc');
                     setMobileMenuOpen(false);
                   }}
-                  className="p-2.5 rounded-xl bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10 text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer"
+                  className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer shadow-sm transition-all border ${
+                    activePage === 'kyc' || activePage === 'verify-kyc'
+                      ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-1 ring-[#E3EDF9]/30'
+                      : 'bg-white/5 text-slate-200 hover:bg-white/10 border-white/10'
+                  }`}
                 >
-                  <Sliders className="w-4 h-4 text-[#6E5BFF]" />
-                  <span>KYC Info</span>
+                  <IdCard className={`w-4 h-4 ${activePage === 'kyc' || activePage === 'verify-kyc' ? 'text-white' : 'text-[#E3EDF9]'}`} />
+                  <span>KYC Status</span>
                 </button>
                 <button
                   onClick={() => {
                     setActivePage('dashboard');
                     setMobileMenuOpen(false);
                   }}
-                  className="p-2.5 rounded-xl bg-white/5 text-slate-200 hover:bg-white/10 border border-white/10 text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer"
+                  className={`p-2.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 text-center cursor-pointer shadow-sm transition-all border ${
+                    activePage === 'dashboard'
+                      ? 'bg-[#3A5A86] text-white border-[#E3EDF9]/40 ring-1 ring-[#E3EDF9]/30'
+                      : 'bg-white/5 text-slate-200 hover:bg-white/10 border-white/10'
+                  }`}
                 >
                   <Wallet className="w-4 h-4 text-emerald-400" />
-                  <span>Wallet</span>
+                  <span>Dashboard</span>
                 </button>
               </div>
             </div>
@@ -920,7 +1017,7 @@ export const Navbar: React.FC = () => {
                 setIsWidgetManagerOpen(true);
                 setMobileMenuOpen(false);
               }}
-              className="w-full py-2.5 px-3 min-h-[44px] rounded-xl bg-gradient-to-r from-[#181335] to-[#241B4B] hover:bg-white/10 border border-[#6E5BFF]/30 text-white font-bold text-xs flex items-center justify-between transition-colors cursor-pointer shadow-sm"
+              className="w-full py-2.5 px-3 min-h-[44px] rounded-xl bg-[#3A5A86]/30 hover:bg-white/10 border border-[#3A5A86]/40 text-white font-bold text-xs flex items-center justify-between transition-colors cursor-pointer shadow-sm"
             >
               <div className="flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-emerald-400" />
@@ -941,8 +1038,8 @@ export const Navbar: React.FC = () => {
                 className="flex-1 py-2.5 px-3 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold text-xs flex items-center justify-between transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-[#A38BFF]" />
-                  <span>Currency: <span className="font-mono text-[#A38BFF]">{currency}</span></span>
+                  <Globe className="w-4 h-4 text-[#E3EDF9]" />
+                  <span>Currency: <span className="font-mono text-[#E3EDF9]">{currency}</span></span>
                 </div>
                 <span className="text-sm">{currentCurrencyObj.flag}</span>
               </button>
@@ -960,7 +1057,7 @@ export const Navbar: React.FC = () => {
                   }
                   setMobileMenuOpen(false);
                 }}
-                className="flex-1 py-2.5 px-3 min-h-[44px] rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer"
+                className="flex-1 py-2.5 px-3 min-h-[44px] rounded-xl bg-[#3A5A86] hover:bg-[#23324A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer border border-[#E3EDF9]/30"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>{user?.userType === 'freelancer' ? 'Create Gig' : 'Post Project'}</span>

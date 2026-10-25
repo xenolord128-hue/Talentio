@@ -200,9 +200,38 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "userId", "endpoint", "keys"]
+    },
+    "KycVerification": {
+      "title": "KycVerification",
+      "description": "Government document KYC verification record for account authenticity",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "documentType": { "type": "string", "enum": ["national_id", "passport", "driving_license", "other"] },
+        "documentCountry": { "type": "string" },
+        "documentFrontImage": { "type": "string" },
+        "documentBackImage": { "type": "string" },
+        "selfieImage": { "type": "string" },
+        "status": { "type": "string", "enum": ["not_submitted", "pending", "verified", "rejected", "resubmission_required"] },
+        "rejectionReason": { "type": "string" },
+        "adminNotes": { "type": "string" },
+        "aiVerification": { "type": "object" },
+        "submittedAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "reviewedAt": { "type": "string" },
+        "reviewedBy": { "type": "string" }
+      },
+      "required": ["id", "userId", "documentType", "status"]
     }
   },
   "firestore": {
+    "/kyc_verifications/{kycId}": {
+      "schema": "KycVerification",
+      "description": "Identity verification document submissions and AI review scores"
+    },
     "/push_subscriptions/{subId}": {
       "schema": "PushSubscription",
       "description": "Web push notification subscriptions for user devices"

@@ -76,7 +76,7 @@ export const ProfileCompletionBarrier: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-5 shrink-0">
           <div className="flex justify-center mb-2">
-            <TalentioLogo size="sm" variant="gradient" animated />
+            <TalentioLogo size="sm" variant="transparent" animated />
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white font-display">
             Complete Your Profile

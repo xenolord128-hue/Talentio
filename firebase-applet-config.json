@@ -1,12 +1,12 @@
 {
   "projectId": "talentio-92919",
-  "appId": "1:339445212638:web:cc41238de4c9bd0aad694f",
+  "appId": "1:339445212638:web:14b4555b6d616b9ead694f",
   "apiKey": "AIzaSyD1QJQxh7J6jGFZ7DRSh_aqeW42SOtXYaw",
   "authDomain": "talentio-92919.firebaseapp.com",
-  "firestoreDatabaseId": "",
+  "firestoreDatabaseId": "ai-studio-talentio-0fdb82fb-3b90-4a4d-ae62-1fe52535facd",
   "storageBucket": "talentio-92919.firebasestorage.app",
   "messagingSenderId": "339445212638",
-  "measurementId": "G-170Z5KR86J",
-  "oAuthClientId": "",
+  "measurementId": "",
+  "oAuthClientId": "339445212638-9f2gjm1rb3al1vll0jrukiqauhd2etfk.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

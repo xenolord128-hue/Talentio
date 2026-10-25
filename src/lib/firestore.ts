@@ -10,6 +10,7 @@ import {
   query, 
   where, 
   orderBy, 
+  limit,
   onSnapshot, 
   serverTimestamp,
   writeBatch
@@ -24,7 +25,8 @@ import {
   ChatMessage, 
   AdminAction,
   Freelancer,
-  PlatformNotice
+  PlatformNotice,
+  KycRecord
 } from '../types';
 
 // ============================================================================
@@ -95,8 +97,9 @@ export async function fetchAllUsers(): Promise<UserProfile[]> {
 
 export function subscribeToUsers(callback: (users: UserProfile[]) => void) {
   const path = 'users';
+  const q = query(collection(db, path), limit(100));
   return onSnapshot(
-    collection(db, path),
+    q,
     (snapshot) => {
       const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
       callback(list);
@@ -127,7 +130,7 @@ export async function updateUserRecord(userId: string, data: Partial<UserProfile
 export async function fetchAllServices(): Promise<TalentioService[]> {
   const path = 'gigs';
   try {
-    const snapshot = await getDocs(collection(db, path));
+    const snapshot = await getDocs(query(collection(db, path), limit(100)));
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TalentioService));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
@@ -137,8 +140,9 @@ export async function fetchAllServices(): Promise<TalentioService[]> {
 
 export function subscribeToServices(callback: (services: TalentioService[]) => void) {
   const path = 'gigs';
+  const q = query(collection(db, path), limit(100));
   return onSnapshot(
-    collection(db, path),
+    q,
     (snapshot) => {
       const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TalentioService));
       callback(list);
@@ -204,8 +208,9 @@ export async function fetchAllJobs(): Promise<ProjectJob[]> {
 
 export function subscribeToJobs(callback: (jobs: ProjectJob[]) => void) {
   const path = 'jobs';
+  const q = query(collection(db, path), limit(60));
   return onSnapshot(
-    collection(db, path),
+    q,
     (snapshot) => {
       const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ProjectJob));
       callback(list);
@@ -239,7 +244,7 @@ export async function createJobDocument(job: ProjectJob): Promise<string> {
 export async function fetchProposals(): Promise<UserProposal[]> {
   const path = 'proposals';
   try {
-    const snapshot = await getDocs(collection(db, path));
+    const snapshot = await getDocs(query(collection(db, path), limit(50)));
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProposal));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
@@ -249,8 +254,9 @@ export async function fetchProposals(): Promise<UserProposal[]> {
 
 export function subscribeToProposals(callback: (proposals: UserProposal[]) => void) {
   const path = 'proposals';
+  const q = query(collection(db, path), limit(50));
   return onSnapshot(
-    collection(db, path),
+    q,
     (snapshot) => {
       const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserProposal));
       callback(list);
@@ -794,6 +800,53 @@ export async function markNoticeAsRead(noticeId: string): Promise<void> {
     const ref = doc(db, 'notices', noticeId);
     await updateDoc(ref, {
       read: true,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+// ============================================================================
+// KYC VERIFICATION RECORDS
+// ============================================================================
+
+export async function submitKycVerificationDocument(kyc: KycRecord): Promise<string> {
+  const path = `kyc_verifications/${kyc.id}`;
+  try {
+    const ref = doc(db, 'kyc_verifications', kyc.id);
+    await setDoc(ref, {
+      ...kyc,
+      submittedAt: kyc.submittedAt || new Date().toISOString(),
+      updatedAt: serverTimestamp()
+    });
+    return kyc.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+    return kyc.id;
+  }
+}
+
+export function subscribeToKycVerifications(callback: (records: KycRecord[]) => void) {
+  const path = 'kyc_verifications';
+  return onSnapshot(
+    collection(db, path),
+    (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as KycRecord));
+      callback(list);
+    },
+    (err) => {
+      handleFirestoreError(err, OperationType.LIST, path);
+    }
+  );
+}
+
+export async function updateKycVerificationDocument(recordId: string, data: Partial<KycRecord>): Promise<void> {
+  const path = `kyc_verifications/${recordId}`;
+  try {
+    const ref = doc(db, 'kyc_verifications', recordId);
+    await updateDoc(ref, {
+      ...data,
       updatedAt: serverTimestamp()
     });
   } catch (error) {

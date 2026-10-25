@@ -79,7 +79,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else if (theme === 'dark') {
         metaThemeColor.setAttribute('content', '#0F0B1E');
       } else {
-        metaThemeColor.setAttribute('content', '#1A1633');
+        metaThemeColor.setAttribute('content', '#23324A');
       }
     }
   }, [theme]);
