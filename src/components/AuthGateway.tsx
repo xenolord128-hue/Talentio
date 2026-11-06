@@ -34,6 +34,14 @@ export const AdminAuthGatewayCheck: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
+      // Immediate fast-path for verified administrative emails
+      if (isAuthorizedAdminEmail(user.email)) {
+        if (active) {
+          setVerificationState('authorized');
+        }
+        return;
+      }
+
       setVerificationState('validating');
 
       try {

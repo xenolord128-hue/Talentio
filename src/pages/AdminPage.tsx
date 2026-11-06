@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { UserProfile, TalentioService, AccountStatus, GigStatus, AdminAction } from '../types';
-import { TalentioLogo } from '../components/TalentioLogo';
 import { CURRENCIES_DATA } from '../data/currenciesData';
 import { COUNTRIES_DATA } from '../data/countriesData';
 import { formatPrice } from '../utils/currency';
@@ -253,7 +252,13 @@ export const AdminPage: React.FC = () => {
           {/* Brand Header */}
           <div className="h-16 px-6 flex items-center justify-between border-b border-[#3A5A86]/30 shrink-0">
             <div className="flex items-center gap-3">
-              <TalentioLogo size="sm" variant="transparent" />
+              <a href="https://ibb.co.com/qL4p0XjC">
+                <img 
+                  src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                  alt="Picsart-26-11-06-08-52-47-568" 
+                  border="0"
+                />
+              </a>
               <div className="flex flex-col">
                 <span className="font-extrabold text-white text-base leading-tight tracking-tight flex items-center gap-1.5">
                   Talentio

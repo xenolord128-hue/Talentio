@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGuide, TalentioPage } from '../context/GuideContext';
-import { useTalentioAI } from '../context/TalentioAIContext';
-import { TalentioLogo } from './TalentioLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { CurrencySelectorModal } from './CurrencySelectorModal';
 import { CURRENCIES_DATA } from '../data/currenciesData';
@@ -38,13 +36,11 @@ import {
   Trophy,
   Bell,
   Smartphone,
-  Bot,
   FileCheck,
   IdCard
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { setIsOpen: setAIOpen, setIsMinimized: setAIMinimized } = useTalentioAI();
   const { 
     activePage, 
     setActivePage, 
@@ -121,32 +117,28 @@ export const Navbar: React.FC = () => {
           
           {/* Logo & Brand */}
           <div className="flex items-center gap-3 lg:gap-5 shrink-0">
-            <button
+            <div
               onClick={() => setActivePage('explore')}
               className="flex items-center gap-2.5 group text-left cursor-pointer focus:outline-none"
               title="Talentio Marketplace"
             >
-              <TalentioLogo size="sm" variant="transparent" animated />
+              <a href="https://ibb.co.com/qL4p0XjC">
+                <img 
+                  src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                  alt="Picsart-26-11-06-08-52-47-568" 
+                  border="0"
+                />
+              </a>
               <div className="flex flex-col">
                 <span className="text-base sm:text-lg font-black tracking-tight text-white font-display">TALENTIO</span>
               </div>
-            </button>
+            </div>
 
           </div>
 
           {/* Right Action Bar - Only Currency, Profile, and Menu */}
           <div className="flex items-center gap-2 sm:gap-2.5">
 
-            {/* TALENTIO AI Top Assistant Quick Trigger */}
-            <button
-              onClick={() => { setAIOpen(true); setAIMinimized(false); }}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] rounded-xl bg-gradient-to-r from-[#3A5A86]/40 to-[#23324A]/50 hover:from-[#3A5A86]/70 hover:to-[#23324A]/80 backdrop-blur-md text-xs font-bold text-white border border-[#3A5A86]/40 transition-all cursor-pointer shadow-sm active:scale-95 group"
-              title="Open TALENTIO AI Website Guide & Voice Assistant"
-            >
-              <Bot className="w-4 h-4 text-[#E3EDF9] group-hover:text-white transition-colors" />
-              <span>AI Guide</span>
-              <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
-            </button>
 
             {/* Currency Switcher - Visible on Mobile and Desktop */}
             <button
@@ -377,20 +369,6 @@ export const Navbar: React.FC = () => {
                   >
                     <Sliders className="w-4 h-4 text-[#E3EDF9]" />
                     <span>Profile Preferences</span>
-                  </button>
-
-                  <button
-                    onClick={() => { setAIOpen(true); setAIMinimized(false); setDropdownOpen(false); }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3A5A86]/40 to-[#23324A]/60 hover:from-[#3A5A86]/70 hover:to-[#23324A]/90 border border-[#3A5A86]/40 transition-colors cursor-pointer mb-1"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Bot className="w-4 h-4 text-[#E3EDF9]" />
-                      <span>TALENTIO AI Assistant</span>
-                    </div>
-                    <span className="px-1.5 py-0.2 rounded-md bg-[#3A5A86] text-white text-[10px] font-bold flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                      <span>Voice</span>
-                    </span>
                   </button>
 
                   <button

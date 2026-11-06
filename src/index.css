@@ -811,73 +811,32 @@ html.dark .ios-glass {
 /* ==================================================
    OFFICIAL TALENTIO BRAND LOGO STYLES
    ================================================== */
-.talentio-logo {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  object-fit: contain;
-  object-position: center;
+a[href="https://ibb.co.com/qL4p0XjC"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+a[href="https://ibb.co.com/qL4p0XjC"] img,
+img[src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg"] {
+  height: 38px;
+  width: 38px;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: inline-block;
+  vertical-align: middle;
+  border: 0;
   user-select: none;
   -webkit-user-drag: none;
+  transition: transform 0.2s ease;
 }
 
-.talentio-logo--header {
-  width: 150px;
-}
-
-.talentio-logo--sidebar {
-  width: 140px;
-}
-
-.talentio-logo--mobile {
-  width: 110px;
-}
-
-.talentio-logo--auth {
-  width: 145px;
-}
-
-.talentio-logo--footer {
-  width: 130px;
-}
-
-.talentio-logo--small {
-  width: 90px;
-}
-
-/* Keep reCAPTCHA v2 Checkbox centered, clean, and properly responsive */
-.recaptcha-checkbox-container {
-  min-height: 78px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  border-radius: 8px;
-}
-
-@media (max-width: 380px) {
-  .recaptcha-checkbox-container {
-    transform: scale(0.88);
-    transform-origin: center center;
-  }
-}
-
-@media (max-width: 768px) {
-  .talentio-logo--header {
-    width: 120px;
-  }
-
-  .talentio-logo--sidebar {
-    width: 115px;
-  }
-
-  .talentio-logo--mobile {
-    width: 100px;
-  }
-
-  .talentio-logo--auth {
-    width: 130px;
-  }
+a[href="https://ibb.co.com/qL4p0XjC"]:hover img {
+  transform: scale(1.05);
 }
 

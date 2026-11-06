@@ -208,14 +208,16 @@ export async function syncUserProfileDocument(firebaseUser: FirebaseUser, additi
       const isAdmin = isAuthorizedAdminEmail(email);
 
       let updatedRole = existingData.role;
-      if (isAdmin && updatedRole !== 'ADMIN') {
-        updatedRole = 'ADMIN';
-        await updateDoc(userRef, {
-          role: 'ADMIN',
-          userType: 'admin',
-          accountStatus: 'approved',
-          updatedAt: serverTimestamp()
-        });
+      if (isAdmin) {
+        if (updatedRole !== 'ADMIN') {
+          updatedRole = 'ADMIN';
+          await updateDoc(userRef, {
+            role: 'ADMIN',
+            userType: 'admin',
+            accountStatus: 'approved',
+            updatedAt: serverTimestamp()
+          });
+        }
         try {
           await setDoc(doc(db, 'admins', firebaseUser.uid), {
             uid: firebaseUser.uid,
@@ -366,9 +368,7 @@ export function formatAuthError(err: any): string {
   if (code === 'auth/code-expired' || msg.includes('code-expired')) {
     return 'The verification code has expired. Please request a new SMS verification code.';
   }
-  if (code === 'auth/captcha-check-failed' || msg.includes('captcha-check-failed')) {
-    return 'reCAPTCHA verification failed. Please try again or refresh the page.';
-  }
+
   if (code === 'auth/too-many-requests' || msg.includes('too-many-requests')) {
     return 'Too many failed attempts. Access temporarily restricted. Please try again in a few minutes or reset your password.';
   }

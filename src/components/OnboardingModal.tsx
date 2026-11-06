@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from './TalentioLogo';
 import { PROFESSIONAL_CATEGORIES } from '../data/categoriesData';
 import { UserRole, ProviderType, UserProfile } from '../types';
 import { 
@@ -203,7 +202,13 @@ export const OnboardingModal: React.FC = () => {
         <div className="p-6 sm:p-7 border-b border-white/10 relative shrink-0">
           <div className="flex items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-3">
-              <TalentioLogo size="sm" variant="black" />
+              <a href="https://ibb.co.com/qL4p0XjC">
+                <img 
+                  src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                  alt="Picsart-26-11-06-08-52-47-568" 
+                  border="0"
+                />
+              </a>
               <div>
                 <span className="text-xs font-extrabold uppercase tracking-wider text-[#A38BFF]">
                   Talentio Onboarding Wizard

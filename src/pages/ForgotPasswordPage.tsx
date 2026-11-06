@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { sendPasswordReset, formatAuthError } from '../lib/firebaseAuth';
-import { TalentioLogo } from '../components/TalentioLogo';
-import { verifyRecaptchaTokenOnServer } from '../lib/recaptcha';
-import { HumanVerificationModal } from '../components/HumanVerificationModal';
-import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound, ShieldCheck } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 
 export const ForgotPasswordPage: React.FC = () => {
   const { setActivePage, showToast } = useGuide();
@@ -12,25 +9,19 @@ export const ForgotPasswordPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [isHumanModalOpen, setIsHumanModalOpen] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  const performPasswordReset = async (recaptchaToken: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
-    setVerificationError(null);
     try {
-      // Authoritative Server-Side verification of reCAPTCHA v2 token
-      const recaptchaResult = await verifyRecaptchaTokenOnServer(recaptchaToken);
-
-      if (!recaptchaResult.valid) {
-        setVerificationError(recaptchaResult.message || 'Verification failed. Please complete reCAPTCHA again.');
-        setIsHumanModalOpen(true);
-        setLoading(false);
-        return;
-      }
-
-      setIsHumanModalOpen(false);
-      await sendPasswordReset(email.trim());
+      await sendPasswordReset(cleanEmail);
       setSubmitted(true);
       showToast('Password reset instructions sent to your email.', 'success');
     } catch (err: any) {
@@ -41,18 +32,6 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setVerificationError(null);
-    if (!email || !email.includes('@')) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-
-    setIsHumanModalOpen(true);
-  };
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 bg-[#0E0B1F]">
       <div className="w-full max-w-md space-y-6">
@@ -60,7 +39,13 @@ export const ForgotPasswordPage: React.FC = () => {
         {/* Header Branding */}
         <div className="text-center space-y-3">
           <div className="inline-flex justify-center mb-2">
-            <TalentioLogo size="md" variant="white" />
+            <a href="https://ibb.co.com/qL4p0XjC">
+              <img 
+                src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                alt="Picsart-26-11-06-08-52-47-568" 
+                border="0"
+              />
+            </a>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display">
             Reset Your Password
@@ -145,10 +130,6 @@ export const ForgotPasswordPage: React.FC = () => {
               </button>
 
               <div className="pt-2 text-center space-y-3">
-                <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Protected by Google reCAPTCHA</span>
-                </div>
                 <button
                   type="button"
                   onClick={() => setActivePage('login')}
@@ -163,19 +144,6 @@ export const ForgotPasswordPage: React.FC = () => {
         </div>
 
       </div>
-
-      <HumanVerificationModal
-        isOpen={isHumanModalOpen}
-        actionTitle="Password Reset Human Verification"
-        errorMessage={verificationError}
-        onVerifySuccess={(token: string) => {
-          performPasswordReset(token);
-        }}
-        onCancel={() => {
-          setIsHumanModalOpen(false);
-          setVerificationError(null);
-        }}
-      />
     </div>
   );
 };

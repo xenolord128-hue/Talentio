@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from './TalentioLogo';
 import { CountrySelector } from './CountrySelector';
 import { 
   CheckCircle2, 
@@ -76,7 +75,13 @@ export const ProfileCompletionBarrier: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-5 shrink-0">
           <div className="flex justify-center mb-2">
-            <TalentioLogo size="sm" variant="transparent" animated />
+            <a href="https://ibb.co.com/qL4p0XjC">
+              <img 
+                src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                alt="Picsart-26-11-06-08-52-47-568" 
+                border="0"
+              />
+            </a>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white font-display">
             Complete Your Profile

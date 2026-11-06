@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from './TalentioLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { 
   Sparkles, 
@@ -87,7 +86,13 @@ export const Footer: React.FC = () => {
           {/* Brand Info */}
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <TalentioLogo size="md" variant="transparent" />
+              <a href="https://ibb.co.com/qL4p0XjC">
+                <img 
+                  src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                  alt="Picsart-26-11-06-08-52-47-568" 
+                  border="0"
+                />
+              </a>
               <span className="text-xl font-extrabold tracking-tight text-white font-display">TALENTIO</span>
             </div>
 
@@ -232,9 +237,7 @@ export const Footer: React.FC = () => {
             <span className="text-slate-500">|</span>
             <span className="text-slate-400 font-mono">SOC2 Type II Certified</span>
             <span className="text-slate-600">|</span>
-            <span className="text-slate-500 text-[10px]">
-              Protected by reCAPTCHA (<a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-slate-300">Privacy</a> / <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-slate-300">Terms</a>)
-            </span>
+            <span className="text-slate-400 font-mono">100% Escrow Protected</span>
           </div>
         </div>
       </div>

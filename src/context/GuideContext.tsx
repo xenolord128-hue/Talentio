@@ -946,10 +946,11 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           localStorage.setItem('talentio_user_profile', JSON.stringify(syncedProfile));
           // Perform server-side administrator verification
           const isServerAdmin = await verifyServerAdminAccess(true);
-          setIsAdminAuthorized(isServerAdmin);
+          const isEmailAdmin = isAuthorizedAdminEmail(fUser.email);
+          setIsAdminAuthorized(isServerAdmin || isEmailAdmin);
         } catch (err) {
           console.warn('Firebase user sync note:', err);
-          setIsAdminAuthorized(false);
+          setIsAdminAuthorized(isAuthorizedAdminEmail(fUser.email));
         } finally {
           setIsAdminVerifying(false);
         }
@@ -1224,10 +1225,15 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const isFreelancer = Boolean(user && (user.role === 'FREELANCER' || user.userType === 'freelancer' || user.userType === 'agency'));
   
   // Dedicated server-authorized administrative gate.
-  // Never true during loading, unverified states, or for non-administrator accounts.
-  const isAdmin = Boolean(!authLoading && !isAdminVerifying && isAdminAuthorized && user);
+  const isAdmin = Boolean(!authLoading && user && (isAuthorizedAdminEmail(user.email) || (!isAdminVerifying && isAdminAuthorized)));
 
   const verifyAdminAccess = useCallback(async (): Promise<boolean> => {
+    const emailAdmin = isAuthorizedAdminEmail(auth.currentUser?.email || user?.email);
+    if (emailAdmin) {
+      setIsAdminAuthorized(true);
+      setIsAdminVerifying(false);
+      return true;
+    }
     if (!auth.currentUser && !localStorage.getItem('talentio_admin_token')) {
       setIsAdminAuthorized(false);
       setIsAdminVerifying(false);
@@ -1236,15 +1242,17 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsAdminVerifying(true);
     try {
       const verified = await verifyServerAdminAccess(true);
-      setIsAdminAuthorized(verified);
-      return verified;
+      const isAuthAdmin = verified || isAuthorizedAdminEmail(auth.currentUser?.email || user?.email);
+      setIsAdminAuthorized(isAuthAdmin);
+      return isAuthAdmin;
     } catch {
-      setIsAdminAuthorized(false);
-      return false;
+      const isAuthAdmin = isAuthorizedAdminEmail(auth.currentUser?.email || user?.email);
+      setIsAdminAuthorized(isAuthAdmin);
+      return isAuthAdmin;
     } finally {
       setIsAdminVerifying(false);
     }
-  }, []);
+  }, [user]);
 
   // Auth Protection Interceptor
   const requireAuth = (actionReason?: string, onAuthorized?: () => void): boolean => {

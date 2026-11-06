@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from '../components/TalentioLogo';
 import { PlatformNotice, NoticeCategory } from '../types';
 import { 
   Bell, 

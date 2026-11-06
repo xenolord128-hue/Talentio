@@ -19,6 +19,7 @@ export const ProposalModal: React.FC = () => {
     setIsProposalModalOpen, 
     proposalJobTarget, 
     submitProposal,
+    setActivePage,
     user 
   } = useGuide();
 
@@ -30,6 +31,59 @@ export const ProposalModal: React.FC = () => {
   const [milestonesCount, setMilestonesCount] = useState<number>(2);
 
   if (!isProposalModalOpen || !proposalJobTarget) return null;
+
+  // KYC Verification check for Freelancers
+  if (user?.userType === 'freelancer' && user.kycStatus !== 'verified' && !user.verifiedBadge) {
+    const kycState = user.kycStatus || 'not_started';
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-[#1A1633]/70 backdrop-blur-xl animate-in fade-in duration-200">
+        <div className="relative w-full max-w-lg ios-glass-dark text-white rounded-[28px] border border-amber-500/40 shadow-2xl p-6 sm:p-8 overflow-hidden my-auto text-center">
+          <button
+            onClick={() => setIsProposalModalOpen(false)}
+            className="absolute top-5 right-5 p-3 min-w-[48px] min-h-[48px] rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 text-amber-400">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+
+          <h3 className="text-xl font-black text-white mb-2 font-display">
+            KYC Verification Required
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+            Under Talentio&apos;s Escrow Safety Policy, all freelancers must complete identity verification before submitting project bids or receiving client milestone payouts.
+          </p>
+
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10 mb-6 flex items-center justify-between text-xs">
+            <span className="text-slate-400">Current KYC Status:</span>
+            <span className="font-mono font-bold uppercase text-amber-400">
+              {kycState.replace('_', ' ')}
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setIsProposalModalOpen(false)}
+              className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setIsProposalModalOpen(false);
+                setActivePage('kyc');
+              }}
+              className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shadow-lg transition-transform active:scale-95"
+            >
+              Verify Identity Now
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

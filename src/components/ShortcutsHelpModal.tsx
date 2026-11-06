@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from './TalentioLogo';
 import { SHORTCUTS_REGISTRY, ShortcutItem } from '../hooks/useGlobalKeyShortcuts';
 import { 
   Keyboard, 
@@ -62,7 +61,13 @@ export const ShortcutsHelpModal: React.FC = () => {
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-gradient-to-r from-[#201B42] to-[#1A1633]">
           <div className="flex items-center gap-3">
-            <TalentioLogo size="sm" variant="black" />
+            <a href="https://ibb.co.com/qL4p0XjC">
+              <img 
+                src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                alt="Picsart-26-11-06-08-52-47-568" 
+                border="0"
+              />
+            </a>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#3D2FD1]/40 border border-[#A38BFF]/30 text-[#A38BFF]">

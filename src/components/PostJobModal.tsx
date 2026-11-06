@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from './TalentioLogo';
 import { 
   X, 
   PlusCircle, 
@@ -72,7 +71,13 @@ export const PostJobModal: React.FC = () => {
         {/* Header */}
         <div className="p-6 bg-[#23324A] text-white border-b border-[#E3EDF9]/30 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <TalentioLogo size="sm" variant="transparent" />
+            <a href="https://ibb.co.com/qL4p0XjC">
+              <img 
+                src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                alt="Picsart-26-11-06-08-52-47-568" 
+                border="0"
+              />
+            </a>
             <div>
               <h3 className="text-base sm:text-lg font-bold">Post a Project with Escrow Protection</h3>
               <p className="text-xs text-slate-300">Receive vetted proposals from top 3% international freelancers</p>

@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from './TalentioLogo';
 import { PROFESSIONAL_CATEGORIES } from '../data/categoriesData';
 import { uploadGigImage } from '../lib/storage';
 import { 
@@ -317,7 +316,13 @@ export const CreateGigModal: React.FC = () => {
         {/* Header */}
         <div className="p-6 sm:p-7 border-b border-slate-100 bg-[#16122E] text-white relative flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <TalentioLogo size="sm" variant="black" />
+            <a href="https://ibb.co.com/qL4p0XjC">
+              <img 
+                src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                alt="Picsart-26-11-06-08-52-47-568" 
+                border="0"
+              />
+            </a>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#3D2FD1]/40 border border-[#A38BFF]/30 text-[#A38BFF]">

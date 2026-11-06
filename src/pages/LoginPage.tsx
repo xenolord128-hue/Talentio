@@ -1,10 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from '../components/TalentioLogo';
-import { registerWithFirebase, isEmailPasswordDisabled, isGithubProviderDisabled, formatAuthError } from '../lib/firebaseAuth';
-import { verifyRecaptchaTokenOnServer } from '../lib/recaptcha';
-import { HumanVerificationModal } from '../components/HumanVerificationModal';
-import { RecaptchaCheckbox } from '../components/RecaptchaCheckbox';
+import { registerWithFirebase, isEmailPasswordDisabled, isGithubProviderDisabled, formatAuthError, isAuthorizedAdminEmail } from '../lib/firebaseAuth';
+import { auth } from '../lib/firebase';
 import { 
   Lock, 
   Mail, 
@@ -63,44 +60,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [disabledProvider, setDisabledProvider] = useState<'email' | 'github' | null>(null);
 
-  // Interactive Human Verification state (Google reCAPTCHA v2)
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const [isRecaptchaVerified, setIsRecaptchaVerified] = useState(false);
-  const [recaptchaResetTrigger, setRecaptchaResetTrigger] = useState(0);
-  const [recaptchaError, setRecaptchaError] = useState<string | null>(null);
-
-  const [isHumanModalOpen, setIsHumanModalOpen] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [pendingAuthAction, setPendingAuthAction] = useState<((token: string) => Promise<void>) | null>(null);
-  const [verificationActionTitle, setVerificationActionTitle] = useState('Talentio Security Check');
-
-  // Inline reCAPTCHA callbacks
-  const handleInlineCaptchaVerify = useCallback(async (token: string) => {
-    setRecaptchaError(null);
-    setRecaptchaToken(token);
-    setIsRecaptchaVerified(true);
-    try {
-      const result = await verifyRecaptchaTokenOnServer(token);
-      if (result.valid) {
-        setIsRecaptchaVerified(true);
-        setVerificationError(null);
-      }
-    } catch {
-      setIsRecaptchaVerified(true);
-    }
-  }, []);
-
-  const handleInlineCaptchaExpired = useCallback(() => {
-    setIsRecaptchaVerified(false);
-    setRecaptchaToken(null);
-    setRecaptchaError('Verification expired. Please check the "I\'m not a robot" box again.');
-    setRecaptchaResetTrigger(prev => prev + 1);
-  }, []);
-
-  const handleInlineCaptchaError = useCallback(() => {
-    setRecaptchaError('Could not reach Google reCAPTCHA. Please check your network connection.');
-  }, []);
-
   // Keep internal mode in sync with activePage route
   useEffect(() => {
     if (activePage === 'register' && mode !== 'register') {
@@ -121,7 +80,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     setErrorMessage(null);
     setSuccessMessage(null);
     setDisabledProvider(null);
-    setRecaptchaError(null);
   }, [setActivePage]);
 
   // Desktop subtle 3D card tilt
@@ -174,7 +132,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
     setErrorMessage(null);
     setSuccessMessage(null);
     setDisabledProvider(null);
-    setRecaptchaError(null);
 
     const cleanEmail = email.trim();
 
@@ -220,25 +177,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
       }
     }
 
-    // 3. Human Verification Validation (reCAPTCHA v2 Checkbox)
-    if (!isRecaptchaVerified || !recaptchaToken) {
-      setRecaptchaError('Please check the "I\'m not a robot" box to complete human verification.');
-      setErrorMessage('Human verification required: Please complete the reCAPTCHA security check below.');
-      const section = document.getElementById('recaptcha-section');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-
     setLoading(true);
     setErrorMessage(null);
 
     try {
       if (mode === 'login') {
-        await loginWithEmail(cleanEmail, password);
+        const loggedUser = await loginWithEmail(cleanEmail, password);
         showToast('Signed in successfully! Welcome back to Talentio.', 'success');
-        setActivePage('dashboard');
+        if (isAuthorizedAdminEmail(cleanEmail) || isAuthorizedAdminEmail(loggedUser?.email) || isAuthorizedAdminEmail(auth.currentUser?.email)) {
+          setActivePage('admin');
+        } else {
+          setActivePage('dashboard');
+        }
       } else {
         // Register flow using createUserWithEmailAndPassword() and Firestore sync
         const newUser = await registerWithFirebase(cleanEmail, password, {
@@ -250,7 +200,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
         if (newUser) {
           setUser(newUser);
           showToast('Account created successfully! Welcome to Talentio.', 'success');
-          setActivePage('dashboard');
+          if (isAuthorizedAdminEmail(cleanEmail) || isAuthorizedAdminEmail(newUser?.email) || isAuthorizedAdminEmail(auth.currentUser?.email)) {
+            setActivePage('admin');
+          } else {
+            setActivePage('dashboard');
+          }
         }
       }
     } catch (err: any) {
@@ -267,96 +221,56 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
   };
 
   // Google OAuth
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setErrorMessage(null);
     setDisabledProvider(null);
-    setVerificationError(null);
     setSocialLoading('google');
 
-    const executeGoogle = async () => {
-      try {
-        const ok = await loginWithGoogle();
-        if (ok) {
-          showToast('Signed in with Google successfully!', 'success');
+    try {
+      const gUser = await loginWithGoogle();
+      if (gUser) {
+        showToast('Signed in with Google successfully!', 'success');
+        if (isAuthorizedAdminEmail(gUser.email) || isAuthorizedAdminEmail(auth.currentUser?.email)) {
+          setActivePage('admin');
+        } else {
           setActivePage('dashboard');
         }
-      } catch (err: any) {
-        console.error('Google auth error:', err);
-        setErrorMessage(formatAuthError(err));
-      } finally {
-        setSocialLoading(null);
       }
-    };
-
-    if (isRecaptchaVerified && recaptchaToken) {
-      executeGoogle();
-      return;
+    } catch (err: any) {
+      console.error('Google auth error:', err);
+      setErrorMessage(formatAuthError(err));
+    } finally {
+      setSocialLoading(null);
     }
-
-    setVerificationActionTitle('Google Sign-In Human Verification');
-    setPendingAuthAction(() => async (token: string) => {
-      const verifyRes = await verifyRecaptchaTokenOnServer(token);
-      if (verifyRes.valid) {
-        setIsRecaptchaVerified(true);
-        setRecaptchaToken(token);
-        setIsHumanModalOpen(false);
-        await executeGoogle();
-      } else {
-        setVerificationError(verifyRes.message || 'Human verification failed. Please try again.');
-        setIsHumanModalOpen(true);
-        setSocialLoading(null);
-      }
-    });
-    setIsHumanModalOpen(true);
   };
 
   // GitHub OAuth
-  const handleGithubLogin = () => {
+  const handleGithubLogin = async () => {
     setErrorMessage(null);
     setDisabledProvider(null);
-    setVerificationError(null);
     setSocialLoading('github');
 
-    const executeGithub = async () => {
-      try {
-        const ok = await loginWithGithub();
-        if (ok) {
-          showToast('Signed in with GitHub successfully!', 'success');
+    try {
+      const gitUser = await loginWithGithub();
+      if (gitUser) {
+        showToast('Signed in with GitHub successfully!', 'success');
+        if (isAuthorizedAdminEmail(gitUser.email) || isAuthorizedAdminEmail(auth.currentUser?.email)) {
+          setActivePage('admin');
+        } else {
           setActivePage('dashboard');
         }
-      } catch (err: any) {
-        console.error('GitHub auth error:', err);
-        if (isGithubProviderDisabled(err)) {
-          setDisabledProvider('github');
-          setErrorMessage('GitHub provider is not enabled or missing OAuth credentials in Firebase Console.');
-        } else {
-          setErrorMessage(formatAuthError(err));
-        }
-      } finally {
-        setSocialLoading(null);
       }
-    };
-
-    if (isRecaptchaVerified && recaptchaToken) {
-      executeGithub();
-      return;
-    }
-
-    setVerificationActionTitle('GitHub Sign-In Human Verification');
-    setPendingAuthAction(() => async (token: string) => {
-      const verifyRes = await verifyRecaptchaTokenOnServer(token);
-      if (verifyRes.valid) {
-        setIsRecaptchaVerified(true);
-        setRecaptchaToken(token);
-        setIsHumanModalOpen(false);
-        await executeGithub();
+    } catch (err: any) {
+      console.error('GitHub auth error:', err);
+      if (isGithubProviderDisabled(err)) {
+        setDisabledProvider('github');
+        setErrorMessage('GitHub provider is not enabled or missing OAuth credentials in Firebase Console.');
       } else {
-        setVerificationError(verifyRes.message || 'Human verification failed. Please try again.');
-        setIsHumanModalOpen(true);
-        setSocialLoading(null);
+        setErrorMessage(formatAuthError(err));
       }
-    });
-    setIsHumanModalOpen(true);
+    } finally {
+      setSocialLoading(null);
+    }
   };
 
   return (
@@ -395,7 +309,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
             title="Return to Talentio Home"
           >
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-black border border-white/10 p-1 flex items-center justify-center shadow-lg shadow-[#23324A] group-hover:scale-105 transition-transform duration-200">
-              <TalentioLogo size="md" variant="transparent" />
+              <a href="https://ibb.co.com/qL4p0XjC">
+                <img 
+                  src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                  alt="Picsart-26-11-06-08-52-47-568" 
+                  border="0"
+                />
+              </a>
             </div>
             <span className="bg-gradient-to-r from-[#E3EDF9] to-[#E3EDF9] bg-clip-text text-transparent">
               Talentio
@@ -502,7 +422,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               {/* Card Header with Official Talentio Logo */}
               <div className="relative z-10 mb-6 text-left">
                 <div className="w-14 h-14 rounded-2xl bg-black border border-[#E3EDF9]/30 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(110,91,255,0.25)] mb-4">
-                  <TalentioLogo size="md" variant="transparent" />
+                  <a href="https://ibb.co.com/qL4p0XjC">
+                    <img 
+                      src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+                      alt="Picsart-26-11-06-08-52-47-568" 
+                      border="0"
+                    />
+                  </a>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#E3EDF9]">
                   {mode === 'login' ? 'Welcome back' : 'Create your account'}
@@ -857,42 +783,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                   </div>
                 )}
 
-                {/* Google reCAPTCHA v2 Checkbox Security Verification */}
-                <div id="recaptcha-section" className="pt-2 pb-1 space-y-1.5 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between px-0.5">
-                    <span className="text-xs font-semibold text-[#9ab0cb] flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#3A5A86]" />
-                      Human Verification
-                    </span>
-                    {isRecaptchaVerified ? (
-                      <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        Verified
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-[#9ab0cb]/70">
-                        Required
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex justify-center p-2 rounded-xl bg-black/25 border border-[#E3EDF9]/10 overflow-hidden">
-                    <RecaptchaCheckbox
-                      onVerify={handleInlineCaptchaVerify}
-                      onExpired={handleInlineCaptchaExpired}
-                      onError={handleInlineCaptchaError}
-                      resetTrigger={recaptchaResetTrigger}
-                      theme="dark"
-                    />
-                  </div>
-
-                  {recaptchaError && (
-                    <p className="text-xs text-rose-400 flex items-center gap-1.5 pl-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{recaptchaError}</span>
-                    </p>
-                  )}
-                </div>
 
                 {/* Submit Button */}
                 <button
@@ -973,12 +863,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
                 </button>
               </div>
 
-              {/* Protected by Google reCAPTCHA badge */}
-              <div className="relative z-10 mt-4 pt-3 border-t border-[#E3EDF9]/10 flex items-center justify-center gap-1.5 text-[11px] text-[#9ab0cb]/70">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Protected by Google reCAPTCHA</span>
-              </div>
-
             </div>
           </section>
 
@@ -1013,25 +897,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
         </footer>
 
       </div>
-
-      {/* Interactive Human Verification Modal with Google reCAPTCHA v2 Checkbox */}
-      <HumanVerificationModal
-        isOpen={isHumanModalOpen}
-        actionTitle={verificationActionTitle}
-        errorMessage={verificationError}
-        onVerifySuccess={async (token: string) => {
-          if (pendingAuthAction) {
-            await pendingAuthAction(token);
-          }
-        }}
-        onCancel={() => {
-          setIsHumanModalOpen(false);
-          setPendingAuthAction(null);
-          setLoading(false);
-          setSocialLoading(null);
-          setVerificationError(null);
-        }}
-      />
     </div>
   );
 };

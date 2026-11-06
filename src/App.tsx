@@ -4,8 +4,6 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
-import { TalentioAIAssistant } from './components/TalentioAIAssistant';
-import { TalentioAIProvider } from './context/TalentioAIContext';
 import { AdProvider } from './context/AdContext';
 import { AdPlacement } from './components/ads/AdPlacement';
 import { ToastContainer } from './components/ToastContainer';
@@ -15,7 +13,6 @@ import { useGlobalKeyShortcuts } from './hooks/useGlobalKeyShortcuts';
 import { SEOHead } from './components/SEOHead';
 import { PageSkeleton } from './components/PageSkeleton';
 import { Loader2 } from 'lucide-react';
-import { TalentioLogo } from './components/TalentioLogo';
 
 // Core Critical Entry Pages (Eagerly Loaded for Fast First Contentful Paint)
 import { HomePage } from './pages/HomePage';
@@ -93,7 +90,13 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-screen w-full bg-[#23324A] flex items-center justify-center text-[#E3EDF9]">
         <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
-          <TalentioLogo size="lg" />
+          <a href="https://ibb.co.com/qL4p0XjC">
+            <img 
+              src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+              alt="Picsart-26-11-06-08-52-47-568" 
+              border="0"
+            />
+          </a>
           <div className="flex items-center gap-2 text-[#E3EDF9]/80 text-sm font-medium">
             <Loader2 className="w-4 h-4 animate-spin text-[#3A5A86]" />
             <span>Connecting to Talentio...</span>
@@ -116,7 +119,6 @@ const AppContent: React.FC = () => {
         ) : (
           <LoginPage />
         )}
-        <TalentioAIAssistant />
         <ToastContainer />
       </div>
     );
@@ -281,9 +283,6 @@ const AppContent: React.FC = () => {
         {isWidgetManagerOpen && <WidgetManagerModal />}
       </React.Suspense>
 
-      {/* TALENTIO AI Built-in Assistant & Voice Companion */}
-      <TalentioAIAssistant />
-
       {/* Toast Notification Container */}
       <ToastContainer />
 
@@ -295,11 +294,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <GuideProvider>
-        <TalentioAIProvider>
-          <AdProvider>
-            <AppContent />
-          </AdProvider>
-        </TalentioAIProvider>
+        <AdProvider>
+          <AppContent />
+        </AdProvider>
       </GuideProvider>
     </ThemeProvider>
   );

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useGuide } from '../context/GuideContext';
 import { formatAuthError } from '../lib/firebaseAuth';
-import { verifyRecaptchaTokenOnServer } from '../lib/recaptcha';
-import { HumanVerificationModal } from './HumanVerificationModal';
 import { 
   X, 
   Mail, 
@@ -44,12 +42,6 @@ export const AuthModal: React.FC = () => {
   const [socialLoading, setSocialLoading] = useState<'google' | 'github' | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  // Human Verification Modal state (Google reCAPTCHA v2 Checkbox)
-  const [isHumanModalOpen, setIsHumanModalOpen] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [pendingAuthAction, setPendingAuthAction] = useState<((token: string) => Promise<void>) | null>(null);
-  const [verificationActionTitle, setVerificationActionTitle] = useState('Talentio Security Check');
-
   // If closed or user is already on a dedicated auth page, do not render
   if (!isAuthModalOpen || activePage === 'login' || activePage === 'register' || activePage === 'forgot-password') {
     return null;
@@ -59,75 +51,37 @@ export const AuthModal: React.FC = () => {
     setIsAuthModalOpen(false);
     setAuthPromptReason(null);
     setModalError(null);
-    setIsHumanModalOpen(false);
-    setPendingAuthAction(null);
-    setVerificationError(null);
   };
 
-  const handleSocialGoogle = () => {
+  const handleSocialGoogle = async () => {
     setModalError(null);
-    setVerificationError(null);
     setSocialLoading('google');
-
-    const executeGoogle = async (token: string) => {
-      try {
-        const verifyRes = await verifyRecaptchaTokenOnServer(token);
-        if (!verifyRes.valid) {
-          setVerificationError(verifyRes.message || 'reCAPTCHA verification failed. Please try again.');
-          setIsHumanModalOpen(true);
-          setSocialLoading(null);
-          return;
-        }
-
-        setIsHumanModalOpen(false);
-        await loginWithGoogle();
-        setIsAuthModalOpen(false);
-      } catch (err: any) {
-        setModalError(err?.message || 'Google sign in failed. Please try again.');
-      } finally {
-        setSocialLoading(null);
-      }
-    };
-
-    setVerificationActionTitle('Google Sign-In Human Verification');
-    setPendingAuthAction(() => executeGoogle);
-    setIsHumanModalOpen(true);
+    try {
+      await loginWithGoogle();
+      setIsAuthModalOpen(false);
+    } catch (err: any) {
+      setModalError(err?.message || 'Google sign in failed. Please try again.');
+    } finally {
+      setSocialLoading(null);
+    }
   };
 
-  const handleSocialGithub = () => {
+  const handleSocialGithub = async () => {
     setModalError(null);
-    setVerificationError(null);
     setSocialLoading('github');
-
-    const executeGithub = async (token: string) => {
-      try {
-        const verifyRes = await verifyRecaptchaTokenOnServer(token);
-        if (!verifyRes.valid) {
-          setVerificationError(verifyRes.message || 'reCAPTCHA verification failed. Please try again.');
-          setIsHumanModalOpen(true);
-          setSocialLoading(null);
-          return;
-        }
-
-        setIsHumanModalOpen(false);
-        await loginWithGithub();
-        setIsAuthModalOpen(false);
-      } catch (err: any) {
-        setModalError(formatAuthError(err));
-      } finally {
-        setSocialLoading(null);
-      }
-    };
-
-    setVerificationActionTitle('GitHub Sign-In Human Verification');
-    setPendingAuthAction(() => executeGithub);
-    setIsHumanModalOpen(true);
+    try {
+      await loginWithGithub();
+      setIsAuthModalOpen(false);
+    } catch (err: any) {
+      setModalError(formatAuthError(err));
+    } finally {
+      setSocialLoading(null);
+    }
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
-    setVerificationError(null);
 
     const cleanEmail = email.trim();
     if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -156,34 +110,18 @@ export const AuthModal: React.FC = () => {
     }
 
     setIsSubmitting(true);
-
-    const executeEmail = async (token: string) => {
-      try {
-        const verifyRes = await verifyRecaptchaTokenOnServer(token);
-        if (!verifyRes.valid) {
-          setVerificationError(verifyRes.message || 'reCAPTCHA verification failed. Please check the box again.');
-          setIsHumanModalOpen(true);
-          setIsSubmitting(false);
-          return;
-        }
-
-        setIsHumanModalOpen(false);
-        if (authMode === 'login') {
-          await loginWithEmail(cleanEmail, password);
-        } else {
-          await registerAccount('email', cleanEmail, name.trim(), password);
-        }
-        setIsAuthModalOpen(false);
-      } catch (err: any) {
-        setModalError(err?.message || 'Authentication failed. Please verify credentials.');
-      } finally {
-        setIsSubmitting(false);
+    try {
+      if (authMode === 'login') {
+        await loginWithEmail(cleanEmail, password);
+      } else {
+        await registerAccount('email', cleanEmail, name.trim(), password);
       }
-    };
-
-    setVerificationActionTitle(authMode === 'login' ? 'Sign In Human Verification' : 'Registration Human Verification');
-    setPendingAuthAction(() => executeEmail);
-    setIsHumanModalOpen(true);
+      setIsAuthModalOpen(false);
+    } catch (err: any) {
+      setModalError(err?.message || 'Authentication failed. Please verify credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -450,32 +388,7 @@ export const AuthModal: React.FC = () => {
           </button>
         </div>
 
-        {/* reCAPTCHA Security Badge */}
-        <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Protected by Google reCAPTCHA</span>
-        </div>
-
       </div>
-
-      {/* Interactive Visual Human Verification Modal with Google reCAPTCHA v2 Checkbox */}
-      <HumanVerificationModal
-        isOpen={isHumanModalOpen}
-        actionTitle={verificationActionTitle}
-        errorMessage={verificationError}
-        onVerifySuccess={async (token: string) => {
-          if (pendingAuthAction) {
-            await pendingAuthAction(token);
-          }
-        }}
-        onCancel={() => {
-          setIsHumanModalOpen(false);
-          setPendingAuthAction(null);
-          setIsSubmitting(false);
-          setSocialLoading(null);
-          setVerificationError(null);
-        }}
-      />
     </div>
   );
 };

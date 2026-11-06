@@ -1,6 +1,5 @@
 import React from 'react';
 import { useGuide } from '../context/GuideContext';
-import { TalentioLogo } from '../components/TalentioLogo';
 import { ShieldAlert, ArrowLeft, Home } from 'lucide-react';
 
 interface AccessDeniedProps {
@@ -20,7 +19,13 @@ export const AccessDeniedPage: React.FC<AccessDeniedProps> = ({
     <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div className="w-full max-w-md text-center space-y-6 bg-[#171330] p-8 rounded-3xl border border-white/10 shadow-2xl">
         <div className="inline-flex justify-center mb-2">
-          <TalentioLogo size="md" variant="white" />
+          <a href="https://ibb.co.com/qL4p0XjC">
+            <img 
+              src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
+              alt="Picsart-26-11-06-08-52-47-568" 
+              border="0"
+            />
+          </a>
         </div>
 
         <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">

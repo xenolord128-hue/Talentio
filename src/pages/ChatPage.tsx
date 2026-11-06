@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGuide } from '../context/GuideContext';
-import { useTalentioAI } from '../context/TalentioAIContext';
 import { 
   Conversation, 
   ChatMessage, 
@@ -12,12 +11,8 @@ import {
 } from '../types';
 import { 
   INITIAL_CONVERSATIONS, 
-  INITIAL_CONVERSATION_MESSAGES,
-  TALENTIO_AI_CONVERSATION,
-  TALENTIO_AI_CONVERSATION_ID,
-  TALENTIO_AI_PARTICIPANT
+  INITIAL_CONVERSATION_MESSAGES
 } from '../data/chatData';
-import { queryLocalKnowledgeBase } from '../data/talentioKnowledgeBase';
 import { 
   subscribeToChatMessages, 
   sendChatMessageDocument, 
@@ -51,7 +46,6 @@ import {
 } from 'lucide-react';
 
 export const ChatPage: React.FC = () => {
-  const { startVoiceSession } = useTalentioAI();
   const { 
     user, 
     isAuthenticated, 
@@ -75,10 +69,7 @@ export const ChatPage: React.FC = () => {
       const saved = localStorage.getItem('talentio_chat_conversations');
       if (saved) {
         const parsed: Conversation[] = JSON.parse(saved);
-        if (!parsed.some(c => c.id === TALENTIO_AI_CONVERSATION_ID || c.participant.role === 'bot')) {
-          return [TALENTIO_AI_CONVERSATION, ...parsed];
-        }
-        return parsed;
+        return parsed.filter(c => c.id !== 'conv-talentio-ai' && c.participant.role !== 'bot');
       }
       return INITIAL_CONVERSATIONS;
     } catch {
@@ -92,22 +83,7 @@ export const ChatPage: React.FC = () => {
       const saved = localStorage.getItem('talentio_chat_messages_map');
       if (saved) {
         const parsed: Record<string, ChatMessage[]> = JSON.parse(saved);
-        if (!parsed[TALENTIO_AI_CONVERSATION_ID] || parsed[TALENTIO_AI_CONVERSATION_ID].length === 0) {
-          parsed[TALENTIO_AI_CONVERSATION_ID] = INITIAL_CONVERSATION_MESSAGES[TALENTIO_AI_CONVERSATION_ID] || [
-            {
-              id: 'ai-msg-welcome',
-              conversationId: TALENTIO_AI_CONVERSATION_ID,
-              sender: 'other',
-              senderId: 'talentio-ai-bot',
-              senderName: 'TALENTIO AI',
-              senderAvatar: TALENTIO_AI_PARTICIPANT.avatar,
-              text: 'Hello! I am TALENTIO AI, your intelligent marketplace assistant. Ask me anything about posting jobs, hiring freelancers, gigs, or escrow protection in English or বাংলা!',
-              timestamp: 'Just now',
-              isoDate: new Date().toISOString(),
-              status: 'read'
-            }
-          ];
-        }
+        delete parsed['conv-talentio-ai'];
         return parsed;
       }
       return INITIAL_CONVERSATION_MESSAGES;
@@ -631,154 +607,6 @@ export const ChatPage: React.FC = () => {
 
     setReplyingMessage(null);
     soundEffects.playMessageSent();
-
-    // SPECIAL HANDLING: TALENTIO AI Assistant (Meta AI style contact in messaging)
-    const isBotConversation = activeConversationId === TALENTIO_AI_CONVERSATION_ID || 
-                             activeConversation.participant.role === 'bot' || 
-                             activeConversation.participant.id === 'talentio-ai-bot';
-
-    if (isBotConversation) {
-      // 1. Indicate bot is typing with animation
-      setConversations(prev => prev.map(c => 
-        c.id === activeConversationId 
-          ? { ...c, participant: { ...c.participant, isTyping: true } }
-          : c
-      ));
-
-      // 2. Fetch answer from API / fallback
-      (async () => {
-        try {
-          const userRole = user?.userType || 'client';
-          const history = (messagesMap[activeConversationId] || []).slice(-6).map(m => ({
-            role: m.sender === 'me' ? 'user' : 'assistant',
-            content: m.text
-          }));
-
-          const res = await fetch('/api/talentio-ai/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: text,
-              messages: history,
-              userRole,
-              currentPage: 'messages',
-              language: /[\u0980-\u09FF]/.test(text) ? 'bn' : 'auto'
-            })
-          });
-
-          let aiReply = '';
-          let aiAction: { type: 'navigate' | 'modal'; target: string; label: string } | undefined = undefined;
-
-          if (res.ok) {
-            const data = await res.json();
-            aiReply = data.reply || '';
-            aiAction = data.action;
-          } else {
-            const fallback = queryLocalKnowledgeBase(text, userRole, 'messages', /[\u0980-\u09FF]/.test(text) ? 'bn' : 'en');
-            aiReply = fallback.reply;
-            aiAction = fallback.action;
-          }
-
-          const botTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          const botMsg: ChatMessage = {
-            id: `ai-msg-${Date.now()}`,
-            conversationId: activeConversationId,
-            conversation_id: activeConversationId,
-            sender: 'other',
-            senderId: 'talentio-ai-bot',
-            sender_id: 'talentio-ai-bot',
-            receiverId: currentUserId,
-            receiver_id: currentUserId,
-            senderName: 'TALENTIO AI',
-            senderAvatar: TALENTIO_AI_PARTICIPANT.avatar,
-            text: aiReply,
-            message: aiReply,
-            timestamp: botTimestamp,
-            isoDate: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            status: 'delivered',
-            read_status: 'delivered',
-            action: aiAction
-          };
-
-          setMessagesMap(prev => ({
-            ...prev,
-            [activeConversationId]: [...(prev[activeConversationId] || []), botMsg]
-          }));
-
-          setConversations(prev => prev.map(c => 
-            c.id === activeConversationId 
-              ? {
-                  ...c,
-                  participant: { ...c.participant, isTyping: false },
-                  lastMessage: {
-                    text: aiReply,
-                    timestamp: botTimestamp,
-                    senderId: 'talentio-ai-bot',
-                    sender_id: 'talentio-ai-bot',
-                    receiver_id: currentUserId,
-                    status: 'delivered',
-                    read_status: 'delivered'
-                  }
-                }
-              : c
-          ));
-
-          soundEffects.playMessageReceived();
-        } catch (err) {
-          const fallback = queryLocalKnowledgeBase(text, user?.userType || 'client', 'messages', /[\u0980-\u09FF]/.test(text) ? 'bn' : 'en');
-          const botTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          const botMsg: ChatMessage = {
-            id: `ai-msg-${Date.now()}`,
-            conversationId: activeConversationId,
-            conversation_id: activeConversationId,
-            sender: 'other',
-            senderId: 'talentio-ai-bot',
-            sender_id: 'talentio-ai-bot',
-            receiverId: currentUserId,
-            receiver_id: currentUserId,
-            senderName: 'TALENTIO AI',
-            senderAvatar: TALENTIO_AI_PARTICIPANT.avatar,
-            text: fallback.reply,
-            message: fallback.reply,
-            timestamp: botTimestamp,
-            isoDate: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            status: 'delivered',
-            read_status: 'delivered',
-            action: fallback.action
-          };
-
-          setMessagesMap(prev => ({
-            ...prev,
-            [activeConversationId]: [...(prev[activeConversationId] || []), botMsg]
-          }));
-
-          setConversations(prev => prev.map(c => 
-            c.id === activeConversationId 
-              ? {
-                  ...c,
-                  participant: { ...c.participant, isTyping: false },
-                  lastMessage: {
-                    text: fallback.reply,
-                    timestamp: botTimestamp,
-                    senderId: 'talentio-ai-bot',
-                    sender_id: 'talentio-ai-bot',
-                    receiver_id: currentUserId,
-                    status: 'delivered',
-                    read_status: 'delivered'
-                  }
-                }
-              : c
-          ));
-          soundEffects.playMessageReceived();
-        }
-      })();
-
-      return;
-    }
 
     // Broadcast via live socket and persist to Firestore database for human recipient
     // Perform background translation if target language differs
@@ -1505,7 +1333,6 @@ export const ChatPage: React.FC = () => {
                 onViewProfile={handleViewProfile}
                 onViewContract={handleViewContract}
                 onOpenConfirmOrderModal={() => setIsConfirmOrderModalOpen(true)}
-                onVoiceStart={() => startVoiceSession()}
               />
             </div>
 
@@ -1616,8 +1443,8 @@ export const ChatPage: React.FC = () => {
                 <span>Direct user-to-user encryption</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Meta AI style co-pilot</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Real-time presence & typing</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-[#3D2FD1]" />
