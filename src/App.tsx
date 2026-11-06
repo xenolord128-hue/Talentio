@@ -40,6 +40,7 @@ const HelpSupportPage = React.lazy(() => import('./pages/HelpSupportPage').then(
 const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 const AccessDeniedPage = React.lazy(() => import('./pages/AccessDeniedPage').then(m => ({ default: m.AccessDeniedPage })));
 const KycVerificationPage = React.lazy(() => import('./pages/KycVerificationPage').then(m => ({ default: m.KycVerificationPage })));
+const BrandStoryPage = React.lazy(() => import('./pages/BrandStoryPage').then(m => ({ default: m.BrandStoryPage })));
 
 // Lazy-Loaded Dialog Modals (Loaded only when user triggers action)
 const SearchModal = React.lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
@@ -78,6 +79,33 @@ const AppContent: React.FC = () => {
   // Initialize Global Key Listener Hook for Fast Navigation (⌘K, ESC, ⌘J, Alt+1-7, ?, Alt+T)
   useGlobalKeyShortcuts();
 
+  // Global Logo Click Handler: Tapping/clicking any Talentio logo opens the Brand Story page
+  React.useEffect(() => {
+    const handleGlobalLogoClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const logoLink = target.closest('a[href="https://ibb.co.com/qL4p0XjC"]');
+      const isLogoImg = target.tagName === 'IMG' && (
+        (target as HTMLImageElement).src.includes('Picsart-26-11-06-08-52-47') ||
+        (target as HTMLImageElement).src.includes('talentio-logo')
+      );
+
+      if (logoLink || isLogoImg) {
+        // If already on Brand Story page, allow standard external link or interactions
+        if (activePage === 'brand-story') return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        setActivePage('brand-story');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    document.addEventListener('click', handleGlobalLogoClick, true);
+    return () => document.removeEventListener('click', handleGlobalLogoClick, true);
+  }, [activePage, setActivePage]);
+
   // Seamless transition to marketplace home when user authenticates from a dedicated auth page
   React.useEffect(() => {
     if (isAuthenticated && user && (activePage === 'login' || activePage === 'register' || activePage === 'forgot-password')) {
@@ -106,8 +134,21 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Strict Global Authentication Gate — Unauthenticated visitors must sign in before accessing the marketplace
+  // Allow unauthenticated visitors to view the Brand Story page
   if (!isAuthenticated || !user) {
+    if (activePage === 'brand-story') {
+      return (
+        <div className="min-h-screen w-full bg-[#0d0920]">
+          <SEOHead />
+          <OfflineNoticeBanner />
+          <React.Suspense fallback={<PageSkeleton />}>
+            <BrandStoryPage />
+          </React.Suspense>
+          <ToastContainer />
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen w-full bg-[#23324A]">
         <SEOHead />
@@ -196,6 +237,10 @@ const AppContent: React.FC = () => {
       case 'ranking':
       case 'rankings':
         return <LeaderboardPage />;
+      case 'brand-story':
+      case 'story':
+      case 'behind-the-mark':
+        return <BrandStoryPage />;
       default:
         return <HomePage />;
     }
@@ -203,25 +248,28 @@ const AppContent: React.FC = () => {
 
   const isChatPage = activePage === 'chat' || activePage === 'messages';
   const isDedicatedAuthPage = activePage === 'login' || activePage === 'register' || activePage === 'forgot-password';
+  const isBrandStoryPage = activePage === 'brand-story' || activePage === 'story' || activePage === 'behind-the-mark';
 
   return (
     <div className={`min-h-screen max-w-full overflow-x-hidden w-full flex flex-col font-sans transition-colors duration-200 selection:bg-[#3A5A86] selection:text-white ${
-      isChatPage ? 'h-screen overflow-hidden pb-0' : isDedicatedAuthPage ? 'pb-0' : 'pb-24 sm:pb-28'
+      isChatPage ? 'h-screen overflow-hidden pb-0' : (isDedicatedAuthPage || isBrandStoryPage) ? 'pb-0' : 'pb-24 sm:pb-28'
     } ${
-      isDedicatedAuthPage
-        ? 'bg-[#23324A] text-[#E3EDF9]'
-        : theme === 'high-contrast' 
-          ? 'bg-black text-white' 
-          : theme === 'dark' 
-            ? 'bg-[#23324A] text-[#E3EDF9]' 
-            : 'bg-[#E3EDF9] text-[#23324A]'
+      isBrandStoryPage
+        ? 'bg-[#0d0920] text-[#F2F0FF]'
+        : isDedicatedAuthPage
+          ? 'bg-[#23324A] text-[#E3EDF9]'
+          : theme === 'high-contrast' 
+            ? 'bg-black text-white' 
+            : theme === 'dark' 
+              ? 'bg-[#23324A] text-[#E3EDF9]' 
+              : 'bg-[#E3EDF9] text-[#23324A]'
     }`}>
       
-      {/* Sticky Compact Global Navigation (Hidden on dedicated Message and Auth pages) */}
+      {/* Sticky Compact Global Navigation (Hidden on dedicated Message, Auth, and Brand Story pages) */}
       <SEOHead />
       <OfflineNoticeBanner />
 
-      {!isChatPage && !isDedicatedAuthPage && <Navbar />}
+      {!isChatPage && !isDedicatedAuthPage && !isBrandStoryPage && <Navbar />}
 
       {/* Main Dynamic Page Content */}
       <main className={`flex-1 w-full max-w-full ${isChatPage ? 'h-full overflow-hidden' : 'overflow-x-hidden'}`}>
@@ -231,24 +279,24 @@ const AppContent: React.FC = () => {
       </main>
 
       {/* Before Footer Placement (Public Pages) */}
-      {!isChatPage && !isDedicatedAuthPage && activePage !== 'admin' && (
+      {!isChatPage && !isDedicatedAuthPage && !isBrandStoryPage && activePage !== 'admin' && (
         <div className="w-full flex justify-center py-4 bg-transparent border-t border-slate-100 dark:border-white/5">
           <AdPlacement placement="before_footer" />
         </div>
       )}
 
-      {/* Global Talentio Marketplace Footer (hidden in full-screen Messenger mode, Admin desk, or dedicated Auth page) */}
-      {!isChatPage && !isDedicatedAuthPage && activePage !== 'admin' && <Footer />}
+      {/* Global Talentio Marketplace Footer (hidden in full-screen Messenger mode, Admin desk, dedicated Auth, or Brand Story) */}
+      {!isChatPage && !isDedicatedAuthPage && !isBrandStoryPage && activePage !== 'admin' && <Footer />}
 
       {/* Mobile Banner Placement */}
-      {!isChatPage && !isDedicatedAuthPage && activePage !== 'admin' && (
+      {!isChatPage && !isDedicatedAuthPage && !isBrandStoryPage && activePage !== 'admin' && (
         <div className="sm:hidden w-full flex justify-center pb-16">
           <AdPlacement placement="mobile_banner" />
         </div>
       )}
 
-      {/* Mobile Bottom Quick Navigation Bar (Hidden on dedicated Message and Auth pages) */}
-      {!isChatPage && !isDedicatedAuthPage && <MobileBottomNav />}
+      {/* Mobile Bottom Quick Navigation Bar (Hidden on dedicated Message, Auth, and Brand Story pages) */}
+      {!isChatPage && !isDedicatedAuthPage && !isBrandStoryPage && <MobileBottomNav />}
 
       {/* Modals & Dialogs (Loaded on-demand and mounted only when active) */}
       <React.Suspense fallback={null}>

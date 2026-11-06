@@ -1,4 +1,5 @@
 import React from 'react';
+import { useGuide } from '../context/GuideContext';
 
 /**
  * OFFICIAL PERMANENT TALENTIO BRAND LOGO
@@ -19,11 +20,24 @@ export interface TalentioLogoProps {
   badgeText?: string;
   variant?: 'dark' | 'gradient' | 'black' | 'transparent' | 'white';
   animated?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export const TalentioLogo: React.FC<TalentioLogoProps> = () => {
+export const TalentioLogo: React.FC<TalentioLogoProps> = ({ onClick }) => {
+  const guide = useGuide();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onClick) {
+      onClick(e);
+    } else if (guide?.setActivePage) {
+      guide.setActivePage('brand-story');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <a href="https://ibb.co.com/qL4p0XjC">
+    <a href="https://ibb.co.com/qL4p0XjC" onClick={handleClick}>
       <img 
         src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
         alt="Picsart-26-11-06-08-52-47-568" 

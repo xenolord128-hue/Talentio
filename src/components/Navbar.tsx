@@ -122,7 +122,16 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-2.5 group text-left cursor-pointer focus:outline-none"
               title="Talentio Marketplace"
             >
-              <a href="https://ibb.co.com/qL4p0XjC">
+              <a 
+                href="https://ibb.co.com/qL4p0XjC"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActivePage('brand-story');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                title="Talentio — Behind The Mark (Brand Story)"
+              >
                 <img 
                   src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
                   alt="Picsart-26-11-06-08-52-47-568" 

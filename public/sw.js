@@ -1,13 +1,14 @@
-// Talentio PWA Service Worker (talentio-pwa-v2)
-const CACHE_NAME = 'talentio-pwa-v2';
+// Talentio PWA Service Worker (talentio-pwa-v5-official-logo)
+const CACHE_NAME = 'talentio-pwa-v5-official-logo';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/assets/talentio-logo.png',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/apple-touch-icon.png'
+  '/manifest.json?v=20261106',
+  '/assets/talentio-logo.png?v=20261106',
+  '/icons/icon-192.png?v=20261106',
+  '/icons/icon-512.png?v=20261106',
+  '/icons/icon-maskable-512.png?v=20261106',
+  '/icons/apple-touch-icon.png?v=20261106'
 ];
 
 // Install Event: Pre-cache essential app shell assets

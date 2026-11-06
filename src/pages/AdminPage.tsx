@@ -100,7 +100,8 @@ export const AdminPage: React.FC = () => {
     toggleFeatureServiceGig,
     removeServiceGig,
     currency,
-    showToast
+    showToast,
+    setActivePage
   } = useGuide();
 
   if (isAdminVerifying) {
@@ -252,7 +253,16 @@ export const AdminPage: React.FC = () => {
           {/* Brand Header */}
           <div className="h-16 px-6 flex items-center justify-between border-b border-[#3A5A86]/30 shrink-0">
             <div className="flex items-center gap-3">
-              <a href="https://ibb.co.com/qL4p0XjC">
+              <a 
+                href="https://ibb.co.com/qL4p0XjC"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActivePage('brand-story');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                title="Talentio — Behind The Mark (Brand Story)"
+              >
                 <img 
                   src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
                   alt="Picsart-26-11-06-08-52-47-568" 

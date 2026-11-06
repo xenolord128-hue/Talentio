@@ -39,7 +39,16 @@ export const ForgotPasswordPage: React.FC = () => {
         {/* Header Branding */}
         <div className="text-center space-y-3">
           <div className="inline-flex justify-center mb-2">
-            <a href="https://ibb.co.com/qL4p0XjC">
+            <a 
+              href="https://ibb.co.com/qL4p0XjC"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActivePage('brand-story');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              title="Talentio — Behind The Mark (Brand Story)"
+            >
               <img 
                 src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
                 alt="Picsart-26-11-06-08-52-47-568" 

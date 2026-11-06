@@ -309,7 +309,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
             title="Return to Talentio Home"
           >
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-black border border-white/10 p-1 flex items-center justify-center shadow-lg shadow-[#23324A] group-hover:scale-105 transition-transform duration-200">
-              <a href="https://ibb.co.com/qL4p0XjC">
+              <a 
+                href="https://ibb.co.com/qL4p0XjC"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActivePage('brand-story');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                title="Talentio — Behind The Mark (Brand Story)"
+              >
                 <img 
                   src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
                   alt="Picsart-26-11-06-08-52-47-568" 
@@ -422,7 +431,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialMode = 'login' }) =
               {/* Card Header with Official Talentio Logo */}
               <div className="relative z-10 mb-6 text-left">
                 <div className="w-14 h-14 rounded-2xl bg-black border border-[#E3EDF9]/30 p-1 flex items-center justify-center shadow-[0_0_35px_rgba(110,91,255,0.25)] mb-4">
-                  <a href="https://ibb.co.com/qL4p0XjC">
+                  <a 
+                    href="https://ibb.co.com/qL4p0XjC"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setActivePage('brand-story');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    title="Talentio — Behind The Mark (Brand Story)"
+                  >
                     <img 
                       src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg" 
                       alt="Picsart-26-11-06-08-52-47-568" 

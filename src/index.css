@@ -821,8 +821,8 @@ a[href="https://ibb.co.com/qL4p0XjC"] {
   vertical-align: middle;
 }
 
-a[href="https://ibb.co.com/qL4p0XjC"] img,
-img[src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg"] {
+a[href="https://ibb.co.com/qL4p0XjC"]:not(.brand-story-link) img,
+img[src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg"]:not(.brand-story-img) {
   height: 38px;
   width: 38px;
   max-height: 100%;
@@ -836,7 +836,7 @@ img[src="https://i.ibb.co.com/qL4p0XjC/Picsart-26-11-06-08-52-47-568.jpg"] {
   transition: transform 0.2s ease;
 }
 
-a[href="https://ibb.co.com/qL4p0XjC"]:hover img {
+a[href="https://ibb.co.com/qL4p0XjC"]:not(.brand-story-link):hover img {
   transform: scale(1.05);
 }
 

@@ -113,6 +113,7 @@ export type TalentioPage =
   | 'security'
   | 'roadmap'
   | 'leaderboard'
+  | 'brand-story'
   | 'admin'
   | 'kyc'
   | 'verify-kyc';
@@ -509,6 +510,10 @@ export const getInitialPageFromUrl = (): TalentioPage => {
       return 'login';
     case '/register':
       return 'register';
+    case '/brand-story':
+    case '/story':
+    case '/behind-the-mark':
+      return 'brand-story';
     case '/kyc':
     case '/verify-kyc':
       return 'kyc';
@@ -522,6 +527,8 @@ export const getPathFromPage = (page: TalentioPage): string => {
     case 'home':
     case 'explore':
       return '/';
+    case 'brand-story':
+      return '/brand-story';
     case 'services':
     case 'marketplace':
     case 'catalog':
