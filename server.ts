@@ -71,7 +71,13 @@ async function sendPushToUser(userId: string, payload: {
   const userSubs = pushSubscriptionsMap.get(userId);
   if (!userSubs || userSubs.size === 0) return;
 
-  const payloadString = JSON.stringify(payload);
+  const resolvedPayload = {
+    ...payload,
+    icon: payload.icon || '/icons/notification-icon.png',
+    badge: payload.badge || '/icons/notification-badge.png'
+  };
+
+  const payloadString = JSON.stringify(resolvedPayload);
   const deadEndpoints: string[] = [];
 
   for (const [endpoint, sub] of userSubs.entries()) {
@@ -207,8 +213,8 @@ io.on("connection", (socket: Socket) => {
     await sendPushToUser(data.message.receiverId, {
       title: `Message from ${data.message.senderName || 'Talentio Client'}`,
       body: previewText,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/icons/notification-icon.png',
+      badge: '/icons/notification-badge.png',
       tag: `msg-${data.message.id || Date.now()}`,
       data: {
         type: 'new_message',
@@ -681,8 +687,8 @@ app.post("/api/push/test", async (req: Request, res: Response) => {
   await sendPushToUser(userId, {
     title: title || "Talentio Test Notification",
     body: body || "Web Push is operating seamlessly across your PWA devices!",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/icons/notification-icon.png",
+    badge: "/icons/notification-badge.png",
     tag: `test-${Date.now()}`,
     data: {
       url: "/?page=chat"
@@ -1749,6 +1755,21 @@ app.post("/api/kyc/enforce-seller-status", async (req: Request, res: Response) =
     res.status(500).json({ allowed: false, error: err?.message });
   }
 });
+
+// Explicitly serve static public assets (icons, manifest, notification assets)
+const publicDir = path.join(process.cwd(), "public");
+app.use(express.static(publicDir, {
+  maxAge: "1d",
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith(".png")) {
+      res.setHeader("Content-Type", "image/png");
+    } else if (filePath.endsWith(".ico")) {
+      res.setHeader("Content-Type", "image/x-icon");
+    } else if (filePath.endsWith(".json")) {
+      res.setHeader("Content-Type", "application/json");
+    }
+  }
+}));
 
 // Mount Vite middleware in development or serve static in production
 async function startServer() {

@@ -91,8 +91,23 @@ export const SettingsPage: React.FC = () => {
 
     const success = await triggerDeviceNotification('💬 New Message from Elena Rostova', {
       body: 'Hi, I have reviewed the design tokens. Milestone 1 is ready for release!',
+      icon: '/icons/notification-icon.png',
+      badge: '/icons/notification-badge.png',
       url: '/?page=chat'
     });
+
+    // Also trigger server web push if user is registered with push
+    if (user?.id) {
+      fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          title: '💬 New Message from Elena Rostova',
+          body: 'Hi, I have reviewed the design tokens. Milestone 1 is ready for release!'
+        })
+      }).catch(() => {});
+    }
 
     if (success) {
       showToast('Test notification sent to your device!', 'success');

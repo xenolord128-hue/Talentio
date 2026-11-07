@@ -153,8 +153,8 @@ class RealtimeService {
       try {
         await triggerDeviceNotification(`Talentio: ${title}`, {
           body,
-          icon: '/icons/icon-192.png',
-          badge: '/icons/icon-192.png',
+          icon: '/icons/notification-icon.png',
+          badge: '/icons/notification-badge.png',
           data: data || { url: '/?page=chat' },
           url: '/?page=chat',
           tag: `talentio-msg-${Date.now()}`

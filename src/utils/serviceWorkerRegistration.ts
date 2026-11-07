@@ -28,6 +28,13 @@ export function registerServiceWorker(onUpdate?: (registration: ServiceWorkerReg
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
+        // Proactively check for service worker updates so new icons apply immediately
+        try {
+          registration.update();
+        } catch (e) {
+          // ignore
+        }
+
         // Check for service worker updates
         registration.onupdatefound = () => {
           const installingWorker = registration.installing;
@@ -75,8 +82,15 @@ export async function triggerDeviceNotification(title: string, options?: DeviceN
     if (granted !== 'granted') return false;
   }
 
-  const defaultIcon = '/icons/icon-192.png';
-  const defaultBadge = '/icons/icon-192.png';
+  const origin = window.location.origin;
+  const toAbsoluteUrl = (path?: string, fallback: string = '/icons/notification-icon.png'): string => {
+    const target = path || fallback;
+    if (target.startsWith('http://') || target.startsWith('https://')) return target;
+    return `${origin}${target.startsWith('/') ? '' : '/'}${target}`;
+  };
+
+  const defaultIcon = toAbsoluteUrl('/icons/notification-icon.png');
+  const defaultBadge = toAbsoluteUrl('/icons/notification-badge.png');
 
   // Determine intelligent actions based on notification context
   let actions = options?.actions;
@@ -96,9 +110,9 @@ export async function triggerDeviceNotification(title: string, options?: DeviceN
 
   const notifOptions: any = {
     body: options?.body || '',
-    icon: options?.icon || defaultIcon,
-    badge: options?.badge || defaultBadge,
-    image: options?.image || undefined,
+    icon: toAbsoluteUrl(options?.icon, defaultIcon),
+    badge: toAbsoluteUrl(options?.badge, defaultBadge),
+    image: options?.image ? toAbsoluteUrl(options?.image) : undefined,
     tag: options?.tag || `talentio-${Date.now()}`,
     data: options?.data || { url: options?.url || '/?page=chat' },
     actions,
@@ -141,8 +155,8 @@ export async function triggerRichChatNotification(
 ): Promise<boolean> {
   return triggerDeviceNotification(`💬 ${senderName} • Talentio Chat`, {
     body: messageText,
-    icon: avatar || '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: avatar || '/icons/notification-icon.png',
+    badge: '/icons/notification-badge.png',
     tag: `chat-${conversationId || 'general'}`,
     url: conversationId ? `/?page=chat&convId=${conversationId}` : '/?page=chat',
     actions: [
@@ -169,8 +183,8 @@ export async function triggerRichAdminNoticeNotification(
   const targetUrl = actionUrl ? (actionUrl.startsWith('/') ? actionUrl : `/?page=${actionUrl}`) : '/?page=notices';
   return triggerDeviceNotification(`📢 Talentio: ${title}`, {
     body: description,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: '/icons/notification-icon.png',
+    badge: '/icons/notification-badge.png',
     tag: `notice-${noticeId || Date.now()}`,
     url: targetUrl,
     actions: [

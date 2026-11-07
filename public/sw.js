@@ -1,14 +1,18 @@
-// Talentio PWA Service Worker (talentio-pwa-v5-official-logo)
-const CACHE_NAME = 'talentio-pwa-v5-official-logo';
+// Talentio PWA Service Worker (talentio-pwa-v8-notification-fix)
+const CACHE_NAME = 'talentio-pwa-v8-notification-fix';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json?v=20261106',
-  '/assets/talentio-logo.png?v=20261106',
-  '/icons/icon-192.png?v=20261106',
-  '/icons/icon-512.png?v=20261106',
-  '/icons/icon-maskable-512.png?v=20261106',
-  '/icons/apple-touch-icon.png?v=20261106'
+  '/manifest.json?v=20261107',
+  '/assets/talentio-logo.png?v=20261107',
+  '/icons/notification-icon.png?v=20261107',
+  '/icons/notification-badge.png?v=20261107',
+  '/notification-icon.png',
+  '/notification-badge.png',
+  '/icons/icon-192.png?v=20261107',
+  '/icons/icon-512.png?v=20261107',
+  '/icons/icon-maskable-512.png?v=20261107',
+  '/icons/apple-touch-icon.png?v=20261107'
 ];
 
 // Install Event: Pre-cache essential app shell assets
@@ -145,11 +149,41 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  // Resolve absolute URLs for icon and badge to avoid Android background/closed service worker resolution failure
+  const origin = self.location.origin;
+  const toAbsoluteUrl = (path, fallback) => {
+    try {
+      const target = path || fallback;
+      if (!target) return undefined;
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        return target;
+      }
+      return new URL(target, origin).href;
+    } catch (e) {
+      return path || fallback;
+    }
+  };
+
+  // Dedicated official Talentio notification assets (192x192 icon & 96x96 transparent monochrome badge)
+  const defaultIcon = toAbsoluteUrl('/icons/notification-icon.png');
+  const defaultBadge = toAbsoluteUrl('/icons/notification-badge.png');
+
+  let resolvedIcon = toAbsoluteUrl(payload.icon, defaultIcon);
+  let resolvedBadge = toAbsoluteUrl(payload.badge, defaultBadge);
+
+  // If payload sent outdated or broken relative paths like '/icon-192.png', map to dedicated assets
+  if (!resolvedIcon || resolvedIcon.includes('icon-192.png')) {
+    resolvedIcon = defaultIcon;
+  }
+  if (!resolvedBadge || resolvedBadge.includes('icon-192.png')) {
+    resolvedBadge = defaultBadge;
+  }
+
   const options = {
     body: payload.body || '',
-    icon: payload.icon || '/icons/icon-192.png',
-    badge: payload.badge || '/icons/icon-192.png',
-    image: payload.image || undefined,
+    icon: resolvedIcon,
+    badge: resolvedBadge,
+    image: payload.image ? toAbsoluteUrl(payload.image) : undefined,
     tag: payload.tag || `talentio-${Date.now()}`,
     data: {
       url: payload.url || (payload.conversationId ? `/?page=chat&convId=${payload.conversationId}` : '/?page=chat'),
