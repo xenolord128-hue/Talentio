@@ -23,8 +23,26 @@ import {
   ExternalLink,
   ChevronRight,
   Filter,
-  Check
+  Check,
+  Smartphone,
+  SlidersHorizontal,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import { 
+  StatsWidget, 
+  StatsGrid, 
+  AnalyticsWidget, 
+  ActivityWidget, 
+  ProgressWidget, 
+  QuickActionsWidget, 
+  NotificationWidget, 
+  SystemStatusWidget, 
+  ProfileWidget, 
+  ProjectsWidget, 
+  AIInsightWidget,
+  StatMetric
+} from '../components/widgets';
 
 export const DashboardPage: React.FC = () => {
   const { 
@@ -40,7 +58,8 @@ export const DashboardPage: React.FC = () => {
     openProposalModal,
     setActivePage,
     setSelectedFreelancer,
-    freelancers
+    freelancers,
+    setIsWidgetManagerOpen
   } = useGuide();
 
   // Dynamic Tabs based on User Role
@@ -51,6 +70,45 @@ export const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [payoutAmount, setPayoutAmount] = useState('2450');
   const [payoutMethod, setPayoutMethod] = useState<'bank' | 'payoneer' | 'stripe' | 'bkash'>('bank');
+
+  // Mobile Widget Customization State (Saved locally)
+  const [widgetVisibility, setWidgetVisibility] = useState({
+    quickActions: true,
+    analytics: true,
+    profile: true,
+    projects: true,
+    progress: true,
+    workstation: true,
+    aiInsights: true,
+    activity: true,
+    wallet: true,
+    notifications: true,
+    systemStatus: true,
+  });
+  const [showCustomizer, setShowCustomizer] = useState(false);
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('talentio_widget_visibility_v1');
+      if (saved) {
+        setWidgetVisibility((prev) => ({ ...prev, ...JSON.parse(saved) }));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleWidget = (key: keyof typeof widgetVisibility) => {
+    setWidgetVisibility((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem('talentio_widget_visibility_v1', JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   const formatCurrency = (amt: number) => {
     if (currency === 'EUR') return `€${Math.round(amt * 0.92)}`;
@@ -103,6 +161,16 @@ export const DashboardPage: React.FC = () => {
 
         {/* Primary Action Trigger */}
         <div className="flex flex-wrap items-center gap-2.5 relative z-10 w-full sm:w-auto">
+          <button
+            onClick={() => setIsWidgetManagerOpen(true)}
+            className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-[#A38BFF]/30 transition-all shadow-xs"
+            title="মোবাইল হোমস্ক্রিন উইজেট ও কাস্টমাইজার"
+          >
+            <Smartphone className="w-4 h-4 text-[#A38BFF]" />
+            <span className="hidden sm:inline">মোবাইল উইজেট</span>
+            <span className="sm:hidden">উইজেট</span>
+          </button>
+
           {isClient ? (
             <button
               onClick={() => setIsPostJobModalOpen(true)}
@@ -203,189 +271,391 @@ export const DashboardPage: React.FC = () => {
         </button>
       </div>
 
-      {/* 4 Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        
-        {/* Stat 1 */}
-        <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 shadow-sm hover:border-[#A38BFF] hover:shadow-lg transition-all space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              {isClient ? 'Available Balance' : 'Cleared Earnings'}
-            </span>
-            <div className="w-10 h-10 rounded-2xl bg-[#F2F0FF] text-[#3D2FD1] flex items-center justify-center shadow-xs">
-              <DollarSign className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#3D2FD1] font-display">
-            {formatCurrency(user?.balanceAvailable || 8450)}
-          </div>
-          <div className="text-xs text-emerald-600 font-bold flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4" />
-            <span>Ready for withdrawal or escrow lock</span>
-          </div>
-        </div>
-
-        {/* Stat 2 */}
-        <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 shadow-sm hover:border-[#A38BFF] hover:shadow-lg transition-all space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Escrow In-Holding</span>
-            <div className="w-10 h-10 rounded-2xl bg-[#F2F0FF] text-[#6E5BFF] flex items-center justify-center shadow-xs">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#1A1633] font-display">
-            {formatCurrency(contract.totalAmount)}
-          </div>
-          <div className="text-xs text-slate-500 font-medium">
-            Protected in Contract #{contract.orderNumber}
-          </div>
-        </div>
-
-        {/* Stat 3 */}
-        <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 shadow-sm hover:border-[#A38BFF] hover:shadow-lg transition-all space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              {isClient ? 'Active Open Jobs' : 'Active Proposals'}
-            </span>
-            <div className="w-10 h-10 rounded-2xl bg-[#F2F0FF] text-[#3D2FD1] flex items-center justify-center shadow-xs">
-              <Layers className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#1A1633] font-display">
-            {isClient ? postedJobs.length : proposals.length}
-          </div>
-          <div className="text-xs text-slate-500 font-medium">
-            {isClient ? 'Receiving bids from top talent' : 'Under client review'}
-          </div>
-        </div>
-
-        {/* Stat 4 */}
-        <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 shadow-sm hover:border-[#A38BFF] hover:shadow-lg transition-all space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Escrow Tier Status</span>
-            <div className="w-10 h-10 rounded-2xl bg-[#F2F0FF] text-emerald-600 flex items-center justify-center shadow-xs">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-[#3D2FD1] font-display">
-            Tier {user?.escrowTier || 1} Pro
-          </div>
-          <div className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>100% Dispute-Free Payouts</span>
-          </div>
-        </div>
-
-      </div>
+      {/* Dynamic KPI Metrics calculated from real user and contract state */}
+      <StatsGrid 
+        metrics={[
+          {
+            id: 'balance',
+            title: isClient ? 'Available Balance' : 'Cleared Earnings',
+            value: formatCurrency(user?.balanceAvailable || 8450),
+            changePercent: 16.0,
+            trend: 'up',
+            supportingText: 'Ready for withdrawal or escrow lock',
+            icon: 'DollarSign',
+            sparkline: [18, 22, 20, 26, 24, 30, 28, 35, 33, 42],
+          },
+          {
+            id: 'escrow',
+            title: 'Escrow In-Holding',
+            value: formatCurrency(contract.totalAmount),
+            changePercent: 12.4,
+            trend: 'up',
+            supportingText: `Contract #${contract.orderNumber}`,
+            icon: 'ShieldCheck',
+            sparkline: [25, 27, 30, 32, 34, 36, 40, 42],
+          },
+          {
+            id: 'active_items',
+            title: isClient ? 'Active Open Jobs' : 'Active Proposals',
+            value: isClient ? postedJobs.length : proposals.length,
+            changePercent: isClient ? 14.2 : 8.5,
+            trend: 'up',
+            supportingText: isClient ? 'Receiving bids from top talent' : 'Under client review',
+            icon: 'Layers',
+            sparkline: [8, 10, 12, 14, 15, 18, 20],
+          },
+          {
+            id: 'tier_status',
+            title: 'Escrow Tier Status',
+            value: `Tier ${user?.escrowTier || 1} Pro`,
+            changePercent: 100,
+            trend: 'up',
+            supportingText: '100% Dispute-Free Payouts',
+            icon: 'CheckCircle2',
+            sparkline: [90, 92, 94, 96, 98, 100],
+          },
+        ]}
+      />
 
       {/* ========================================================================= */}
-      {/* TAB: OVERVIEW */}
+      {/* TAB: OVERVIEW (Modular Widget System) */}
       {/* ========================================================================= */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="space-y-8">
           
-          {/* Main 2 Cols: Active Workstation & Milestones */}
-          <div className="lg:col-span-2 p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-[#1A1633]">Live Workstation Activity</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Current escrow contracts and milestone deliverables</p>
+          {/* Mobile-Friendly Widget Customizer Bar */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/80 backdrop-blur-md border border-[#A38BFF]/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#F2F0FF] text-[#3D2FD1] flex items-center justify-center shrink-0">
+                <SlidersHorizontal className="w-4 h-4" />
               </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-extrabold text-[#1A1633] font-display">
+                  মোবাইল ও ড্যাশবোর্ড উইজেট কন্ট্রোল (Widget Controls)
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  মোবাইল বা ডেস্কটপ থেকে সরাসরি যেকোনো উইজেট অন/অফ ও সাজিয়ে নিন
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
-                onClick={() => setActivePage('workstation')}
-                className="text-xs font-bold text-[#3D2FD1] hover:underline flex items-center gap-1 cursor-pointer"
+                onClick={() => setShowCustomizer(!showCustomizer)}
+                className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+                  showCustomizer 
+                    ? 'bg-[#3D2FD1] text-white border-[#3D2FD1]' 
+                    : 'bg-white text-slate-700 hover:text-[#3D2FD1] border-slate-200'
+                }`}
               >
-                <span>Full Workstation</span>
-                <ChevronRight className="w-4 h-4" />
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>{showCustomizer ? 'কাস্টমাইজার বন্ধ করুন' : 'উইজেট কাস্টমাইজ'}</span>
+              </button>
+
+              <button
+                onClick={() => setIsWidgetManagerOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-[#F2F0FF] hover:bg-[#E3EDF9] text-[#3D2FD1] text-xs font-bold border border-[#A38BFF]/30 flex items-center gap-1.5 cursor-pointer transition-all"
+                title="অ্যান্ড্রয়েড হোমস্ক্রিন উইজেট"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Android হোমস্ক্রিন</span>
+                <span className="sm:hidden">হোমস্ক্রিন</span>
               </button>
             </div>
+          </div>
 
-            {/* Contract Item */}
-            <div className="p-5 rounded-2xl bg-white/70 backdrop-blur-md border border-[#A38BFF]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#3D2FD1] to-[#6E5BFF] text-white flex items-center justify-center shrink-0 shadow-md">
-                  <ShieldCheck className="w-6 h-6 text-[#A38BFF]" />
-                </div>
+          {/* Interactive Mobile Customizer Drawer */}
+          {showCustomizer && (
+            <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-[#1A1633] to-[#23324A] text-white border border-[#A38BFF]/30 shadow-lg animate-fade-in space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-sm text-[#1A1633]">{contract.title}</h4>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                    <span>Client: <strong>{contract.clientName}</strong></span>
-                    <span>•</span>
-                    <span>Talent: <strong>{contract.freelancerName}</strong></span>
-                  </div>
+                  <h4 className="text-xs sm:text-sm font-extrabold text-white">
+                    মোবাইলে কোন কোন উইজেট দেখাতে চান নির্বাচন করুন
+                  </h4>
+                  <p className="text-[11px] text-slate-300">
+                    টগল চাপলে পরিবর্তন স্বয়ংক্রিয়ভাবে আপনার ফোনে সংরক্ষিত থাকবে।
+                  </p>
                 </div>
+                <button
+                  onClick={() => setShowCustomizer(false)}
+                  className="text-xs text-[#A38BFF] hover:text-white font-bold cursor-pointer"
+                >
+                  সম্পন্ন
+                </button>
               </div>
 
-              <div className="text-right shrink-0">
-                <span className="text-sm font-extrabold text-[#3D2FD1] block font-mono">{formatCurrency(contract.totalAmount)}</span>
-                <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  {contract.status}
-                </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                {[
+                  { key: 'quickActions', label: 'কুইক অ্যাকশন বার' },
+                  { key: 'analytics', label: 'অ্যানালিটিক্স চার্ট' },
+                  { key: 'profile', label: 'প্রোফাইল সামারি' },
+                  { key: 'projects', label: 'প্রজেক্টস ও অর্ডার' },
+                  { key: 'progress', label: 'মাইলস্টোন অগ্রগতি' },
+                  { key: 'workstation', label: 'লাইভ ওয়ার্কস্টেশন' },
+                  { key: 'aiInsights', label: 'এআই ইনসাইটস' },
+                  { key: 'activity', label: 'অ্যাক্টিভিটি টাইমলাইন' },
+                  { key: 'wallet', label: 'মাল্টি-কারেন্সি ওয়ালেট' },
+                  { key: 'notifications', label: 'নোটিফিকেশন অ্যালার্ট' },
+                  { key: 'systemStatus', label: 'সিস্টেম স্ট্যাটাস SLA' },
+                ].map(({ key, label }) => {
+                  const isVisible = widgetVisibility[key as keyof typeof widgetVisibility];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => toggleWidget(key as keyof typeof widgetVisibility)}
+                      className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center justify-between cursor-pointer transition-all ${
+                        isVisible
+                          ? 'bg-[#3D2FD1]/60 border-[#A38BFF]/50 text-white'
+                          : 'bg-white/5 border-white/10 text-slate-400 opacity-60'
+                      }`}
+                    >
+                      <span className="truncate">{label}</span>
+                      {isVisible ? (
+                        <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0 ml-1" />
+                      ) : (
+                        <EyeOff className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          )}
 
-            {/* Milestones Preview */}
-            <div className="space-y-2.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Milestone Deliverables</span>
-              {(contract.milestones || []).map((m, idx) => (
-                <div key={m.id} className="p-4 rounded-xl bg-white/80 backdrop-blur-md border border-[#A38BFF]/20 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                      m.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {m.status === 'completed' ? '✓' : idx + 1}
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-800 block">{m.name}</span>
-                      <span className="text-[11px] text-slate-500">{m.dueDate}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-slate-700">{formatCurrency(m.amount)}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      m.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {m.status}
-                    </span>
-                  </div>
+          {/* Widget 1: Quick Actions Command Bar */}
+          {widgetVisibility.quickActions && (
+            <QuickActionsWidget
+              onCreateProject={() => setIsPostJobModalOpen(true)}
+              onCreateGig={() => setIsCreateGigModalOpen(true)}
+              onViewWorkstation={() => setActivePage('workstation')}
+              onManageOrders={() => setActiveTab(isClient ? 'contracts' : 'proposals')}
+              onOpenSettings={() => setActivePage('settings')}
+              onInvite={() => showToast('Collaborator invite link copied to clipboard!', 'success')}
+            />
+          )}
+
+          {/* Row 1: Analytics & Profile Summary (2 Cols + 1 Col) */}
+          {(widgetVisibility.analytics || widgetVisibility.profile) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+              {widgetVisibility.analytics && (
+                <div className={widgetVisibility.profile ? "lg:col-span-2" : "lg:col-span-3"}>
+                  <AnalyticsWidget 
+                    onExport={() => showToast('Analytics export generated and downloaded!', 'success')}
+                  />
                 </div>
-              ))}
+              )}
+              {widgetVisibility.profile && (
+                <div className={widgetVisibility.analytics ? "lg:col-span-1" : "lg:col-span-3"}>
+                  <ProfileWidget
+                    profile={{
+                      name: user?.name || 'Alexander Vance',
+                      username: user?.name ? user.name.toLowerCase().replace(/\s+/g, '') : 'alexandervance',
+                      email: user?.email || 'alexander@vancefintech.com',
+                      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+                      role: isClient 
+                        ? (user?.companyName || 'Verified Client Buyer') 
+                        : (user?.title || 'Senior UI/UX & Design Systems Architect'),
+                      isVerified: true,
+                      completionPercentage: 95,
+                      rating: 4.98,
+                      reviewsCount: 68,
+                      stats: [
+                        { label: isClient ? 'Jobs' : 'Completed', value: isClient ? postedJobs.length : '142' },
+                        { label: 'Win Rate', value: '42.8%' },
+                        { label: 'Escrow Tier', value: `Tier ${user?.escrowTier || 1}` },
+                      ],
+                    }}
+                    onViewProfile={() => setActivePage('freelancers')}
+                    onEditProfile={() => setActivePage('settings')}
+                  />
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Quick Ledger / Multi-Currency Box (1 Col) */}
-          <div className="p-6 rounded-3xl bg-[#1A1633]/90 backdrop-blur-md text-white border border-[#A38BFF]/40 shadow-md space-y-6">
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-white">Multi-Currency Wallet</h3>
-              <p className="text-xs text-slate-300">Escrow-backed balances in major currencies.</p>
+          {/* Row 2: Projects & Progress Velocity (2 Cols + 1 Col) */}
+          {(widgetVisibility.projects || widgetVisibility.progress) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+              {widgetVisibility.projects && (
+                <div className={widgetVisibility.progress ? "lg:col-span-2" : "lg:col-span-3"}>
+                  <ProjectsWidget 
+                    onViewAll={() => setActivePage('workstation')}
+                    onProjectClick={(p) => {
+                      showToast(`Viewing details for "${p.name}" in Workstation`, 'info');
+                      setActivePage('workstation');
+                    }}
+                  />
+                </div>
+              )}
+              {widgetVisibility.progress && (
+                <div className={widgetVisibility.projects ? "lg:col-span-1" : "lg:col-span-3"}>
+                  <ProgressWidget
+                    onGoalAction={(goal) => {
+                      showToast(`Opening action checklist for: ${goal.title}`, 'info');
+                    }}
+                  />
+                </div>
+              )}
             </div>
+          )}
 
-            <div className="space-y-3">
-              <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-[#A38BFF]/30 flex items-center justify-between text-xs">
-                <span className="text-slate-300">USD Primary Balance</span>
-                <span className="font-extrabold text-white font-mono">${user?.balanceAvailable || 8450}.00</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-[#A38BFF]/30 flex items-center justify-between text-xs">
-                <span className="text-slate-300">EUR Escrow Ledger</span>
-                <span className="font-extrabold text-white font-mono">€3,200.00</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-[#A38BFF]/30 flex items-center justify-between text-xs">
-                <span className="text-slate-300">GBP Balance</span>
-                <span className="font-extrabold text-white font-mono">£1,850.00</span>
-              </div>
+          {/* Row 3: Workstation Milestones & Multi-Currency Ledger + System Health & Notifications */}
+          {(widgetVisibility.workstation || widgetVisibility.aiInsights || widgetVisibility.activity || widgetVisibility.wallet || widgetVisibility.notifications || widgetVisibility.systemStatus) && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+              
+              {/* Left 2 Cols: Live Workstation Activity, AI Market Insights, Activity Timeline */}
+              {(widgetVisibility.workstation || widgetVisibility.aiInsights || widgetVisibility.activity) && (
+                <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+                  {/* Existing Live Workstation Activity */}
+                  {widgetVisibility.workstation && (
+                    <div className="p-6 sm:p-8 rounded-3xl bg-white/85 backdrop-blur-md border border-[#A38BFF]/30 shadow-sm space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-base font-bold text-[#1A1633]">Live Workstation Activity</h3>
+                          <p className="text-xs text-slate-500 mt-0.5">Current escrow contracts and milestone deliverables</p>
+                        </div>
+                        <button
+                          onClick={() => setActivePage('workstation')}
+                          className="text-xs font-bold text-[#3D2FD1] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Full Workstation</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Contract Item */}
+                      <div className="p-5 rounded-2xl bg-white/70 backdrop-blur-md border border-[#A38BFF]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#3D2FD1] to-[#6E5BFF] text-white flex items-center justify-center shrink-0 shadow-md">
+                            <ShieldCheck className="w-6 h-6 text-[#A38BFF]" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-[#1A1633]">{contract.title}</h4>
+                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                              <span>Client: <strong>{contract.clientName}</strong></span>
+                              <span>•</span>
+                              <span>Talent: <strong>{contract.freelancerName}</strong></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-sm font-extrabold text-[#3D2FD1] block font-mono">{formatCurrency(contract.totalAmount)}</span>
+                          <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {contract.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Milestones Preview */}
+                      <div className="space-y-2.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Milestone Deliverables</span>
+                        {(contract.milestones || []).map((m, idx) => (
+                          <div key={m.id} className="p-4 rounded-xl bg-white/80 backdrop-blur-md border border-[#A38BFF]/20 flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                                m.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {m.status === 'completed' ? '✓' : idx + 1}
+                              </div>
+                              <div>
+                                <span className="font-bold text-slate-800 block">{m.name}</span>
+                                <span className="text-[11px] text-slate-500">{m.dueDate}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono font-bold text-slate-700">{formatCurrency(m.amount)}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                m.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {m.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Insight Widget */}
+                  {widgetVisibility.aiInsights && (
+                    <AIInsightWidget
+                      onApplyAction={(ins) => {
+                        showToast(`Applied AI strategy: ${ins.recommendedAction}`, 'success');
+                      }}
+                    />
+                  )}
+
+                  {/* Real-time Activity Timeline */}
+                  {widgetVisibility.activity && (
+                    <ActivityWidget
+                      onViewAll={() => setActivePage('workstation')}
+                      onItemClick={(item) => {
+                        showToast(`Selected activity: ${item.title}`, 'info');
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Right 1 Col: Wallet, System Status, Notifications */}
+              {(widgetVisibility.wallet || widgetVisibility.notifications || widgetVisibility.systemStatus) && (
+                <div className="lg:col-span-1 space-y-6 sm:space-y-8">
+                  {/* Quick Ledger / Multi-Currency Box */}
+                  {widgetVisibility.wallet && (
+                    <div className="p-6 rounded-3xl bg-[#1A1633]/90 backdrop-blur-md text-white border border-[#A38BFF]/40 shadow-md space-y-6">
+                      <div className="space-y-1">
+                        <h3 className="text-base font-bold text-white">Multi-Currency Wallet</h3>
+                        <p className="text-xs text-slate-300">Escrow-backed balances in major currencies.</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-[#A38BFF]/30 flex items-center justify-between text-xs">
+                          <span className="text-slate-300">USD Primary Balance</span>
+                          <span className="font-extrabold text-white font-mono">${user?.balanceAvailable || 8450}.00</span>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-[#A38BFF]/30 flex items-center justify-between text-xs">
+                          <span className="text-slate-300">EUR Escrow Ledger</span>
+                          <span className="font-extrabold text-white font-mono">€3,200.00</span>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-[#A38BFF]/30 flex items-center justify-between text-xs">
+                          <span className="text-slate-300">GBP Balance</span>
+                          <span className="font-extrabold text-white font-mono">£1,850.00</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setActiveTab('payouts')}
+                        className="w-full py-3 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold shadow-md shadow-[#3D2FD1]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>{isClient ? 'Deposit Escrow Funds' : 'Initiate Payout'}</span>
+                        <ArrowUpRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Notification Center Widget */}
+                  {widgetVisibility.notifications && (
+                    <NotificationWidget
+                      onNotificationClick={(n) => {
+                        showToast(`Opened notification: ${n.title}`, 'info');
+                      }}
+                    />
+                  )}
+
+                  {/* System Infrastructure SLA Widget */}
+                  {widgetVisibility.systemStatus && (
+                    <SystemStatusWidget />
+                  )}
+                </div>
+              )}
+
             </div>
-
-            <button
-              onClick={() => setActiveTab('payouts')}
-              className="w-full py-3 rounded-xl bg-[#3D2FD1] hover:bg-[#6E5BFF] text-white text-xs font-bold shadow-md shadow-[#3D2FD1]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>{isClient ? 'Deposit Escrow Funds' : 'Initiate Payout'}</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </button>
-          </div>
+          )}
 
         </div>
       )}
+
 
       {/* ========================================================================= */}
       {/* TAB: RECOMMENDED JOBS FEED (For Freelancers) */}
