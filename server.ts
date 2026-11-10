@@ -677,27 +677,6 @@ app.post("/api/push/unsubscribe", (req: Request, res: Response) => {
   res.json({ success: true, message: "Device unregistered from Web Push" });
 });
 
-// Web Push: Trigger Test Notification
-app.post("/api/push/test", async (req: Request, res: Response) => {
-  const { userId, title, body } = req.body;
-  if (!userId) {
-    return res.status(400).json({ error: "userId is required" });
-  }
-
-  await sendPushToUser(userId, {
-    title: title || "Talentio Test Notification",
-    body: body || "Web Push is operating seamlessly across your PWA devices!",
-    icon: "/icons/notification-icon.png",
-    badge: "/icons/notification-badge.png",
-    tag: `test-${Date.now()}`,
-    data: {
-      url: "/?page=chat"
-    }
-  });
-
-  res.json({ success: true, message: "Test notification dispatched." });
-});
-
 // AI: Natural Language Talent Search
 app.post("/api/ai/talent-search", async (req: Request, res: Response) => {
   try {

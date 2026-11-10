@@ -80,7 +80,11 @@ export function formatUserProfile(firebaseUser: FirebaseUser, docData?: any): Us
     name: docData?.name || docData?.displayName || firebaseUser.displayName || 'Talentio Member',
     displayName: docData?.displayName || docData?.name || firebaseUser.displayName || 'Talentio Member',
     fullName: docData?.fullName || docData?.name || firebaseUser.displayName || '',
-    handle: docData?.handle || `@${(docData?.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '')}_${firebaseUser.uid.slice(0, 4)}`,
+    handle: (docData?.handle || `@${(docData?.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`).startsWith('@') 
+      ? (docData?.handle || `@${(docData?.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`)
+      : `@${docData?.handle}`,
+    username: (docData?.username || (docData?.handle ? docData.handle.replace(/^@/, '') : `${(docData?.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`)),
+    normalized_username: (docData?.normalized_username || (docData?.username ? docData.username.toLowerCase().trim() : (docData?.handle ? docData.handle.replace(/^@/, '').toLowerCase().trim() : `${(docData?.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`.toLowerCase()))),
     email,
     phone: docData?.phone || firebaseUser.phoneNumber || '',
     avatar: docData?.avatar || firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
@@ -140,7 +144,11 @@ export async function syncUserProfileDocument(firebaseUser: FirebaseUser, additi
     name: additionalData.name || firebaseUser.displayName || 'Talentio Member',
     displayName: additionalData.name || firebaseUser.displayName || 'Talentio Member',
     fullName: additionalData.fullName || additionalData.name || firebaseUser.displayName || '',
-    handle: additionalData.handle || `@${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '')}_${firebaseUser.uid.slice(0, 4)}`,
+    handle: (additionalData.handle || `@${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`).startsWith('@')
+      ? (additionalData.handle || `@${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`)
+      : `@${additionalData.handle}`,
+    username: (additionalData.username || (additionalData.handle ? additionalData.handle.replace(/^@/, '') : `${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`)),
+    normalized_username: (additionalData.normalized_username || (additionalData.username ? additionalData.username.toLowerCase().trim() : (additionalData.handle ? additionalData.handle.replace(/^@/, '').toLowerCase().trim() : `${(additionalData.name || firebaseUser.displayName || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}_${firebaseUser.uid.slice(0, 4)}`.toLowerCase()))),
     email,
     phone: additionalData.phone || firebaseUser.phoneNumber || '',
     avatar: additionalData.avatar || firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',

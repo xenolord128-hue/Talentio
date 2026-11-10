@@ -26,6 +26,8 @@ export const FreelancerProfileModal: React.FC = () => {
     savedFreelancerIds, 
     toggleSaveFreelancer, 
     currency,
+    user,
+    startChatWithUser,
     setActivePage,
     sendChatMessage,
     showToast
@@ -58,14 +60,27 @@ export const FreelancerProfileModal: React.FC = () => {
     return `$${amt}`;
   };
 
+  const isSelf = !!(user?.id && selectedFreelancer && user.id === selectedFreelancer.id);
+
+  const handleOpenDirectChat = () => {
+    if (isSelf) {
+      showToast('You cannot message yourself', 'warning');
+      return;
+    }
+    startChatWithUser(selectedFreelancer);
+    setIsHireModalOpen(false);
+  };
+
   const handleSendMessageAndHire = () => {
+    if (isSelf) {
+      showToast('You cannot message yourself', 'warning');
+      return;
+    }
+    startChatWithUser(selectedFreelancer);
     if (customMessage.trim()) {
       sendChatMessage(customMessage, true, parseFloat(offerBudget) || 500);
-    } else {
-      sendChatMessage(`Hi ${selectedFreelancer.name}, I would like to discuss a project with an escrow budget of $${offerBudget}.`, true, parseFloat(offerBudget) || 500);
     }
     setIsHireModalOpen(false);
-    setActivePage('chat');
     showToast(`Initiated contract chat with ${selectedFreelancer.name}!`, 'success');
   };
 
@@ -320,20 +335,23 @@ export const FreelancerProfileModal: React.FC = () => {
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
-              onClick={() => {
-                setIsHireModalOpen(false);
-                setActivePage('chat');
-              }}
-              className="flex-1 sm:flex-none px-4 py-3 min-h-[48px] rounded-xl border border-[#E3EDF9]/50 text-[#3A5A86] hover:bg-[#E3EDF9] text-xs sm:text-sm font-bold cursor-pointer flex items-center justify-center"
+              onClick={handleOpenDirectChat}
+              disabled={isSelf}
+              className={`flex-1 sm:flex-none px-4 py-3 min-h-[48px] rounded-xl border border-[#E3EDF9]/50 text-xs sm:text-sm font-bold flex items-center justify-center transition-all ${
+                isSelf ? 'opacity-50 cursor-not-allowed text-slate-400 bg-slate-100' : 'text-[#3A5A86] hover:bg-[#E3EDF9] cursor-pointer'
+              }`}
             >
-              Open Direct Chat
+              {isSelf ? 'This is Your Profile' : 'Open Direct Chat'}
             </button>
             <button
               onClick={handleSendMessageAndHire}
-              className="flex-1 sm:flex-none px-5 py-3 min-h-[48px] rounded-xl bg-[#3A5A86] hover:bg-[#3A5A86] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#3A5A86]/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              disabled={isSelf}
+              className={`flex-1 sm:flex-none px-5 py-3 min-h-[48px] rounded-xl text-white text-xs sm:text-sm font-bold shadow-md shadow-[#3A5A86]/30 transition-all flex items-center justify-center gap-1.5 ${
+                isSelf ? 'bg-slate-400 opacity-50 cursor-not-allowed' : 'bg-[#3A5A86] hover:bg-[#23324A] cursor-pointer'
+              }`}
             >
-              <span>Hire with Escrow</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>{isSelf ? 'Your Profile' : 'Hire with Escrow'}</span>
+              {!isSelf && <ArrowRight className="w-4 h-4" />}
             </button>
           </div>
         </div>

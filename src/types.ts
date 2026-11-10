@@ -304,6 +304,8 @@ export interface ConversationParticipant {
   id: string;
   name: string;
   handle: string;
+  username?: string;
+  normalized_username?: string;
   avatar: string;
   role: 'freelancer' | 'client' | 'agency' | 'admin' | 'bot' | 'assistant';
   title?: string;
@@ -374,6 +376,8 @@ export interface UserProfile {
   displayName?: string;
   fullName?: string;
   handle: string;
+  username?: string;
+  normalized_username?: string;
   email?: string;
   phone?: string;
   avatar: string;

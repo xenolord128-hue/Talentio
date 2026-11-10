@@ -17,7 +17,9 @@ import {
   subscribeToChatMessages, 
   sendChatMessageDocument, 
   saveConversationDocument,
-  markMessagesSeenInFirestore 
+  markMessagesSeenInFirestore,
+  subscribeToConversations,
+  getOrCreateDirectConversation
 } from '../lib/firestore';
 import { detectLanguageFromText } from '../data/languagesData';
 import { realtimeService } from '../lib/realtimeService';
@@ -54,6 +56,8 @@ export const ChatPage: React.FC = () => {
     setActivePage, 
     selectedFreelancer, 
     setSelectedFreelancer,
+    targetChatUser,
+    setTargetChatUser,
     showToast,
     freelancers,
     startServiceOrderEscrow,
@@ -92,14 +96,8 @@ export const ChatPage: React.FC = () => {
     }
   });
 
-  // Active Selected Conversation ID — REQUIREMENT 2: No account automatically open on first load / entry!
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
-    if (selectedFreelancer) {
-      const found = INITIAL_CONVERSATIONS.find(c => c.participant.id === selectedFreelancer.id);
-      if (found) return found.id;
-    }
-    return null; // Empty on first open, user chooses from conversation list
-  });
+  // Active Selected Conversation ID — REQUIREMENT 4: DO NOT automatically open a random conversation on initial load!
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // Modals & States
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
@@ -380,51 +378,81 @@ export const ChatPage: React.FC = () => {
     }
   }, [activeConversationId, messagesMap[activeConversationId || '']?.length]);
 
-  // When selectedFreelancer updates from another page, create or jump to conversation
+  // Real-time Firestore conversations synchronization for current user
   useEffect(() => {
-    if (selectedFreelancer) {
-      const existing = conversations.find(c => c.participant.id === selectedFreelancer.id);
-      if (existing) {
-        setActiveConversationId(existing.id);
-      } else {
-        const newConv: Conversation = {
-          id: `conv-${selectedFreelancer.id}`,
-          participant: {
-            id: selectedFreelancer.id,
-            name: selectedFreelancer.name,
-            handle: selectedFreelancer.handle || `@${selectedFreelancer.name.toLowerCase().replace(/\s+/g, '')}`,
-            avatar: selectedFreelancer.avatar,
-            role: 'freelancer',
-            verified: true,
-            online: !!selectedFreelancer.availableNow,
-            lastSeen: selectedFreelancer.availableNow ? 'Online' : 'Recently',
-            countryFlag: selectedFreelancer.countryFlag
-          },
-          participantIds: [user?.id || 'user-me', selectedFreelancer.id],
-          lastMessage: {
-            senderId: 'user-me',
-            sender_id: user?.id || 'user-me',
-            receiver_id: selectedFreelancer.id,
-            text: 'Conversation opened',
-            timestamp: 'Just now',
-            status: 'sent',
-            read_status: 'sent'
-          },
-          unreadCount: 0,
-          isPinned: false,
-          isMuted: false,
-          category: 'direct'
-        };
-
-        setConversations(prev => [newConv, ...prev]);
-        setMessagesMap(prev => ({
-          ...prev,
-          [newConv.id]: []
-        }));
-        setActiveConversationId(newConv.id);
+    if (!user?.id) return;
+    const unsubscribe = subscribeToConversations(user.id, (firestoreConvs) => {
+      if (firestoreConvs && firestoreConvs.length > 0) {
+        setConversations(prev => {
+          const map = new Map<string, Conversation>();
+          // Preserve existing state
+          prev.forEach(c => map.set(c.id, c));
+          // Merge incoming Firestore updates
+          firestoreConvs.forEach(c => {
+            const existing = map.get(c.id);
+            map.set(c.id, existing ? { ...existing, ...c } : c);
+          });
+          return Array.from(map.values());
+        });
       }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [user?.id]);
+
+  // Handle opening or starting 1-to-1 conversation with a target user (via profile button or username search)
+  const handleStartChatWithUser = async (target: any) => {
+    if (!target) return;
+    if (user?.id && target.id === user.id) {
+      showToast('You cannot message yourself', 'warning');
+      return;
     }
-  }, [selectedFreelancer]);
+
+    const currentSender = {
+      id: user?.id || 'user-me',
+      name: user?.name || 'You',
+      handle: user?.handle || '@user_me',
+      avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      role: (user?.userType || 'client') as any
+    };
+
+    const targetParticipant = {
+      id: target.id,
+      name: target.name,
+      handle: target.handle || `@${(target.username || target.name || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
+      username: target.username || target.handle?.replace(/^@/, ''),
+      avatar: target.avatar,
+      role: (target.role || 'freelancer') as any,
+      title: target.title,
+      countryFlag: target.countryFlag,
+      verified: target.verified ?? true
+    };
+
+    try {
+      const conv = await getOrCreateDirectConversation(currentSender, targetParticipant);
+      
+      setConversations(prev => {
+        const exists = prev.find(c => c.id === conv.id);
+        if (exists) return prev;
+        return [conv, ...prev];
+      });
+
+      setActiveConversationId(conv.id);
+      showToast(`Chat opened with ${target.name}`, 'info');
+    } catch (err) {
+      console.warn('Error opening chat conversation:', err);
+    }
+  };
+
+  // When targetChatUser is provided (from clicking Message on a profile or modal), jump straight to that chat
+  useEffect(() => {
+    if (targetChatUser) {
+      handleStartChatWithUser(targetChatUser);
+      setTargetChatUser(null);
+    }
+  }, [targetChatUser]);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
   const activeMessages = activeConversationId ? (messagesMap[activeConversationId] || []) : [];
@@ -1306,6 +1334,8 @@ export const ChatPage: React.FC = () => {
           onDeleteConversation={handleDeleteConversation}
           onMarkAsRead={handleMarkAsRead}
           onBackToMarketplace={() => setActivePage('home')}
+          onStartChatWithUser={handleStartChatWithUser}
+          currentUserId={user?.id}
         />
       </div>
 
@@ -1415,7 +1445,7 @@ export const ChatPage: React.FC = () => {
             </h3>
             
             <p className="text-xs text-slate-500 max-w-md leading-relaxed mb-6">
-              Select an account from the left list to open the conversation, review milestones, and exchange project deliverables.
+              Select a conversation from the left to start messaging, or search for a username to start a new private 1-to-1 conversation.
             </p>
 
             <div className="flex items-center gap-3">

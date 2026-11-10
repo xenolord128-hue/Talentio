@@ -384,6 +384,9 @@ interface GuideContextType {
   setSelectedFreelancer: (f: Freelancer | null) => void;
   selectedService: TalentioService | null;
   setSelectedService: (s: TalentioService | null) => void;
+  targetChatUser: any | null;
+  setTargetChatUser: (u: any | null) => void;
+  startChatWithUser: (target: any) => void;
 
   // Marketplace Data
   freelancers: Freelancer[];
@@ -773,6 +776,17 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return TALENTIO_SERVICES[0];
   });
+  const [targetChatUser, setTargetChatUser] = useState<any | null>(null);
+
+  const startChatWithUser = (target: any) => {
+    if (!target) return;
+    if (user?.id && target.id === user.id) {
+      showToast('You cannot message yourself', 'warning');
+      return;
+    }
+    setTargetChatUser(target);
+    setActivePage('chat');
+  };
 
   // Data Collections
   const [freelancers] = useState<Freelancer[]>(TALENTIO_FREELANCERS);
@@ -2366,6 +2380,9 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSelectedFreelancer,
     selectedService,
     setSelectedService,
+    targetChatUser,
+    setTargetChatUser,
+    startChatWithUser,
     freelancers,
     services,
     postedJobs,
@@ -2445,6 +2462,7 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     proposalJobTarget,
     selectedFreelancer,
     selectedService,
+    targetChatUser,
     freelancers,
     services,
     postedJobs,

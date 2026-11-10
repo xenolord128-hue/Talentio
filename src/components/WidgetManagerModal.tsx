@@ -11,14 +11,12 @@ import {
   ExternalLink, 
   Copy, 
   Eye, 
-  Send,
-  Layers,
-  Palette,
-  Clock,
-  ChevronRight,
-  Maximize2
+  Layers, 
+  Palette, 
+  Clock, 
+  ChevronRight, 
+  Maximize2 
 } from 'lucide-react';
-import { triggerRichChatNotification, triggerRichAdminNoticeNotification } from '../utils/serviceWorkerRegistration';
 
 export const WidgetManagerModal: React.FC = () => {
   const { 
@@ -40,7 +38,6 @@ export const WidgetManagerModal: React.FC = () => {
   const [showActiveDot, setShowActiveDot] = useState(true);
   const [languageMode, setLanguageMode] = useState<'bn' | 'en'>('bn');
   const [copiedCode, setCopiedCode] = useState(false);
-  const [sendingTest, setSendingTest] = useState(false);
 
   if (!isWidgetManagerOpen) return null;
 
@@ -55,33 +52,6 @@ export const WidgetManagerModal: React.FC = () => {
     title: 'অফিসিয়াল মার্কেটপ্লেস নোটিশ',
     description: 'নতুন এসক্রো সুরক্ষা ২.০ চালু হয়েছে। ১০০% নিরাপদ লেনদেন নিশ্চিত করুন।',
     timestamp: '10m ago'
-  };
-
-  // Test Notification matching Screenshot 3
-  const handleTestNotification = async () => {
-    setSendingTest(true);
-    try {
-      if (selectedWidgetType === 'chat') {
-        await triggerRichChatNotification(
-          'Md Sydur Rahman (Client)',
-          '🔥 আপনার পরিবারের নিরাপত্তার জন্য নতুন ডেলিভারি আপডেট করা হয়েছে। দয়া করে ওপেন করুন।',
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-          'conv-1'
-        );
-      } else {
-        await triggerRichAdminNoticeNotification(
-          'Talentio অফিশিয়াল এনাউন্সমেন্ট',
-          'আপনার অ্যাকাউন্টে নতুন প্রজেক্ট ইনকোয়ারি এসেছে! ১০০% এসক্রো ফান্ড সুরক্ষিত আছে।',
-          '/?page=notices',
-          'notice-test'
-        );
-      }
-      showToast('ডিভাইসে রিচ নোটিফিকেশন পাঠানো হয়েছে! মোবাইল নোটিফিকেশন শেড চেক করুন।', 'success');
-    } catch (err) {
-      showToast('নোটিফিকেশন পারমিশন এনাবল করুন।', 'warning');
-    } finally {
-      setSendingTest(false);
-    }
   };
 
   const getThemeStyles = () => {
@@ -350,26 +320,8 @@ export const WidgetManagerModal: React.FC = () => {
               {/* Home Indicator line */}
               <div className="w-24 h-1 bg-white/20 rounded-full mt-5" />
             </div>
-
-            {/* Test Action Trigger (Direct Notification shade) */}
-            <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-xs text-slate-300">
-                  স্ক্রিনশটের মতো মোবাইল নোটিফিকেশন শেডে টেস্ট পাঠাতে চান?
-                </span>
-              </div>
-
-              <button
-                onClick={handleTestNotification}
-                disabled={sendingTest}
-                className="w-full sm:w-auto px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-emerald-900/30 shrink-0"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>{sendingTest ? 'পাঠানো হচ্ছে...' : 'টেস্ট নোটিফিকেশন পাঠান'}</span>
-              </button>
-            </div>
           </div>
+
 
           {/* Right Column: Customization Controls & Installation Guide */}
           <div className="lg:col-span-5 flex flex-col space-y-5">

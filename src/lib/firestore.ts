@@ -123,6 +123,185 @@ export async function updateUserRecord(userId: string, data: Partial<UserProfile
   }
 }
 
+export interface PublicUserSearchResult {
+  id: string;
+  name: string;
+  handle: string;
+  username: string;
+  avatar: string;
+  role: string;
+  title?: string;
+  countryFlag?: string;
+  verified?: boolean;
+  online?: boolean;
+}
+
+/**
+ * Fast, indexed, case-insensitive search for users by username / handle
+ * Never exposes private information (email, balance, password, phone, KYC)
+ */
+export async function searchUsersByUsername(
+  queryStr: string,
+  currentUserId?: string
+): Promise<PublicUserSearchResult[]> {
+  const clean = queryStr.trim().replace(/^@/, '').toLowerCase();
+  if (!clean || clean.length < 1) return [];
+
+  const resultsMap = new Map<string, PublicUserSearchResult>();
+
+  // 1. Search Firestore users collection by normalized_username prefix
+  try {
+    const usersRef = collection(db, 'users');
+    const qNormalized = query(
+      usersRef,
+      where('normalized_username', '>=', clean),
+      where('normalized_username', '<=', clean + '\uf8ff'),
+      limit(20)
+    );
+    const snapNormalized = await getDocs(qNormalized);
+    snapNormalized.docs.forEach(d => {
+      const data = d.data();
+      const uid = d.id;
+      if (currentUserId && uid === currentUserId) return;
+      const rawHandle = data.handle || `@${clean}`;
+      const handle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
+      const username = data.username || handle.replace(/^@/, '');
+      resultsMap.set(uid, {
+        id: uid,
+        name: data.name || data.displayName || 'Talentio Member',
+        handle,
+        username,
+        avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        role: data.role || data.userType || 'member',
+        title: data.title || '',
+        countryFlag: data.countryFlag || '🌐',
+        verified: data.verifiedBadge ?? true,
+        online: true
+      });
+    });
+
+    // 2. Also search by handle prefix
+    const qHandle = query(
+      usersRef,
+      where('handle', '>=', '@' + clean),
+      where('handle', '<=', '@' + clean + '\uf8ff'),
+      limit(20)
+    );
+    const snapHandle = await getDocs(qHandle);
+    snapHandle.docs.forEach(d => {
+      const data = d.data();
+      const uid = d.id;
+      if (currentUserId && uid === currentUserId) return;
+      if (!resultsMap.has(uid)) {
+        const rawHandle = data.handle || `@${clean}`;
+        const handle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
+        const username = data.username || handle.replace(/^@/, '');
+        resultsMap.set(uid, {
+          id: uid,
+          name: data.name || data.displayName || 'Talentio Member',
+          handle,
+          username,
+          avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          role: data.role || data.userType || 'member',
+          title: data.title || '',
+          countryFlag: data.countryFlag || '🌐',
+          verified: data.verifiedBadge ?? true,
+          online: true
+        });
+      }
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, 'users');
+  }
+
+  // 3. Fallback match across catalog freelancers and registered seed accounts
+  try {
+    const { TALENTIO_FREELANCERS } = await import('../data/talentioData');
+    TALENTIO_FREELANCERS.forEach(f => {
+      if (currentUserId && f.id === currentUserId) return;
+      const fClean = f.handle.replace(/^@/, '').toLowerCase();
+      const nameClean = f.name.toLowerCase();
+      if (fClean.includes(clean) || nameClean.includes(clean)) {
+        if (!resultsMap.has(f.id)) {
+          resultsMap.set(f.id, {
+            id: f.id,
+            name: f.name,
+            handle: f.handle,
+            username: f.handle.replace(/^@/, ''),
+            avatar: f.avatar,
+            role: 'freelancer',
+            title: f.title,
+            countryFlag: f.countryFlag,
+            verified: f.verifiedBadge,
+            online: f.availableNow
+          });
+        }
+      }
+    });
+
+    // Also include platform client accounts
+    const mockClients = [
+      {
+        id: 'client-1',
+        name: 'Julian Sterling',
+        handle: '@julian_curve',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+        role: 'client',
+        title: 'VP of Product @ Curve Fintech',
+        countryFlag: '🇺🇸',
+        verified: true,
+        online: true
+      },
+      {
+        id: 'client-2',
+        name: 'Dr. Sarah Lin',
+        handle: '@sarah_medtech',
+        avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
+        role: 'client',
+        title: 'CTO @ MedTech Health Labs',
+        countryFlag: '🇩🇪',
+        verified: true,
+        online: false
+      },
+      {
+        id: 'user-client-1',
+        name: 'Alexander Vance',
+        handle: '@alexander_v',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        role: 'client',
+        title: 'Managing Director @ Vance Capital',
+        countryFlag: '🇺🇸',
+        verified: true,
+        online: true
+      }
+    ];
+
+    mockClients.forEach(c => {
+      if (currentUserId && c.id === currentUserId) return;
+      const cClean = c.handle.replace(/^@/, '').toLowerCase();
+      const nameClean = c.name.toLowerCase();
+      if (cClean.includes(clean) || nameClean.includes(clean)) {
+        if (!resultsMap.has(c.id)) {
+          resultsMap.set(c.id, {
+            id: c.id,
+            name: c.name,
+            handle: c.handle,
+            username: c.handle.replace(/^@/, ''),
+            avatar: c.avatar,
+            role: c.role,
+            title: c.title,
+            countryFlag: c.countryFlag,
+            verified: c.verified,
+            online: c.online
+          });
+        }
+      }
+    });
+  } catch {}
+
+  return Array.from(resultsMap.values());
+}
+
 // ============================================================================
 // SERVICES & GIGS
 // ============================================================================
@@ -351,42 +530,94 @@ export function generateCanonicalConversationId(userId1: string, userId2: string
 }
 
 export async function getOrCreateDirectConversation(
-  currentUser: { id: string; name: string; handle?: string; avatar: string; role?: string },
-  targetUser: { id: string; name: string; handle?: string; avatar: string; role?: string; verified?: boolean; title?: string }
+  currentUser: { id: string; name: string; handle?: string; username?: string; avatar: string; role?: string },
+  targetUser: { id: string; name: string; handle?: string; username?: string; avatar: string; role?: string; verified?: boolean; title?: string; countryFlag?: string }
 ): Promise<any> {
   const convId = generateCanonicalConversationId(currentUser.id, targetUser.id);
   const convRef = doc(db, 'conversations', convId);
 
+  const myHandle = (currentUser.handle || `@${(currentUser.name || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}`).startsWith('@')
+    ? (currentUser.handle || `@${(currentUser.name || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}`)
+    : `@${currentUser.handle}`;
+  
+  const targetHandle = (targetUser.handle || `@${(targetUser.name || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}`).startsWith('@')
+    ? (targetUser.handle || `@${(targetUser.name || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '')}`)
+    : `@${targetUser.handle}`;
+
   try {
     const snap = await getDoc(convRef);
     if (snap.exists()) {
-      return { id: snap.id, ...snap.data() };
+      const data = snap.data();
+      const otherParticipant = data.participants?.[targetUser.id] || {
+        id: targetUser.id,
+        name: targetUser.name,
+        handle: targetHandle,
+        avatar: targetUser.avatar,
+        role: targetUser.role || 'freelancer',
+        verified: targetUser.verified ?? true,
+        title: targetUser.title || '',
+        countryFlag: targetUser.countryFlag || '🌐',
+        online: true,
+        lastSeen: 'Online'
+      };
+
+      return {
+        id: snap.id,
+        ...data,
+        participant: otherParticipant,
+        participantIds: data.participantIds || [currentUser.id, targetUser.id],
+        lastMessage: data.lastMessage || {
+          text: 'Conversation active',
+          timestamp: 'Just now',
+          senderId: currentUser.id,
+          status: 'sent',
+          read_status: 'sent'
+        },
+        unreadCount: data.unreadCounts?.[currentUser.id] || 0,
+        isPinned: data.isPinned ?? false,
+        isMuted: data.isMuted ?? false,
+        category: data.category || 'direct'
+      };
     }
 
-    const newConv = {
+    const newConvDoc = {
       id: convId,
       participantIds: [currentUser.id, targetUser.id],
       participants: {
         [currentUser.id]: {
           id: currentUser.id,
           name: currentUser.name,
-          handle: currentUser.handle || `@${currentUser.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+          handle: myHandle,
+          username: myHandle.replace(/^@/, ''),
           avatar: currentUser.avatar,
           role: currentUser.role || 'client'
         },
         [targetUser.id]: {
           id: targetUser.id,
           name: targetUser.name,
-          handle: targetUser.handle || `@${targetUser.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+          handle: targetHandle,
+          username: targetHandle.replace(/^@/, ''),
           avatar: targetUser.avatar,
           role: targetUser.role || 'freelancer',
           verified: targetUser.verified ?? true,
-          title: targetUser.title || ''
+          title: targetUser.title || '',
+          countryFlag: targetUser.countryFlag || '🌐',
+          online: true,
+          lastSeen: 'Online'
         }
       },
       unreadCounts: {
         [currentUser.id]: 0,
         [targetUser.id]: 0
+      },
+      lastMessage: {
+        text: 'Conversation opened',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        senderId: currentUser.id,
+        sender_id: currentUser.id,
+        receiver_id: targetUser.id,
+        status: 'sent',
+        read_status: 'sent'
       },
       isPinned: false,
       isMuted: false,
@@ -395,17 +626,41 @@ export async function getOrCreateDirectConversation(
       updatedAt: serverTimestamp()
     };
 
-    await setDoc(convRef, newConv);
-    return newConv;
+    await setDoc(convRef, newConvDoc);
+
+    return {
+      id: convId,
+      ...newConvDoc,
+      participant: newConvDoc.participants[targetUser.id],
+      unreadCount: 0
+    };
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, `conversations/${convId}`);
     return {
       id: convId,
+      participant: {
+        id: targetUser.id,
+        name: targetUser.name,
+        handle: targetHandle,
+        avatar: targetUser.avatar,
+        role: targetUser.role || 'freelancer',
+        verified: targetUser.verified ?? true,
+        title: targetUser.title || '',
+        online: true,
+        lastSeen: 'Online'
+      },
       participantIds: [currentUser.id, targetUser.id],
-      participants: {
-        [currentUser.id]: currentUser,
-        [targetUser.id]: targetUser
-      }
+      lastMessage: {
+        text: 'Conversation opened',
+        timestamp: 'Just now',
+        senderId: currentUser.id,
+        status: 'sent',
+        read_status: 'sent'
+      },
+      unreadCount: 0,
+      isPinned: false,
+      isMuted: false,
+      category: 'direct'
     };
   }
 }
@@ -419,10 +674,39 @@ export function subscribeToConversations(userId: string, callback: (conversation
     return onSnapshot(
       q,
       (snapshot) => {
-        const list = snapshot.docs.map(d => ({
-          id: d.id,
-          ...d.data()
-        })).filter((c: any) => {
+        const list = snapshot.docs.map(d => {
+          const data = d.data();
+          const pIds: string[] = data.participantIds || [];
+          const otherId = pIds.find(id => id !== userId) || (pIds[0] === userId ? pIds[1] : pIds[0]) || 'unknown';
+          const participantData = data.participants?.[otherId] || data.participant || {
+            id: otherId,
+            name: 'Talentio Member',
+            handle: `@user_${otherId.slice(-4)}`,
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+            role: 'freelancer',
+            verified: true,
+            online: true,
+            lastSeen: 'Online'
+          };
+
+          return {
+            id: d.id,
+            ...data,
+            participant: participantData,
+            participantIds: pIds,
+            unreadCount: data.unreadCounts?.[userId] || data.unreadCount || 0,
+            lastMessage: data.lastMessage || {
+              text: 'Active conversation',
+              timestamp: 'Recently',
+              senderId: otherId,
+              status: 'sent',
+              read_status: 'sent'
+            },
+            isPinned: data.isPinned ?? false,
+            isMuted: data.isMuted ?? false,
+            category: data.category || 'direct'
+          };
+        }).filter((c: any) => {
           if (!userId) return true;
           if (Array.isArray(c.participantIds)) {
             return c.participantIds.includes(userId);

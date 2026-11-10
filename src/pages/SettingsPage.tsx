@@ -18,11 +18,10 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  Vibrate,
   Layers,
   Languages
 } from 'lucide-react';
-import { triggerDeviceNotification, updateAppBadge, subscribeUserToPush } from '../utils/serviceWorkerRegistration';
+import { triggerDeviceNotification, subscribeUserToPush } from '../utils/serviceWorkerRegistration';
 import { SUPPORTED_LANGUAGES } from '../data/languagesData';
 
 export const SettingsPage: React.FC = () => {
@@ -63,7 +62,7 @@ export const SettingsPage: React.FC = () => {
         if (user?.id) {
           await subscribeUserToPush(user.id);
         }
-        // Send welcoming test notification
+        // Send activation notification
         await triggerDeviceNotification('🔔 Talentio Notifications Active', {
           body: 'You will now receive instant alerts for client messages, offers, and escrow payouts!',
           url: '/?page=chat'
@@ -75,45 +74,6 @@ export const SettingsPage: React.FC = () => {
       showToast('Could not request notification permission.', 'error');
     } finally {
       setIsSubscribing(false);
-    }
-  };
-
-  const handleSendTestNotification = async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      showToast('Notifications not supported', 'error');
-      return;
-    }
-
-    if (Notification.permission !== 'granted') {
-      await handleEnableNotifications();
-      return;
-    }
-
-    const success = await triggerDeviceNotification('💬 New Message from Elena Rostova', {
-      body: 'Hi, I have reviewed the design tokens. Milestone 1 is ready for release!',
-      icon: '/icons/notification-icon.png',
-      badge: '/icons/notification-badge.png',
-      url: '/?page=chat'
-    });
-
-    // Also trigger server web push if user is registered with push
-    if (user?.id) {
-      fetch('/api/push/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          title: '💬 New Message from Elena Rostova',
-          body: 'Hi, I have reviewed the design tokens. Milestone 1 is ready for release!'
-        })
-      }).catch(() => {});
-    }
-
-    if (success) {
-      showToast('Test notification sent to your device!', 'success');
-      updateAppBadge(1);
-    } else {
-      showToast('Notification could not be shown. Please check browser permissions.', 'warning');
     }
   };
 
@@ -315,7 +275,7 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {notificationPermission !== 'granted' ? (
+                {notificationPermission !== 'granted' && (
                   <button
                     onClick={handleEnableNotifications}
                     disabled={isSubscribing}
@@ -323,14 +283,6 @@ export const SettingsPage: React.FC = () => {
                   >
                     <BellRing className="w-3.5 h-3.5" />
                     <span>{isSubscribing ? 'Enabling...' : 'Enable Notifications'}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSendTestNotification}
-                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-                  >
-                    <Vibrate className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Test Mobile Notification</span>
                   </button>
                 )}
               </div>
@@ -342,12 +294,6 @@ export const SettingsPage: React.FC = () => {
                   <Check className="w-3.5 h-3.5" />
                   Device is paired with Service Worker. Mobile vibration and badges enabled.
                 </span>
-                <button
-                  onClick={handleSendTestNotification}
-                  className="text-xs text-[#3D2FD1] font-bold hover:underline cursor-pointer"
-                >
-                  Send Sample Message Alert →
-                </button>
               </div>
             )}
           </div>
